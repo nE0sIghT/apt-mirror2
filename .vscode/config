@@ -1,0 +1,34 @@
+set base_path         /workspace/contrib/spool
+set mirror_path       $base_path/mirror
+set skel_path         $base_path/skel
+set var_path          $base_path/var
+set postmirror_script $var_path/postmirror.sh
+set defaultarch       amd64
+set run_postmirror    0
+set nthreads          8
+set _tilde            0
+
+
+set use_proxy         off
+set http_proxy        127.0.0.1:3128
+set proxy_user        user
+set proxy_password    password
+
+#deb http://archive.ubuntu.com/ubuntu mantic main restricted universe multiverse
+#deb http://archive.ubuntu.com/ubuntu mantic-security main restricted universe multiverse
+#deb http://archive.ubuntu.com/ubuntu mantic-updates main restricted universe multiverse
+#deb http://archive.ubuntu.com/ubuntu mantic-backports main restricted universe multiverse
+
+#deb-src http://archive.ubuntu.com/ubuntu mantic main restricted universe multiverse
+#deb-src http://archive.ubuntu.com/ubuntu mantic-security main restricted universe multiverse
+#deb-src http://archive.ubuntu.com/ubuntu mantic-updates main restricted universe multiverse
+#deb-src http://archive.ubuntu.com/ubuntu mantic-backports main restricted universe multiverse
+
+deb [signed-by=/usr/share/keyrings/runner_gitlab-runner-archive-keyring.gpg] https://packages.gitlab.com/runner/gitlab-runner/debian/ bookworm main
+deb-src [signed-by=/usr/share/keyrings/runner_gitlab-runner-archive-keyring.gpg] https://packages.gitlab.com/runner/gitlab-runner/debian/ bookworm main
+
+#clean http://archive.ubuntu.com/ubuntu
+
+#deb http://archive.debian.org/debian/ stretch main contrib non-free
+
+mirror_path http://archive.debian.org/debian/ debian

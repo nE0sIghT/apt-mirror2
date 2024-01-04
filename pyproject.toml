@@ -1,0 +1,60 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "apt_mirror2"
+authors = [
+    {name = "Yuri Konotopov", email = "ykonotopov@gnome.org"},
+]
+description = "apt-mirror Python reimplementation"
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+]
+dependencies = [
+    "aiofile==3.8.8",
+    "aioftp==0.21.4",
+    "httpx[http2]==0.26.0",
+    "python-debian==0.1.49",
+    "uvloop==0.19.0",
+]
+dynamic = ["version"]
+
+[project.scripts]
+apt-mirror = "apt_mirror.apt_mirror:main"
+
+[tool.setuptools.packages.find]
+
+[tool.black]
+preview = true
+
+[tool.isort]
+profile = "black"
+default_section = "THIRDPARTY"
+known_first_party = "apt_mirror"
+
+[tool.pylint.main]
+ignore-patterns = "^\\.#"
+jobs = 0
+disable = [
+    "C0111",
+    "W1203",
+]
+signature-mutators=[
+    "click.decorators.option",
+    "click.decorators.argument",
+    "click.decorators.version_option",
+    "click.decorators.help_option",
+    "click.decorators.pass_context",
+    "click.decorators.confirmation_option",
+]
+
+[tool.pyright]
+exclude = [
+    "build/",
+    "contrib/",
+    "dist/",
+    "**/*.egg-info",
+]

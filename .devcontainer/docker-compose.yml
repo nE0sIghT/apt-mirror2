@@ -1,0 +1,15 @@
+services:
+  apt-mirror2-vscode:
+    build:
+      context: ../
+      dockerfile: .devcontainer/Dockerfile
+      args:
+        PYTHON_VERSION: '3.10'
+    image: apt-mirror2-vscode
+    volumes:
+      - "../:/workspace:cached"
+    networks:
+      - apt-mirror2
+
+networks:
+  apt-mirror2:

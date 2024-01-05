@@ -542,7 +542,7 @@ class HTTPDownloader(Downloader):
                 retry=server_disconnected,
                 error=str(ex) if not server_disconnected else None,
             )
-        except Exception as ex:
+        except Exception as ex:  # pylint: disable=W0718
             yield DownloadResponse(
                 _stream=None,
                 error=f"{ex.__class__.__qualname__}: {str(ex)}",

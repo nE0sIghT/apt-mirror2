@@ -1,4 +1,4 @@
-# About
+# apt-mirror2
 
 `apt-mirror2` is the Python/asyncio reimplementation of the [apt-mirror](https://github.com/apt-mirror/apt-mirror) developed as drop-in replacement for the latest.  
 This project is in early development stage however it should be suitable as general [apt-mirror](https://github.com/apt-mirror/apt-mirror) replacement.

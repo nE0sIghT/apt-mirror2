@@ -7,7 +7,7 @@ import os
 from errno import EWOULDBLOCK
 from fcntl import LOCK_EX, LOCK_NB, flock
 from pathlib import Path
-from typing import Any, Awaitable
+from typing import Any, Awaitable, Iterable, Sequence
 
 import uvloop
 
@@ -55,71 +55,104 @@ class APTMirror:
                 self._download_semaphore,
             )
 
-            # Download release files
-            self._log.info(f"Downloading release files for repository {repository}")
-            release_files = [
-                DownloadFile.from_path(path) for path in repository.release_files
-            ]
-            downloader.add(*release_files)
-            await downloader.download()
+            release_files = await self.download_release_files(repository, downloader)
 
             # Download other metadata files
-            metadata_files = repository.get_metadata_files(
-                self._config.skel_path,
-                self._config.encode_tilde,
-            )
-
+            metadata_files = await self.download_metadata_files(repository, downloader)
             if not metadata_files:
                 self._log.error(
                     f"Unable to obtain metadata files for repository {repository}"
                 )
-                return
-
-            downloader.add(*metadata_files)
-
-            self._log.info(
-                f"Downloading {downloader.queue_files_count} metadata files for"
-                f" repository {repository}. Total size is {downloader.queue_files_size}"
-            )
-
-            await downloader.download()
+                return metadata_files
 
             # Download remaining pool
-            downloader.set_target_path(
-                self._config.mirror_path
-                / repository.get_mirror_path(self._config.encode_tilde)
-            )
-
-            self._log.info(f"Processing metadata for repository {repository}")
-            pool_files = repository.get_pool_files(
-                self._config.skel_path,
-                self._config.encode_tilde,
-            )
-
-            downloader.add(*pool_files)
-
-            self._log.info(
-                f"Downloading {downloader.queue_files_count} pool files for repository"
-                f" {repository}. Total size is {downloader.queue_files_size}"
-            )
-
-            await downloader.download()
+            pool_files = await self.download_pool_files(repository, downloader)
 
             # Move skel to mirror
-            self._log.info("Moving metadata")
-            for file in itertools.chain(release_files, metadata_files):
-                mirror_path = repository.get_mirror_path(self._config.encode_tilde)
-                file_relative_path = mirror_path / file.path
-                file_skel_path = self._config.skel_path / file_relative_path
+            await self.move_metadata(
+                repository, itertools.chain(release_files, metadata_files)
+            )
 
-                if file_skel_path.exists():
-                    Downloader.link_or_copy(
-                        file_skel_path,
-                        *[
-                            self._config.mirror_path / mirror_path / f
-                            for f in file.get_all_paths()
-                        ],
-                    )
+    async def download_release_files(
+        self, repository: BaseRepository, downloader: Downloader
+    ) -> Sequence[DownloadFile]:
+        # Download release files
+        self._log.info(f"Downloading release files for repository {repository}")
+        release_files = [
+            DownloadFile.from_path(path) for path in repository.release_files
+        ]
+        downloader.add(*release_files)
+        await downloader.download()
+
+        return release_files
+
+    async def download_metadata_files(
+        self, repository: BaseRepository, downloader: Downloader
+    ) -> Sequence[DownloadFile]:
+        metadata_files = repository.get_metadata_files(
+            self._config.skel_path,
+            self._config.encode_tilde,
+        )
+
+        if not metadata_files:
+            self._log.error(
+                f"Unable to obtain metadata files for repository {repository}"
+            )
+            return metadata_files
+
+        downloader.add(*metadata_files)
+
+        self._log.info(
+            f"Downloading {downloader.queue_files_count} metadata files for"
+            f" repository {repository}. Total size is {downloader.queue_files_size}"
+        )
+
+        await downloader.download()
+
+        return metadata_files
+
+    async def download_pool_files(
+        self, repository: BaseRepository, downloader: Downloader
+    ) -> Sequence[DownloadFile]:
+        downloader.set_target_path(
+            self._config.mirror_path
+            / repository.get_mirror_path(self._config.encode_tilde)
+        )
+
+        self._log.info(f"Processing metadata for repository {repository}")
+        pool_files = repository.get_pool_files(
+            self._config.skel_path,
+            self._config.encode_tilde,
+        )
+
+        downloader.add(*pool_files)
+
+        self._log.info(
+            f"Downloading {downloader.queue_files_count} pool files for repository"
+            f" {repository}. Total size is {downloader.queue_files_size}"
+        )
+
+        await downloader.download()
+
+        return pool_files
+
+    async def move_metadata(
+        self, repository: BaseRepository, metadata_files: Iterable[DownloadFile]
+    ):
+        self._log.info("Moving metadata")
+        for file in metadata_files:
+            mirror_path = repository.get_mirror_path(self._config.encode_tilde)
+            file_relative_path = mirror_path / file.path
+            file_skel_path = self._config.skel_path / file_relative_path
+
+            if file_skel_path.exists():
+                Downloader.link_or_copy(
+                    file_skel_path,
+                    *[
+                        self._config.mirror_path / mirror_path / f
+                        for f in file.get_all_paths()
+                    ],
+                )
 
     def die(self, message: str, code: int = 1):
         self._log.error(message)

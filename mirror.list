@@ -1,28 +1,45 @@
-# Paths to working directories
+## Paths to working directories
 set base_path         /var/spool/apt-mirror
-# All mirrors will be saved to mirror_path
+## All mirrors will be saved to mirror_path
 set mirror_path       $base_path/mirror
-# Initial metadata synchronization path
+## Initial metadata synchronization path
 set skel_path         $base_path/skel
-# Path to variable data
+## Path to variable data
 set var_path          $base_path/var
 
+## Used when arch is not explicitly specified for repository
 set defaultarch       amd64
 set nthreads          8
 set _tilde            0
 
-# Binary mirrors
-deb http://archive.ubuntu.com/ubuntu mantic main restricted universe multiverse
+## By default redundand files are not removed after mirror update.
+## Shell script is created in the path specified by `cleanscript` option
+## that can be used to clean mirror.
+# set cleanscript     $var_path/clean.sh
+
+## If `_autoclean` option is specified and enabled, clean script will
+## not be created and mirror will be cleaned
+# set _autoclean 0
+
+
+## Binary mirrors are configured using standard sources.list syntax
+## Binary mirrors
+deb [ arch=amd64,arm64 ] http://archive.ubuntu.com/ubuntu mantic main restricted universe multiverse
+
+## Or via `deb-arch`
+# deb-amd64 http://archive.ubuntu.com/ubuntu mantic main restricted universe multiverse
+# deb-arm64 http://archive.ubuntu.com/ubuntu mantic main restricted universe multiverse
+
 deb http://archive.ubuntu.com/ubuntu mantic-security main restricted universe multiverse
 deb http://archive.ubuntu.com/ubuntu mantic-updates main restricted universe multiverse
 deb http://archive.ubuntu.com/ubuntu mantic-backports main restricted universe multiverse
 
-# Source mirrors
-#deb-src http://archive.ubuntu.com/ubuntu mantic main restricted universe multiverse
-#deb-src http://archive.ubuntu.com/ubuntu mantic-security main restricted universe multiverse
-#deb-src http://archive.ubuntu.com/ubuntu mantic-updates main restricted universe multiverse
-#deb-src http://archive.ubuntu.com/ubuntu mantic-backports main restricted universe multiverse
+## Source mirrors
+# deb-src http://archive.ubuntu.com/ubuntu mantic main restricted universe multiverse
+# deb-src http://archive.ubuntu.com/ubuntu mantic-security main restricted universe multiverse
+# deb-src http://archive.ubuntu.com/ubuntu mantic-updates main restricted universe multiverse
+# deb-src http://archive.ubuntu.com/ubuntu mantic-backports main restricted universe multiverse
 
-# By default the name of mirrored folder constructed from mirror URL.
-# Using mirror_path it's possible to override mirror folder name
+## By default the name of mirrored folder constructed from mirror URL.
+## Using mirror_path it's possible to override mirror folder name
 mirror_path http://archive.ubuntu.com/ubuntu ubuntu

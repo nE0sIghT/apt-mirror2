@@ -20,20 +20,6 @@ RUN \
     pip --disable-pip-version-check --no-cache-dir install \
         -r /tmp/pip-tmp/requirements.txt ;\
     rm -rf /tmp/pip-tmp ;\
-    mkdir -p /tmp/python-apt ;\
-    pushd /tmp/python-apt ;\
-    apt-get source python-apt ;\
-    for dir in $(ls -1); do \
-        if test -d "${dir}"; then \
-            pushd "${dir}" ;\
-            python setup.py install ;\
-            popd ;\
-            break ;\
-        fi ;\
-    done ;\
-    popd ;\
-    rm -r /tmp/python-apt ;\
-    { python -c 'import apt_pkg' || (echo "python-apt was not installed"; exit 1;) } ;\
     adduser --disabled-password --gecos '' vscode ;\
     echo "vscode ALL=(root) NOPASSWD: ALL" > /etc/sudoers.d/vscode
 

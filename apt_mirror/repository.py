@@ -11,7 +11,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Sequence
 
-from debian.deb822 import Packages, Release, Sources
+from debian.deb822 import Release
 
 from .download import URL, DownloadFile, HashSum, HashType
 from .logs import get_logger
@@ -33,6 +33,22 @@ class RepositoryType(Enum):
 
         raise RepositoryType.UnknownTypeException(
             f"Unknown repository type string: {type_string}"
+        )
+
+
+@dataclass
+class PackageFile:
+    path: Path
+    size: int
+    hashes: dict[HashType, HashSum]
+
+    def to_download_file(self, directory: str):
+        return DownloadFile(
+            path=Path(directory) / self.path,
+            size=self.size,
+            hashes=self.hashes,
+            use_by_hash=False,
+            check_size=True,
         )
 
 
@@ -151,66 +167,135 @@ class BaseRepository(ABC):
                     continue
 
                 with open(sources_file, "rt", encoding="utf-8") as fp:
-                    for sources in Sources.iter_paragraphs(fp):
-                        directory = Path(sources["Directory"])
+                    directory = None
+                    hash_type = None
+                    package_files: dict[Path, PackageFile] = {}
 
-                        for hash_type in HashType:
-                            for pool_file in sources.get(
-                                self._get_sources_files_field(hash_type), []
-                            ):
-                                path = directory / pool_file["name"]
+                    for line in fp:
+                        starts_with_space = False
 
-                                hash_sum = HashSum(
-                                    type=hash_type, hash=pool_file[hash_type.value]
-                                )
+                        match line:
+                            case line if line.startswith("Directory:"):
+                                _, directory = line.strip().split()
+                            case line if line.startswith("Files:"):
+                                hash_type = HashType.MD5
+                                continue
+                            case line if line.startswith("Checksums-Sha1:"):
+                                hash_type = HashType.SHA1
+                                continue
+                            case line if line.startswith("Checksums-Sha256:"):
+                                hash_type = HashType.SHA256
+                                continue
+                            case line if line.startswith("Checksums-Sha512:"):
+                                hash_type = HashType.SHA512
+                                continue
+                            case line if line.startswith(" "):
+                                starts_with_space = True
 
-                                if path in pool_files:
-                                    pool_files[path].hashes[hash_sum.type] = hash_sum
-                                else:
-                                    pool_files[path] = DownloadFile(
-                                        path,
-                                        size=int(pool_file["size"]),
-                                        hashes={
-                                            hash_sum.type: hash_sum,
-                                        },
-                                        use_by_hash=False,
-                                        check_size=True,
+                                if not hash_type:
+                                    continue
+
+                                try:
+                                    hashsum, _size, filename = line.strip().split(
+                                        maxsplit=2
                                     )
+                                except ValueError:
+                                    continue
+
+                                if " " in filename:
+                                    continue
+
+                                file_path = Path(filename)
+                                package_files.setdefault(
+                                    file_path,
+                                    PackageFile(
+                                        path=file_path, size=int(_size), hashes={}
+                                    ),
+                                ).hashes[hash_type] = HashSum(
+                                    type=hash_type, hash=hashsum
+                                )
+                            case line if not line.strip():
+                                if not directory:
+                                    continue
+
+                                for package_file in package_files.values():
+                                    download_file = package_file.to_download_file(
+                                        directory
+                                    )
+                                    pool_files[download_file.path] = download_file
+
+                                directory = None
+                                hash_type = None
+                                package_files = {}
+                            case _:
+                                pass
+
+                        if not starts_with_space:
+                            hash_type = None
 
         if self.arches:
             for packages_file_relative_path in self.packages_files:
-                packages_file = (
+                package_file = (
                     repository_root
                     / self.get_mirror_path(encode_tilde)
                     / packages_file_relative_path
                 )
 
-                if not self._try_unpack(packages_file):
+                if not self._try_unpack(package_file):
                     # This is optional
-                    if "binary-all" not in str(packages_file):
-                        self._log.info(f"No index file {packages_file}. Skipping")
+                    if "binary-all" not in str(package_file):
+                        self._log.info(f"No index file {package_file}. Skipping")
                     continue
 
-                with open(packages_file, "rt", encoding="utf-8") as fp:
-                    for packages in Packages.iter_paragraphs(fp):
-                        path = Path(packages["Filename"])
-                        size = int(packages["Size"])
+                with open(package_file, "rt", encoding="utf-8") as fp:
+                    file_path = None
+                    size = 0
+                    hashes: dict[HashType, HashSum] = {}
+                    for line in fp:
+                        match line:
+                            case line if line.startswith("Filename:"):
+                                _, filename = line.strip().split(maxsplit=1)
+                                file_path = Path(filename)
+                            case line if line.startswith("Size:"):
+                                _, _size = line.strip().split(maxsplit=1)
+                                size = int(_size)
+                            case line if line.startswith(f"{HashType.MD5.value}:"):
+                                _, hashsum = line.strip().split(maxsplit=1)
+                                hashes[HashType.MD5] = HashSum(
+                                    type=HashType.MD5, hash=hashsum
+                                )
+                            case line if line.startswith(f"{HashType.SHA1.value}:"):
+                                _, hashsum = line.strip().split(maxsplit=1)
+                                hashes[HashType.SHA1] = HashSum(
+                                    type=HashType.SHA1, hash=hashsum
+                                )
+                            case line if line.startswith(f"{HashType.SHA256.value}:"):
+                                _, hashsum = line.strip().split(maxsplit=1)
+                                hashes[HashType.SHA256] = HashSum(
+                                    type=HashType.SHA256, hash=hashsum
+                                )
+                            case line if line.startswith(f"{HashType.SHA512.value}:"):
+                                _, hashsum = line.strip().split(maxsplit=1)
+                                hashes[HashType.SHA512] = HashSum(
+                                    type=HashType.SHA512, hash=hashsum
+                                )
+                            case line if not line.strip():
+                                if not file_path or not size:
+                                    continue
 
-                        pool_files[path] = DownloadFile(
-                            path,
-                            size=size,
-                            hashes={},
-                            use_by_hash=False,
-                            check_size=True,
-                        )
+                                pool_files[file_path] = DownloadFile(
+                                    path=file_path,
+                                    size=size,
+                                    hashes=hashes,
+                                    use_by_hash=False,
+                                    check_size=True,
+                                )
 
-                        for hash_type in HashType:
-                            if not packages.get(hash_type.value):
-                                continue
-
-                            pool_files[path].hashes[hash_type] = HashSum(
-                                type=hash_type, hash=packages[hash_type.value]
-                            )
+                                file_path = None
+                                hashes = {}
+                                size = 0
+                            case _:
+                                pass
 
         return list(pool_files.values())
 

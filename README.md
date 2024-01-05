@@ -32,31 +32,6 @@ python setup.py install
 apt-mirror --help
 ```
 
-To speed up indexes parsing you may also install python-apt into virtualenv:
-
-```bash
-# Create temporary folder
-mkdir -p /tmp/python-apt
-pushd /tmp/python-apt
-
-# Get python-apt source code
-apt-get source python-apt
-
-# Find python-apt directory
-for dir in $(ls -1); do
-    if test -d "${dir}"; then
-        break
-    fi
-done
-
-# Install python-apt to virtualenv
-pushd "${dir}"
-python setup.py install
-
-popd; popd
-rm -r /tmp/python-apt
-```
-
 # Usage
 
 As the drop-in replacement for the `apt-mirror` this project supports same CLI syntax.

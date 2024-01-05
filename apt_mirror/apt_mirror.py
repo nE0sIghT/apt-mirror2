@@ -42,6 +42,31 @@ class APTMirror:
 
         await asyncio.gather(*tasks)
 
+        if not self._config.autoclean and any(
+            r.clean for r in self._config.repositories.values()
+        ):
+            self._log.info(f"Writing clean script {self._config.cleanscript}")
+            with open(self._config.cleanscript, "wt", encoding="utf-8") as fp:
+                fp.write(
+                    "\n".join([
+                        "#!/bin/sh",
+                        "set -e",
+                        "",
+                    ])
+                )
+
+                for repository in self._config.repositories.values():
+                    if not repository.clean:
+                        continue
+
+                    clean_script = (
+                        self._config.cleanscript.parent
+                        / repository.get_clean_script_name(self._config.encode_tilde)
+                    )
+                    fp.write(f"sh '{clean_script}'\n")
+
+            self._config.cleanscript.chmod(0o750)
+
         self.unlock()
 
     async def mirror_repository(self, repository: BaseRepository):
@@ -72,6 +97,20 @@ class APTMirror:
             await self.move_metadata(
                 repository, itertools.chain(release_files, metadata_files)
             )
+
+            if repository.clean:
+                await self.clean_repository(
+                    repository,
+                    set(
+                        itertools.chain.from_iterable(
+                            file.get_all_paths()
+                            for file in itertools.chain(
+                                release_files, metadata_files, pool_files
+                            )
+                        )
+                    ),
+                    unlink=self._config.autoclean,
+                )
 
     async def download_release_files(
         self, repository: BaseRepository, downloader: Downloader
@@ -153,6 +192,101 @@ class APTMirror:
                         for f in file.get_all_paths()
                     ],
                 )
+
+    async def clean_repository(
+        self, repository: BaseRepository, needed_files: set[Path], unlink: bool
+    ):
+        def clean_file(path: Path) -> bool:
+            nonlocal bytes_cleaned, files_count, fp, mirror_path
+
+            if path.relative_to(mirror_path) in needed_files:
+                return True
+
+            files_count += 1
+            bytes_cleaned += path.stat().st_size
+
+            if fp:
+                fp.write(f"rm -f '{path}'\n")
+            else:
+                path.unlink(missing_ok=True)
+
+            return False
+
+        def clean_folder(path: Path) -> bool:
+            nonlocal bytes_cleaned, files_count, fp
+
+            is_needed = False
+            for file in path.glob("*"):
+                if file.is_symlink():
+                    is_needed = True
+                    continue
+
+                if file.is_file():
+                    is_needed |= clean_file(file)
+
+                if file.is_dir():
+                    is_needed |= clean_folder(file)
+
+            if not is_needed:
+                files_count += 1
+
+                if fp:
+                    fp.write(f"rmdir '{path}\n")
+                else:
+                    path.rmdir()
+
+            return is_needed
+
+        files_count = 0
+        bytes_cleaned = 0
+
+        fp = None
+        try:
+            if not unlink:
+                self._log.info(f"Creating clean script for repository {repository}")
+                fp = open(
+                    self._config.cleanscript.parent
+                    / repository.get_clean_script_name(self._config.encode_tilde),
+                    "wt",
+                    encoding="utf-8",
+                )
+                fp.write(
+                    "\n".join(
+                        [
+                            "#!/bin/bash",
+                            "set -e",
+                            "",
+                            (
+                                f"echo 'Removing {files_count} unnecessary files and"
+                                " directories"
+                                f" [{Downloader.format_size(bytes_cleaned)}] in"
+                                f" repository {repository.url}...'"
+                            ),
+                            "",
+                        ]
+                        + [""]
+                    )
+                )
+            else:
+                self._log.info(f"Cleaning repository {repository}")
+
+            mirror_path = self._config.mirror_path / repository.get_mirror_path(
+                self._config.encode_tilde
+            )
+
+            clean_folder(
+                self._config.mirror_path
+                / repository.get_mirror_path(self._config.encode_tilde)
+            )
+        finally:
+            if fp:
+                fp.close()
+
+        if not unlink:
+            (
+                self._config.cleanscript.parent
+                / repository.get_clean_script_name(self._config.encode_tilde)
+            ).chmod(0o750)
 
     def die(self, message: str, code: int = 1):
         self._log.error(message)

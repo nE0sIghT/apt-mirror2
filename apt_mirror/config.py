@@ -204,8 +204,16 @@ class Config:
         return Path(self[key])
 
     @property
+    def autoclean(self) -> bool:
+        return self.get_bool("_autoclean")
+
+    @property
     def base_path(self) -> Path:
         return self.get_path("base_path")
+
+    @property
+    def cleanscript(self) -> Path:
+        return self.get_path("cleanscript")
 
     @property
     def default_arch(self):

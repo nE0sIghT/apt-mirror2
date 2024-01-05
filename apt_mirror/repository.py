@@ -84,6 +84,10 @@ class BaseRepository(ABC):
 
         return self.url.as_filesystem_path(encode_tilde)
 
+    def get_clean_script_name(self, encode_tilde: bool):
+        path = Path(str(self.get_mirror_path(encode_tilde)).replace("/", "_"))
+        return path.with_name(f"{path.name}.sh")
+
     def get_metadata_files(
         self, repository_root: Path, encode_tilde: bool
     ) -> Sequence[DownloadFile]:

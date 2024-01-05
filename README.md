@@ -56,7 +56,6 @@ As of now next options are not supported and ignored:
 - `limit_rate`
 - `unlink` - apt-mirror2 always unlink files before saving
 - `*proxy*`
-- `clean`
 
 In additions there are some enhancements supported:
 

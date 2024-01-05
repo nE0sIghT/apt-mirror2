@@ -1,0 +1,121 @@
+variables:
+  FF_NETWORK_PER_BUILD: 'true'
+  PYTHON_VERSION: '3.10'
+
+workflow:
+  rules:
+    - if: $CI_COMMIT_REF_PROTECTED == "true"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+stages:
+  - validate
+  - security
+  - build
+
+.pip cache:
+  cache:
+    paths:
+      - $PIP_CACHE_DIR
+    when: always
+  variables:
+    PIP_CACHE_DIR: $CI_PROJECT_DIR/.cache/pip
+
+.security defaults:
+  stage: security
+  allow_failure: true
+  needs: []
+
+.test defaults:
+  extends:
+    - .pip cache
+  image: python:$PYTHON_VERSION
+  before_script:
+    - pip install -r requirements.txt
+  needs: []
+
+.validate defaults:
+  extends:
+    - .test defaults
+  stage: validate
+  script:
+    - >-
+      "${VALIDATE_TOOL}" ${VALIDATE_TOOL_ARGS}
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+flake8:
+  extends:
+    - .validate defaults
+  variables:
+    VALIDATE_TOOL: flake8
+
+isort:
+  extends:
+    - .validate defaults
+  variables:
+    VALIDATE_TOOL: isort
+    VALIDATE_TOOL_ARGS: --check --diff .
+
+black:
+  extends:
+    - .validate defaults
+  variables:
+    VALIDATE_TOOL: black
+    VALIDATE_TOOL_ARGS: --check --diff .
+
+security (trivy):
+  extends:
+    - .security defaults
+  image:
+    name: aquasec/trivy
+    entrypoint: [""]
+  script:
+    - trivy fs .
+  cache:
+    paths:
+      - .trivy
+    when: always
+  variables:
+    TRIVY_CACHE_DIR: .trivy
+    TRIVY_EXIT_CODE: 1
+    TRIVY_SCANNERS: vuln,config
+
+security (safety):
+  extends:
+    - .pip cache
+    - .security defaults
+  image:
+    name: python:$PYTHON_VERSION
+  before_script:
+    - pip install safety
+  script:
+    - safety check -r requirements.txt
+
+security (pip-audit):
+  extends:
+    - .pip cache
+    - .security defaults
+  image:
+    name: python:$PYTHON_VERSION
+  before_script:
+    - pip install pip-audit
+  script:
+    - pip-audit -r requirements.txt
+
+.build image:
+  image: docker:24
+  services:
+    - docker:24-dind
+  script:
+    - >-
+      docker build
+      --build-arg PYTHON_VERSION="${PYTHON_VERSION}"
+      -t apt-mirror2:latest
+      -f Dockerfile
+      .
+
+build image:
+  extends:
+    - .build image
+  stage: build
+  needs: []

@@ -14,4 +14,4 @@ RUN \
     rm -rf /tmp/apt-mirror2
 
 ENTRYPOINT [ "apt-mirror" ]
-CMD [ "--help" ]
+CMD [ "" ]

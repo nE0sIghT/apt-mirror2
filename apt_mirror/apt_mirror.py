@@ -230,7 +230,8 @@ class APTMirror:
                                 release_files, metadata_files, pool_files
                             )
                         )
-                    ),
+                    )
+                    - downloader.get_missing_sources(),
                     unlink=self._config.autoclean,
                 )
 

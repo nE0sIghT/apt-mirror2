@@ -7,7 +7,7 @@ import os
 from errno import EWOULDBLOCK
 from fcntl import LOCK_EX, LOCK_NB, flock
 from pathlib import Path
-from typing import Any, Awaitable, Iterable, Sequence
+from typing import IO, Any, Awaitable, Iterable, Sequence
 
 import uvloop
 
@@ -15,6 +15,92 @@ from .config import Config
 from .download import Downloader, DownloadFile
 from .logs import get_logger
 from .repository import BaseRepository
+
+
+class PathCleaner:
+    def __init__(self, root_path: Path, keep_files: set[Path]) -> None:
+        self._log = get_logger(self)
+
+        self._root_path = root_path
+
+        self._bytes_cleaned = 0
+        self._files_cleaned = 0
+        self._fp = None
+
+        self._files_queue: list[Path] = []
+        self._folders_queue: list[Path] = []
+        self._keep_files = keep_files
+
+        self._check_folder(self._root_path)
+
+    def _check_folder(self, path: Path) -> bool:
+        is_needed = False
+        for file in path.glob("*"):
+            if file.is_symlink():
+                is_needed = True
+                continue
+
+            if file.is_file():
+                is_needed |= self._check_file(file)
+
+            if file.is_dir():
+                is_needed |= self._check_folder(file)
+
+        if not is_needed:
+            self._folders_queue.append(path)
+
+        return is_needed
+
+    def _check_file(self, path: Path) -> bool:
+        if path.relative_to(self._root_path) in self._keep_files:
+            return True
+
+        self._bytes_cleaned += path.stat().st_size
+        self._files_queue.append(path)
+
+        return False
+
+    @property
+    def bytes_cleaned(self):
+        return self._bytes_cleaned
+
+    def write_clean_script(self, fp: IO[str], repository: BaseRepository):
+        fp.write(
+            "\n".join(
+                [
+                    "#!/bin/bash",
+                    "set -e",
+                    "",
+                    (
+                        f"echo 'Removing {len(self._files_queue)}"
+                        f" [{Downloader.format_size(self._bytes_cleaned)}]"
+                        f" unnecessary files and {len(self._folders_queue)} unnecessary"
+                        f" folders in the repository {repository.url}...'"
+                    ),
+                    "",
+                ]
+                + [""]
+            )
+        )
+
+        for file in self._files_queue:
+            fp.write(f"rm -f '{file.absolute()}'\n")
+
+        for folder in self._folders_queue:
+            fp.write(f"rm -r '{folder.absolute()}'\n")
+
+    def clean(self):
+        for file in self._files_queue:
+            file.unlink(missing_ok=True)
+
+        for folder in self._folders_queue:
+            folder.rmdir()
+
+        self._log.info(
+            "Removed"
+            f" {len(self._files_queue)} [{Downloader.format_size(self._bytes_cleaned)}]"
+            f" unnecessary files and {len(self._folders_queue)} unnecessary folders"
+        )
 
 
 class APTMirror:
@@ -220,97 +306,29 @@ class APTMirror:
     async def clean_repository(
         self, repository: BaseRepository, needed_files: set[Path], unlink: bool
     ):
-        def clean_file(path: Path) -> bool:
-            nonlocal bytes_cleaned, files_count, fp, mirror_path
+        cleaner = PathCleaner(
+            self._config.mirror_path
+            / repository.get_mirror_path(self._config.encode_tilde),
+            needed_files,
+        )
 
-            if path.relative_to(mirror_path) in needed_files:
-                return True
-
-            files_count += 1
-            bytes_cleaned += path.stat().st_size
-
-            if fp:
-                fp.write(f"rm -f '{path}'\n")
-            else:
-                path.unlink(missing_ok=True)
-
-            return False
-
-        def clean_folder(path: Path) -> bool:
-            nonlocal bytes_cleaned, files_count, fp
-
-            is_needed = False
-            for file in path.glob("*"):
-                if file.is_symlink():
-                    is_needed = True
-                    continue
-
-                if file.is_file():
-                    is_needed |= clean_file(file)
-
-                if file.is_dir():
-                    is_needed |= clean_folder(file)
-
-            if not is_needed:
-                files_count += 1
-
-                if fp:
-                    fp.write(f"rmdir '{path}\n")
-                else:
-                    path.rmdir()
-
-            return is_needed
-
-        files_count = 0
-        bytes_cleaned = 0
-
-        fp = None
-        try:
-            if not unlink:
-                self._log.info(f"Creating clean script for repository {repository}")
-                fp = open(
-                    self._config.cleanscript.parent
-                    / repository.get_clean_script_name(self._config.encode_tilde),
-                    "wt",
-                    encoding="utf-8",
-                )
-                fp.write(
-                    "\n".join(
-                        [
-                            "#!/bin/bash",
-                            "set -e",
-                            "",
-                            (
-                                f"echo 'Removing {files_count} unnecessary files and"
-                                " directories"
-                                f" [{Downloader.format_size(bytes_cleaned)}] in"
-                                f" repository {repository.url}...'"
-                            ),
-                            "",
-                        ]
-                        + [""]
-                    )
-                )
-            else:
-                self._log.info(f"Cleaning repository {repository}")
-
-            mirror_path = self._config.mirror_path / repository.get_mirror_path(
-                self._config.encode_tilde
-            )
-
-            clean_folder(
-                self._config.mirror_path
-                / repository.get_mirror_path(self._config.encode_tilde)
-            )
-        finally:
-            if fp:
-                fp.close()
-
-        if not unlink:
-            (
+        if unlink:
+            self._log.info(f"Cleaning repository {repository}")
+            cleaner.clean()
+        else:
+            self._log.info(f"Creating clean script for repository {repository}")
+            clean_script = (
                 self._config.cleanscript.parent
                 / repository.get_clean_script_name(self._config.encode_tilde)
-            ).chmod(0o750)
+            )
+            with open(
+                clean_script,
+                "wt",
+                encoding="utf-8",
+            ) as fp:
+                cleaner.write_clean_script(fp, repository=repository)
+
+            clean_script.chmod(0o750)
 
     def die(self, message: str, code: int = 1):
         self._log.error(message)

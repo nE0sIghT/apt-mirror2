@@ -451,6 +451,9 @@ class Downloader(ABC):
 
         self._log.error(f"Unable to download {source_path}: no more tryes")
 
+    def get_missing_sources(self):
+        return self._missing_sources.copy()
+
     @staticmethod
     def link_or_copy(source: Path, *targets: Path):
         if len(targets) > 1:

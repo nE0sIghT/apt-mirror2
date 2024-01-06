@@ -155,12 +155,15 @@ class BaseRepository(ABC):
         return f"Checksum-{hash_type.value.capitalize()}"
 
     def get_pool_files(
-        self, repository_root: Path, encode_tilde: bool
+        self, repository_root: Path, encode_tilde: bool, missing_sources: set[Path]
     ) -> Sequence[DownloadFile]:
         pool_files: dict[Path, DownloadFile] = {}
 
         if self.source:
             for sources_file_relative_path in self.sources_files:
+                if sources_file_relative_path in missing_sources:
+                    continue
+
                 sources_file = (
                     repository_root
                     / self.get_mirror_path(encode_tilde)
@@ -168,7 +171,9 @@ class BaseRepository(ABC):
                 )
 
                 if not self._try_unpack(sources_file):
-                    self._log.info(f"No index file {sources_file}. Skipping")
+                    self._log.warning(
+                        f"Unable to unpack index file {sources_file}. Skipping"
+                    )
                     continue
 
                 sources_file_size = sources_file.stat().st_size
@@ -269,7 +274,9 @@ class BaseRepository(ABC):
                 if not self._try_unpack(package_file):
                     # This is optional
                     if "binary-all" not in str(package_file):
-                        self._log.info(f"No index file {package_file}. Skipping")
+                        self._log.info(
+                            f"Unable to unpack index file {package_file}. Skipping"
+                        )
                     continue
 
                 package_file_size = package_file.stat().st_size

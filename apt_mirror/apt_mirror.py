@@ -162,6 +162,7 @@ class APTMirror:
         pool_files = repository.get_pool_files(
             self._config.skel_path,
             self._config.encode_tilde,
+            downloader.get_missing_sources(),
         )
 
         downloader.add(*pool_files)

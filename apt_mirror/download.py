@@ -208,7 +208,7 @@ class Downloader(ABC):
         self._semaphore = semaphore
 
         self._sources: list[DownloadFile] = []
-        self._all_sources: set[str] = set()
+        self._all_sources: set[Path] = set()
         self._download_start = datetime.now()
 
         self.reset_stats()
@@ -228,7 +228,7 @@ class Downloader(ABC):
 
     def add(self, *args: DownloadFile):
         self._sources.extend(a for a in args)
-        self._all_sources.update(str(path) for a in args for path in a.get_all_paths())
+        self._all_sources.update(path for a in args for path in a.get_all_paths())
 
         self.reset_stats()
 
@@ -284,7 +284,7 @@ class Downloader(ABC):
             tasks.add(
                 asyncio.create_task(
                     self.download_path(
-                        str(source_file),
+                        source_file.path,
                         target_path,
                         expected_size=source_file.size,
                         mirror_paths=mirror_paths,
@@ -333,7 +333,7 @@ class Downloader(ABC):
 
     async def download_path(
         self,
-        source_path: str,
+        source_path: Path,
         target_path: Path,
         expected_size: int,
         mirror_paths: Sequence[Path] | None = None,
@@ -458,7 +458,7 @@ class Downloader(ABC):
 
     @asynccontextmanager
     @abstractmethod
-    async def stream(self, source_path: str) -> AsyncGenerator[DownloadResponse, None]:
+    async def stream(self, source_path: Path) -> AsyncGenerator[DownloadResponse, None]:
         yield  # type: ignore
 
 
@@ -504,9 +504,9 @@ class HTTPDownloader(Downloader):
         return func
 
     @asynccontextmanager
-    async def stream(self, source_path: str):
+    async def stream(self, source_path: Path):
         try:
-            async with (self._httpx.stream("GET", source_path) as response,):
+            async with (self._httpx.stream("GET", str(source_path)) as response,):
                 date: datetime | None
                 try:
                     date = parsedate_to_datetime(  # type: ignore
@@ -561,7 +561,7 @@ class FTPDownloader(Downloader):
         return func
 
     @asynccontextmanager
-    async def stream(self, source_path: str):
+    async def stream(self, source_path: Path):
         stream: DataConnectionThrottleStreamIO
 
         try:

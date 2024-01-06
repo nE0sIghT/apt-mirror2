@@ -51,7 +51,7 @@ As the drop-in replacement for the `apt-mirror` this project supports same CLI s
 usage: apt-mirror [-h] [configfile]
 
 positional arguments:
-  configfile  Path to config file. Default /etc/apt-mirror/mirror.list
+  configfile  Path to config file. Default /etc/apt/mirror.list
 
 options:
   -h, --help  show this help message and exit

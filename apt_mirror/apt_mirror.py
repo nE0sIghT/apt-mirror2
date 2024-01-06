@@ -16,7 +16,7 @@ from .download import Downloader, DownloadFile
 from .logs import get_logger
 from .repository import BaseRepository
 
-DEFAULT_CONFIGFILE = "/etc/apt-mirror/mirror.list"
+DEFAULT_CONFIGFILE = "/etc/apt/mirror.list"
 
 
 class APTMirror:

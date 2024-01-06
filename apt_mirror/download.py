@@ -1,6 +1,7 @@
 # SPDX-License-Identifer: GPL-3.0-or-later
 
 import asyncio
+import itertools
 import os
 import shutil
 from abc import ABC, abstractmethod
@@ -207,8 +208,12 @@ class Downloader(ABC):
         self._target_root_path = target_root_path
         self._semaphore = semaphore
 
+        # Download queue. Reseted in download()
         self._sources: list[DownloadFile] = []
+        # All paths ever added to this instance
         self._all_sources: set[Path] = set()
+        # Either missing on server files or files with errors
+        self._missing_sources: set[Path] = set()
         self._download_start = datetime.now()
 
         self.reset_stats()
@@ -336,7 +341,7 @@ class Downloader(ABC):
         source_path: Path,
         target_path: Path,
         expected_size: int,
-        mirror_paths: Sequence[Path] | None = None,
+        mirror_paths: Sequence[Path],
     ):
         async def retry(
             message: str | None = None, sleep: bool = True, skip_try: bool = False
@@ -366,6 +371,10 @@ class Downloader(ABC):
                 if response.missing:
                     self._missing_count += 1
                     self._missing_size += expected_size
+                    self._missing_sources.update(
+                        itertools.chain([source_path], mirror_paths)
+                    )
+
                     return
 
                 if response.error:
@@ -438,6 +447,8 @@ class Downloader(ABC):
 
         self._error_count += 1
         self._error_size += expected_size
+        self._missing_sources.update(itertools.chain([source_path], mirror_paths))
+
         self._log.error(f"Unable to download {source_path}: no more tryes")
 
     @staticmethod

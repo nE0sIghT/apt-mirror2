@@ -198,6 +198,20 @@ class APTMirror:
                 )
                 return metadata_files
 
+            await self.clean_repository_skel(
+                repository,
+                set(
+                    itertools.chain.from_iterable(
+                        file.get_all_paths()
+                        for file in itertools.chain(
+                            release_files,
+                            metadata_files,
+                        )
+                    )
+                )
+                - downloader.get_missing_sources(),
+            )
+
             # Download remaining pool
             pool_files = await self.download_pool_files(repository, downloader)
 
@@ -329,6 +343,19 @@ class APTMirror:
                 cleaner.write_clean_script(fp, repository=repository)
 
             clean_script.chmod(0o750)
+
+    async def clean_repository_skel(
+        self, repository: BaseRepository, needed_files: set[Path]
+    ):
+        self._log.info(f"Cleaning skel folder for repository {repository}")
+
+        cleaner = PathCleaner(
+            self._config.skel_path
+            / repository.get_mirror_path(self._config.encode_tilde),
+            needed_files,
+        )
+
+        cleaner.clean()
 
     def die(self, message: str, code: int = 1):
         self._log.error(message)

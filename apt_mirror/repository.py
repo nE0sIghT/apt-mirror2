@@ -8,6 +8,7 @@ import shutil
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
+from mmap import MADV_SEQUENTIAL, MAP_POPULATE, MAP_PRIVATE, mmap
 from pathlib import Path
 from typing import Sequence
 
@@ -170,72 +171,92 @@ class BaseRepository(ABC):
                     self._log.info(f"No index file {sources_file}. Skipping")
                     continue
 
-                with open(sources_file, "rt", encoding="utf-8") as fp:
+                sources_file_size = sources_file.stat().st_size
+                if sources_file_size < 1:
+                    continue
+
+                with open(sources_file, "rb") as fp:
                     directory = None
                     hash_type = None
                     package_files: dict[Path, PackageFile] = {}
 
-                    for line in fp:
-                        starts_with_space = False
+                    mfp = fp
+                    if sources_file_size > 1 * 1024 * 1024:
+                        mfp = mmap(
+                            fp.fileno(),
+                            length=0,
+                            flags=MAP_PRIVATE | MAP_POPULATE,
+                        )
 
-                        match line:
-                            case line if line.startswith("Directory:"):
-                                _, directory = line.strip().split()
-                            case line if line.startswith("Files:"):
-                                hash_type = HashType.MD5
-                                continue
-                            case line if line.startswith("Checksums-Sha1:"):
-                                hash_type = HashType.SHA1
-                                continue
-                            case line if line.startswith("Checksums-Sha256:"):
-                                hash_type = HashType.SHA256
-                                continue
-                            case line if line.startswith("Checksums-Sha512:"):
-                                hash_type = HashType.SHA512
-                                continue
-                            case line if line.startswith(" "):
-                                starts_with_space = True
+                    try:
+                        if isinstance(mfp, mmap):
+                            mfp.madvise(MADV_SEQUENTIAL)
 
-                                if not hash_type:
+                        for bytes_line in iter(mfp.readline, b""):
+                            starts_with_space = False
+                            line = bytes_line.decode("utf-8")
+
+                            match line:
+                                case line if line.startswith("Directory:"):
+                                    _, directory = line.strip().split()
+                                case line if line.startswith("Files:"):
+                                    hash_type = HashType.MD5
                                     continue
+                                case line if line.startswith("Checksums-Sha1:"):
+                                    hash_type = HashType.SHA1
+                                    continue
+                                case line if line.startswith("Checksums-Sha256:"):
+                                    hash_type = HashType.SHA256
+                                    continue
+                                case line if line.startswith("Checksums-Sha512:"):
+                                    hash_type = HashType.SHA512
+                                    continue
+                                case line if line.startswith(" "):
+                                    starts_with_space = True
 
-                                try:
-                                    hashsum, _size, filename = line.strip().split(
-                                        maxsplit=2
+                                    if not hash_type:
+                                        continue
+
+                                    try:
+                                        hashsum, _size, filename = line.strip().split(
+                                            maxsplit=2
+                                        )
+                                    except ValueError:
+                                        continue
+
+                                    if " " in filename:
+                                        continue
+
+                                    file_path = Path(filename)
+                                    package_files.setdefault(
+                                        file_path,
+                                        PackageFile(
+                                            path=file_path, size=int(_size), hashes={}
+                                        ),
+                                    ).hashes[hash_type] = HashSum(
+                                        type=hash_type, hash=hashsum
                                     )
-                                except ValueError:
-                                    continue
+                                case line if not line.strip():
+                                    if not directory:
+                                        continue
 
-                                if " " in filename:
-                                    continue
+                                    for package_file in package_files.values():
+                                        download_file = package_file.to_download_file(
+                                            directory
+                                        )
+                                        pool_files[download_file.path] = download_file
 
-                                file_path = Path(filename)
-                                package_files.setdefault(
-                                    file_path,
-                                    PackageFile(
-                                        path=file_path, size=int(_size), hashes={}
-                                    ),
-                                ).hashes[hash_type] = HashSum(
-                                    type=hash_type, hash=hashsum
-                                )
-                            case line if not line.strip():
-                                if not directory:
-                                    continue
+                                    directory = None
+                                    hash_type = None
+                                    package_files = {}
+                                case _:
+                                    pass
 
-                                for package_file in package_files.values():
-                                    download_file = package_file.to_download_file(
-                                        directory
-                                    )
-                                    pool_files[download_file.path] = download_file
-
-                                directory = None
+                            if not starts_with_space:
                                 hash_type = None
-                                package_files = {}
-                            case _:
-                                pass
-
-                        if not starts_with_space:
-                            hash_type = None
+                    finally:
+                        if isinstance(mfp, mmap):
+                            mfp.close()
 
         if self.arches:
             for packages_file_relative_path in self.packages_files:
@@ -251,55 +272,81 @@ class BaseRepository(ABC):
                         self._log.info(f"No index file {package_file}. Skipping")
                     continue
 
-                with open(package_file, "rt", encoding="utf-8") as fp:
+                package_file_size = package_file.stat().st_size
+                if package_file_size < 1:
+                    continue
+
+                with open(package_file, "rb") as fp:
                     file_path = None
                     size = 0
                     hashes: dict[HashType, HashSum] = {}
-                    for line in fp:
-                        match line:
-                            case line if line.startswith("Filename:"):
-                                _, filename = line.strip().split(maxsplit=1)
-                                file_path = Path(filename)
-                            case line if line.startswith("Size:"):
-                                _, _size = line.strip().split(maxsplit=1)
-                                size = int(_size)
-                            case line if line.startswith(f"{HashType.MD5.value}:"):
-                                _, hashsum = line.strip().split(maxsplit=1)
-                                hashes[HashType.MD5] = HashSum(
-                                    type=HashType.MD5, hash=hashsum
-                                )
-                            case line if line.startswith(f"{HashType.SHA1.value}:"):
-                                _, hashsum = line.strip().split(maxsplit=1)
-                                hashes[HashType.SHA1] = HashSum(
-                                    type=HashType.SHA1, hash=hashsum
-                                )
-                            case line if line.startswith(f"{HashType.SHA256.value}:"):
-                                _, hashsum = line.strip().split(maxsplit=1)
-                                hashes[HashType.SHA256] = HashSum(
-                                    type=HashType.SHA256, hash=hashsum
-                                )
-                            case line if line.startswith(f"{HashType.SHA512.value}:"):
-                                _, hashsum = line.strip().split(maxsplit=1)
-                                hashes[HashType.SHA512] = HashSum(
-                                    type=HashType.SHA512, hash=hashsum
-                                )
-                            case line if not line.strip():
-                                if not file_path or not size:
-                                    continue
 
-                                pool_files[file_path] = DownloadFile(
-                                    path=file_path,
-                                    size=size,
-                                    hashes=hashes,
-                                    use_by_hash=False,
-                                    check_size=True,
-                                )
+                    mfp = fp
+                    if package_file_size > 1 * 1024 * 1024:
+                        mfp = mmap(
+                            fp.fileno(),
+                            length=0,
+                            flags=MAP_PRIVATE | MAP_POPULATE,
+                        )
 
-                                file_path = None
-                                hashes = {}
-                                size = 0
-                            case _:
-                                pass
+                    try:
+                        if isinstance(mfp, mmap):
+                            mfp.madvise(MADV_SEQUENTIAL)
+
+                        for bytes_line in iter(mfp.readline, b""):
+                            line = bytes_line.decode("utf-8")
+
+                            match line:
+                                case line if line.startswith("Filename:"):
+                                    _, filename = line.strip().split(maxsplit=1)
+                                    file_path = Path(filename)
+                                case line if line.startswith("Size:"):
+                                    _, _size = line.strip().split(maxsplit=1)
+                                    size = int(_size)
+                                case line if line.startswith(f"{HashType.MD5.value}:"):
+                                    _, hashsum = line.strip().split(maxsplit=1)
+                                    hashes[HashType.MD5] = HashSum(
+                                        type=HashType.MD5, hash=hashsum
+                                    )
+                                case line if line.startswith(f"{HashType.SHA1.value}:"):
+                                    _, hashsum = line.strip().split(maxsplit=1)
+                                    hashes[HashType.SHA1] = HashSum(
+                                        type=HashType.SHA1, hash=hashsum
+                                    )
+                                case line if line.startswith(
+                                    f"{HashType.SHA256.value}:"
+                                ):
+                                    _, hashsum = line.strip().split(maxsplit=1)
+                                    hashes[HashType.SHA256] = HashSum(
+                                        type=HashType.SHA256, hash=hashsum
+                                    )
+                                case line if line.startswith(
+                                    f"{HashType.SHA512.value}:"
+                                ):
+                                    _, hashsum = line.strip().split(maxsplit=1)
+                                    hashes[HashType.SHA512] = HashSum(
+                                        type=HashType.SHA512, hash=hashsum
+                                    )
+                                case line if not line.strip():
+                                    if not file_path or not size:
+                                        continue
+
+                                    pool_files[file_path] = DownloadFile(
+                                        path=file_path,
+                                        size=size,
+                                        hashes=hashes,
+                                        use_by_hash=False,
+                                        check_size=True,
+                                    )
+
+                                    file_path = None
+                                    hashes = {}
+                                    size = 0
+                                case _:
+                                    pass
+                    finally:
+                        if isinstance(mfp, mmap):
+                            mfp.close()
 
         return list(pool_files.values())
 

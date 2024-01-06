@@ -11,6 +11,7 @@ stages:
   - validate
   - security
   - build
+  - deploy
 
 .pip cache:
   cache:
@@ -113,9 +114,32 @@ security (pip-audit):
       -t apt-mirror2:latest
       -f Dockerfile
       .
+  tags:
+    - docker
 
 build image:
   extends:
     - .build image
   stage: build
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
   needs: []
+
+build and deploy:
+  extends:
+    - .build image
+  stage: deploy
+  rules:
+    - if: $CI_COMMIT_REF_PROTECTED == "true"
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+  script:
+    - !reference [.build image, script]
+    - docker login -u "${DOCKER_HUB_USERNAME}" -p "${DOCKER_HUB_PASSWORD}"
+    - docker push aptmirror/apt-mirror2:latest
+    - if [ -n "${CI_COMMIT_TAG}" ]; then
+    -   docker tag aptmirror/apt-mirror2:latest "aptmirror/apt-mirror2:${CI_COMMIT_TAG#v}"
+    -   docker push "aptmirror/apt-mirror2:${CI_COMMIT_TAG#v}"
+    - fi

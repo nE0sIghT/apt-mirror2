@@ -9,7 +9,18 @@ Python 3.10 is the minimum supported version.
 For additional dependencies look to the `pyproject.yml` and/or `requirements.txt`.
 
 # Installation
-As for now the most easy way to try this project is to use virtualenv:
+## Docker
+
+Docker image is available in the Docker Hub under [aptmirror/apt-mirror2](https://hub.docker.com/repository/docker/aptmirror/apt-mirror2) repository.
+You can try it using
+
+```
+docker run -it --rm aptmirror/apt-mirror2 --help
+```
+
+## Virtualenv
+
+It's possible to use `apt-mirror2` from the virtualenv:
 
 ```bash
 # Let's work in the home folder

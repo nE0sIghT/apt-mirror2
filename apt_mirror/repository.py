@@ -121,6 +121,7 @@ class SourcesParser(IndexFileParser):
         super().__init__(repository_path, index_files)
         self._reset_block_parser()
 
+    # https://github.com/pylint-dev/pylint/issues/5214
     def _reset_block_parser(self):
         self._directory: str | None = None
         self._hash_type = None
@@ -130,59 +131,63 @@ class SourcesParser(IndexFileParser):
         self._reset_block_parser()
 
         for bytes_line in iter(fp.readline, b""):
-            starts_with_space = False
-            line = bytes_line.decode("utf-8")
-
-            match line:
-                case line if line.startswith("Directory:"):
-                    _, self._directory = line.strip().split()  # pylint: disable=W0201
-                case line if line.startswith("Files:"):
-                    self._hash_type = HashType.MD5  # pylint: disable=W0201
+            if bytes_line[0] == ord(" "):
+                if not self._hash_type:
                     continue
-                case line if line.startswith("Checksums-Sha1:"):
-                    self._hash_type = HashType.SHA1  # pylint: disable=W0201
-                    continue
-                case line if line.startswith("Checksums-Sha256:"):
-                    self._hash_type = HashType.SHA256  # pylint: disable=W0201
-                    continue
-                case line if line.startswith("Checksums-Sha512:"):
-                    self._hash_type = HashType.SHA512  # pylint: disable=W0201
-                    continue
-                case line if line.startswith(" "):
-                    starts_with_space = True
 
-                    if not self._hash_type:
-                        continue
-
-                    try:
-                        hashsum, _size, filename = line.strip().split(maxsplit=2)
-                    except ValueError:
-                        continue
-
-                    if " " in filename:
-                        continue
-
-                    file_path = Path(filename)
-                    self._package_files.setdefault(
-                        file_path,
-                        PackageFile(path=file_path, size=int(_size), hashes={}),
-                    ).hashes[self._hash_type] = HashSum(
-                        type=self._hash_type, hash=hashsum
+                try:
+                    hashsum, _size, filename = (
+                        bytes_line.decode().strip().split(maxsplit=2)
                     )
-                case line if not line.strip():
-                    if not self._directory:
+                except ValueError:
+                    continue
+
+                if " " in filename:
+                    continue
+
+                file_path = Path(filename)
+                self._package_files.setdefault(
+                    file_path,
+                    PackageFile(path=file_path, size=int(_size), hashes={}),
+                ).hashes[self._hash_type] = HashSum(type=self._hash_type, hash=hashsum)
+            elif bytes_line[0] != ord("\n"):
+                match bytes_line:
+                    case line if line.startswith(b"Directory:"):
+                        # https://github.com/pylint-dev/pylint/issues/5214
+                        _, self._directory = (  # pylint: disable=W0201
+                            line.decode().strip().split()
+                        )
+                    case line if line.startswith(b"Files:"):
+                        self._hash_type = HashType.MD5  # pylint: disable=W0201
                         continue
+                    case line if line.startswith(b"Checksums-"):
+                        match line[len(b"Checksums-") : -1]:
+                            case b"Sha1:":
+                                self._hash_type = HashType.SHA1  # pylint: disable=W0201
+                            case b"Sha256:":
+                                self._hash_type = (  # pylint: disable=W0201
+                                    HashType.SHA256
+                                )
+                            case b"Sha512:":
+                                self._hash_type = (  # pylint: disable=W0201
+                                    HashType.SHA512
+                                )
+                            case _:
+                                self._hash_type = None  # pylint: disable=W0201
 
-                    for package_file in self._package_files.values():
-                        download_file = package_file.to_download_file(self._directory)
-                        self._pool_files[download_file.path] = download_file
+                        continue
+                    case _:
+                        self._hash_type = None  # pylint: disable=W0201
+                        continue
+            else:
+                if not self._directory:
+                    continue
 
-                    self._reset_block_parser()
-                case _:
-                    pass
+                for package_file in self._package_files.values():
+                    download_file = package_file.to_download_file(self._directory)
+                    self._pool_files[download_file.path] = download_file
 
-            if not starts_with_space:
-                self._hash_type = None  # pylint: disable=W0201
+                self._reset_block_parser()
 
 
 class PackagesParser(IndexFileParser):
@@ -197,50 +202,55 @@ class PackagesParser(IndexFileParser):
 
     def _do_parse_index(self, fp: IO[bytes] | mmap):
         for bytes_line in iter(fp.readline, b""):
-            line = bytes_line.decode("utf-8")
-
-            match line:
-                case line if line.startswith("Filename:"):
-                    _, filename = line.strip().split(maxsplit=1)
-                    self._file_path = Path(filename)  # pylint: disable=W0201
-                case line if line.startswith("Size:"):
-                    _, _size = line.strip().split(maxsplit=1)
-                    self._size = int(_size)  # pylint: disable=W0201
-                case line if line.startswith(f"{HashType.MD5.value}:"):
-                    _, hashsum = line.strip().split(maxsplit=1)
-                    self._hashes[HashType.MD5] = HashSum(
-                        type=HashType.MD5, hash=hashsum
-                    )
-                case line if line.startswith(f"{HashType.SHA1.value}:"):
-                    _, hashsum = line.strip().split(maxsplit=1)
-                    self._hashes[HashType.SHA1] = HashSum(
-                        type=HashType.SHA1, hash=hashsum
-                    )
-                case line if line.startswith(f"{HashType.SHA256.value}:"):
-                    _, hashsum = line.strip().split(maxsplit=1)
-                    self._hashes[HashType.SHA256] = HashSum(
-                        type=HashType.SHA256, hash=hashsum
-                    )
-                case line if line.startswith(f"{HashType.SHA512.value}:"):
-                    _, hashsum = line.strip().split(maxsplit=1)
-                    self._hashes[HashType.SHA512] = HashSum(
-                        type=HashType.SHA512, hash=hashsum
-                    )
-                case line if not line.strip():
-                    if not self._file_path or not self._size:
+            if bytes_line[0] != ord("\n"):
+                match bytes_line:
+                    case line if line.startswith(b"Filename:"):
+                        self._file_path = Path(  # pylint: disable=W0201
+                            self._get_line_value(line)
+                        )
+                    case line if line.startswith(b"Size:"):
+                        self._size = int(  # pylint: disable=W0201
+                            self._get_line_value(line)
+                        )
+                    case line if line.startswith(b"%s:" % HashType.MD5.value.encode()):
+                        self._hashes[HashType.MD5] = HashSum(
+                            type=HashType.MD5, hash=self._get_line_value(line)
+                        )
+                    case line if line.startswith(b"%s:" % HashType.SHA1.value.encode()):
+                        self._hashes[HashType.MD5] = HashSum(
+                            type=HashType.SHA1, hash=self._get_line_value(line)
+                        )
+                    case line if line.startswith(
+                        b"%s:" % HashType.SHA256.value.encode()
+                    ):
+                        self._hashes[HashType.SHA256] = HashSum(
+                            type=HashType.SHA256, hash=self._get_line_value(line)
+                        )
+                    case line if line.startswith(
+                        b"%s:" % HashType.SHA512.value.encode()
+                    ):
+                        self._hashes[HashType.SHA512] = HashSum(
+                            type=HashType.SHA512, hash=self._get_line_value(line)
+                        )
+                    case _:
+                        self._hash_type = None  # pylint: disable=W0201
                         continue
+            else:
+                if not self._file_path or not self._size:
+                    continue
 
-                    self._pool_files[self._file_path] = DownloadFile(
-                        path=self._file_path,
-                        size=self._size,
-                        hashes=self._hashes,
-                        use_by_hash=False,
-                        check_size=True,
-                    )
+                self._pool_files[self._file_path] = DownloadFile(
+                    path=self._file_path,
+                    size=self._size,
+                    hashes=self._hashes,
+                    use_by_hash=False,
+                    check_size=True,
+                )
 
-                    self._reset_block_parser()
-                case _:
-                    pass
+                self._reset_block_parser()
+
+    def _get_line_value(self, line: bytes):
+        return line.decode().strip().split(":", maxsplit=1)[1].strip()
 
 
 @dataclass

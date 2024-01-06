@@ -153,6 +153,7 @@ class APTMirror:
         metadata_files = repository.get_metadata_files(
             self._config.skel_path,
             self._config.encode_tilde,
+            downloader.get_missing_sources(),
         )
 
         if not metadata_files:

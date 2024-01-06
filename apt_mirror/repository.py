@@ -290,9 +290,12 @@ class BaseRepository(ABC):
         return path.with_name(f"{path.name}.sh")
 
     def get_metadata_files(
-        self, repository_root: Path, encode_tilde: bool
+        self, repository_root: Path, encode_tilde: bool, missing_sources: set[Path]
     ) -> Sequence[DownloadFile]:
         for release_file_relative_path in (self.inrelease_file, self.release_file):
+            if release_file_relative_path in missing_sources:
+                continue
+
             release_file = (
                 repository_root
                 / self.get_mirror_path(encode_tilde)

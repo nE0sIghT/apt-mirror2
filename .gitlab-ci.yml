@@ -115,7 +115,7 @@ security (pip-audit):
       -f Dockerfile
       .
   variables:
-    - IMAGE_NAME: aptmirror/apt-mirror2
+    IMAGE_NAME: aptmirror/apt-mirror2
   tags:
     - docker
 

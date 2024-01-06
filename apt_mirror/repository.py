@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from enum import Enum
 from mmap import MADV_SEQUENTIAL, MAP_POPULATE, MAP_PRIVATE, mmap
 from pathlib import Path
-from typing import Sequence
+from typing import IO, Iterable, Sequence
 
 from debian.deb822 import Release
 
@@ -51,6 +51,196 @@ class PackageFile:
             use_by_hash=False,
             check_size=True,
         )
+
+
+class IndexFileParser(ABC):
+    def __init__(self, repository_path: Path, index_files: set[Path]) -> None:
+        super().__init__()
+
+        self._log = get_logger(self)
+        self._repository_path = repository_path
+        self._index_files = index_files
+        self._pool_files: dict[Path, DownloadFile] = {}
+
+    def parse(self) -> set[DownloadFile]:
+        for index_file_relative_path in self._index_files:
+            index_file = self._repository_path / index_file_relative_path
+
+            if not self._unpack_index(index_file):
+                if "binary-all" not in str(index_file):
+                    self._log.warning(
+                        f"Unable to unpack index file {index_file}. Skipping"
+                    )
+                continue
+
+            index_file_size = index_file.stat().st_size
+            if index_file_size < 1:
+                continue
+
+            with open(index_file, "rb") as fp:
+                mfp = fp
+                if index_file_size > 1 * 1024 * 1024:
+                    mfp = mmap(
+                        fp.fileno(),
+                        length=0,
+                        flags=MAP_PRIVATE | MAP_POPULATE,
+                    )
+
+                try:
+                    if isinstance(mfp, mmap):
+                        mfp.madvise(MADV_SEQUENTIAL)
+
+                    self._do_parse_index(mfp)
+                finally:
+                    if isinstance(mfp, mmap):
+                        mfp.close()
+
+        return set(self._pool_files.values())
+
+    def _unpack_index(self, file: Path) -> bool:
+        for suffix, open_function in BaseRepository.COMPRESSION_SUFFIXES.items():
+            compressed_file = file.with_name(f"{file.name}{suffix}")
+            if not compressed_file.exists():
+                continue
+
+            with open_function(compressed_file, "rb") as source_fp:
+                with open(file, "wb") as target_fp:
+                    shutil.copyfileobj(source_fp, target_fp)
+                    shutil.copystat(compressed_file, file)
+
+                    return True
+
+        return False
+
+    @abstractmethod
+    def _do_parse_index(self, fp: IO[bytes] | mmap): ...
+
+
+class SourcesParser(IndexFileParser):
+    def __init__(self, repository_path: Path, index_files: set[Path]) -> None:
+        super().__init__(repository_path, index_files)
+        self._reset_block_parser()
+
+    def _reset_block_parser(self):
+        self._directory: str | None = None
+        self._hash_type = None
+        self._package_files: dict[Path, PackageFile] = {}
+
+    def _do_parse_index(self, fp: IO[bytes] | mmap):
+        self._reset_block_parser()
+
+        for bytes_line in iter(fp.readline, b""):
+            starts_with_space = False
+            line = bytes_line.decode("utf-8")
+
+            match line:
+                case line if line.startswith("Directory:"):
+                    _, self._directory = line.strip().split()  # pylint: disable=W0201
+                case line if line.startswith("Files:"):
+                    self._hash_type = HashType.MD5  # pylint: disable=W0201
+                    continue
+                case line if line.startswith("Checksums-Sha1:"):
+                    self._hash_type = HashType.SHA1  # pylint: disable=W0201
+                    continue
+                case line if line.startswith("Checksums-Sha256:"):
+                    self._hash_type = HashType.SHA256  # pylint: disable=W0201
+                    continue
+                case line if line.startswith("Checksums-Sha512:"):
+                    self._hash_type = HashType.SHA512  # pylint: disable=W0201
+                    continue
+                case line if line.startswith(" "):
+                    starts_with_space = True
+
+                    if not self._hash_type:
+                        continue
+
+                    try:
+                        hashsum, _size, filename = line.strip().split(maxsplit=2)
+                    except ValueError:
+                        continue
+
+                    if " " in filename:
+                        continue
+
+                    file_path = Path(filename)
+                    self._package_files.setdefault(
+                        file_path,
+                        PackageFile(path=file_path, size=int(_size), hashes={}),
+                    ).hashes[self._hash_type] = HashSum(
+                        type=self._hash_type, hash=hashsum
+                    )
+                case line if not line.strip():
+                    if not self._directory:
+                        continue
+
+                    for package_file in self._package_files.values():
+                        download_file = package_file.to_download_file(self._directory)
+                        self._pool_files[download_file.path] = download_file
+
+                    self._reset_block_parser()
+                case _:
+                    pass
+
+            if not starts_with_space:
+                self._hash_type = None  # pylint: disable=W0201
+
+
+class PackagesParser(IndexFileParser):
+    def __init__(self, repository_path: Path, index_files: set[Path]) -> None:
+        super().__init__(repository_path, index_files)
+        self._reset_block_parser()
+
+    def _reset_block_parser(self):
+        self._file_path = None
+        self._size = 0
+        self._hashes: dict[HashType, HashSum] = {}
+
+    def _do_parse_index(self, fp: IO[bytes] | mmap):
+        for bytes_line in iter(fp.readline, b""):
+            line = bytes_line.decode("utf-8")
+
+            match line:
+                case line if line.startswith("Filename:"):
+                    _, filename = line.strip().split(maxsplit=1)
+                    self._file_path = Path(filename)  # pylint: disable=W0201
+                case line if line.startswith("Size:"):
+                    _, _size = line.strip().split(maxsplit=1)
+                    self._size = int(_size)  # pylint: disable=W0201
+                case line if line.startswith(f"{HashType.MD5.value}:"):
+                    _, hashsum = line.strip().split(maxsplit=1)
+                    self._hashes[HashType.MD5] = HashSum(
+                        type=HashType.MD5, hash=hashsum
+                    )
+                case line if line.startswith(f"{HashType.SHA1.value}:"):
+                    _, hashsum = line.strip().split(maxsplit=1)
+                    self._hashes[HashType.SHA1] = HashSum(
+                        type=HashType.SHA1, hash=hashsum
+                    )
+                case line if line.startswith(f"{HashType.SHA256.value}:"):
+                    _, hashsum = line.strip().split(maxsplit=1)
+                    self._hashes[HashType.SHA256] = HashSum(
+                        type=HashType.SHA256, hash=hashsum
+                    )
+                case line if line.startswith(f"{HashType.SHA512.value}:"):
+                    _, hashsum = line.strip().split(maxsplit=1)
+                    self._hashes[HashType.SHA512] = HashSum(
+                        type=HashType.SHA512, hash=hashsum
+                    )
+                case line if not line.strip():
+                    if not self._file_path or not self._size:
+                        continue
+
+                    self._pool_files[self._file_path] = DownloadFile(
+                        path=self._file_path,
+                        size=self._size,
+                        hashes=self._hashes,
+                        use_by_hash=False,
+                        check_size=True,
+                    )
+
+                    self._reset_block_parser()
+                case _:
+                    pass
 
 
 @dataclass
@@ -156,206 +346,26 @@ class BaseRepository(ABC):
 
     def get_pool_files(
         self, repository_root: Path, encode_tilde: bool, missing_sources: set[Path]
-    ) -> Sequence[DownloadFile]:
-        pool_files: dict[Path, DownloadFile] = {}
+    ) -> Iterable[DownloadFile]:
+        pool_files: set[DownloadFile] = set()
 
         if self.source:
-            for sources_file_relative_path in self.sources_files:
-                if sources_file_relative_path in missing_sources:
-                    continue
-
-                sources_file = (
-                    repository_root
-                    / self.get_mirror_path(encode_tilde)
-                    / sources_file_relative_path
-                )
-
-                if not self._try_unpack(sources_file):
-                    self._log.warning(
-                        f"Unable to unpack index file {sources_file}. Skipping"
-                    )
-                    continue
-
-                sources_file_size = sources_file.stat().st_size
-                if sources_file_size < 1:
-                    continue
-
-                with open(sources_file, "rb") as fp:
-                    directory = None
-                    hash_type = None
-                    package_files: dict[Path, PackageFile] = {}
-
-                    mfp = fp
-                    if sources_file_size > 1 * 1024 * 1024:
-                        mfp = mmap(
-                            fp.fileno(),
-                            length=0,
-                            flags=MAP_PRIVATE | MAP_POPULATE,
-                        )
-
-                    try:
-                        if isinstance(mfp, mmap):
-                            mfp.madvise(MADV_SEQUENTIAL)
-
-                        for bytes_line in iter(mfp.readline, b""):
-                            starts_with_space = False
-                            line = bytes_line.decode("utf-8")
-
-                            match line:
-                                case line if line.startswith("Directory:"):
-                                    _, directory = line.strip().split()
-                                case line if line.startswith("Files:"):
-                                    hash_type = HashType.MD5
-                                    continue
-                                case line if line.startswith("Checksums-Sha1:"):
-                                    hash_type = HashType.SHA1
-                                    continue
-                                case line if line.startswith("Checksums-Sha256:"):
-                                    hash_type = HashType.SHA256
-                                    continue
-                                case line if line.startswith("Checksums-Sha512:"):
-                                    hash_type = HashType.SHA512
-                                    continue
-                                case line if line.startswith(" "):
-                                    starts_with_space = True
-
-                                    if not hash_type:
-                                        continue
-
-                                    try:
-                                        hashsum, _size, filename = line.strip().split(
-                                            maxsplit=2
-                                        )
-                                    except ValueError:
-                                        continue
-
-                                    if " " in filename:
-                                        continue
-
-                                    file_path = Path(filename)
-                                    package_files.setdefault(
-                                        file_path,
-                                        PackageFile(
-                                            path=file_path, size=int(_size), hashes={}
-                                        ),
-                                    ).hashes[hash_type] = HashSum(
-                                        type=hash_type, hash=hashsum
-                                    )
-                                case line if not line.strip():
-                                    if not directory:
-                                        continue
-
-                                    for package_file in package_files.values():
-                                        download_file = package_file.to_download_file(
-                                            directory
-                                        )
-                                        pool_files[download_file.path] = download_file
-
-                                    directory = None
-                                    hash_type = None
-                                    package_files = {}
-                                case _:
-                                    pass
-
-                            if not starts_with_space:
-                                hash_type = None
-                    finally:
-                        if isinstance(mfp, mmap):
-                            mfp.close()
+            pool_files.update(
+                SourcesParser(
+                    repository_root / self.get_mirror_path(encode_tilde),
+                    set(self.sources_files) - missing_sources,
+                ).parse()
+            )
 
         if self.arches:
-            for packages_file_relative_path in self.packages_files:
-                package_file = (
-                    repository_root
-                    / self.get_mirror_path(encode_tilde)
-                    / packages_file_relative_path
-                )
+            pool_files.update(
+                PackagesParser(
+                    repository_root / self.get_mirror_path(encode_tilde),
+                    set(self.packages_files) - missing_sources,
+                ).parse()
+            )
 
-                if not self._try_unpack(package_file):
-                    # This is optional
-                    if "binary-all" not in str(package_file):
-                        self._log.info(
-                            f"Unable to unpack index file {package_file}. Skipping"
-                        )
-                    continue
-
-                package_file_size = package_file.stat().st_size
-                if package_file_size < 1:
-                    continue
-
-                with open(package_file, "rb") as fp:
-                    file_path = None
-                    size = 0
-                    hashes: dict[HashType, HashSum] = {}
-
-                    mfp = fp
-                    if package_file_size > 1 * 1024 * 1024:
-                        mfp = mmap(
-                            fp.fileno(),
-                            length=0,
-                            flags=MAP_PRIVATE | MAP_POPULATE,
-                        )
-
-                    try:
-                        if isinstance(mfp, mmap):
-                            mfp.madvise(MADV_SEQUENTIAL)
-
-                        for bytes_line in iter(mfp.readline, b""):
-                            line = bytes_line.decode("utf-8")
-
-                            match line:
-                                case line if line.startswith("Filename:"):
-                                    _, filename = line.strip().split(maxsplit=1)
-                                    file_path = Path(filename)
-                                case line if line.startswith("Size:"):
-                                    _, _size = line.strip().split(maxsplit=1)
-                                    size = int(_size)
-                                case line if line.startswith(f"{HashType.MD5.value}:"):
-                                    _, hashsum = line.strip().split(maxsplit=1)
-                                    hashes[HashType.MD5] = HashSum(
-                                        type=HashType.MD5, hash=hashsum
-                                    )
-                                case line if line.startswith(f"{HashType.SHA1.value}:"):
-                                    _, hashsum = line.strip().split(maxsplit=1)
-                                    hashes[HashType.SHA1] = HashSum(
-                                        type=HashType.SHA1, hash=hashsum
-                                    )
-                                case line if line.startswith(
-                                    f"{HashType.SHA256.value}:"
-                                ):
-                                    _, hashsum = line.strip().split(maxsplit=1)
-                                    hashes[HashType.SHA256] = HashSum(
-                                        type=HashType.SHA256, hash=hashsum
-                                    )
-                                case line if line.startswith(
-                                    f"{HashType.SHA512.value}:"
-                                ):
-                                    _, hashsum = line.strip().split(maxsplit=1)
-                                    hashes[HashType.SHA512] = HashSum(
-                                        type=HashType.SHA512, hash=hashsum
-                                    )
-                                case line if not line.strip():
-                                    if not file_path or not size:
-                                        continue
-
-                                    pool_files[file_path] = DownloadFile(
-                                        path=file_path,
-                                        size=size,
-                                        hashes=hashes,
-                                        use_by_hash=False,
-                                        check_size=True,
-                                    )
-
-                                    file_path = None
-                                    hashes = {}
-                                    size = 0
-                                case _:
-                                    pass
-                    finally:
-                        if isinstance(mfp, mmap):
-                            mfp.close()
-
-        return list(pool_files.values())
+        return pool_files
 
     @abstractmethod
     def _metadata_file_allowed(self, file_path: Path) -> bool: ...

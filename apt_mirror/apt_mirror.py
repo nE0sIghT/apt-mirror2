@@ -152,7 +152,7 @@ class APTMirror:
 
     async def download_pool_files(
         self, repository: BaseRepository, downloader: Downloader
-    ) -> Sequence[DownloadFile]:
+    ) -> Iterable[DownloadFile]:
         downloader.set_target_path(
             self._config.mirror_path
             / repository.get_mirror_path(self._config.encode_tilde)

@@ -436,6 +436,8 @@ class Downloader(ABC):
                 self._downloaded_size += size
                 return
 
+        self._error_count += 1
+        self._error_size += expected_size
         self._log.error(f"Unable to download {source_path}: no more tryes")
 
     @staticmethod

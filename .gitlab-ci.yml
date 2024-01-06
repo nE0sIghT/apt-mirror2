@@ -111,9 +111,11 @@ security (pip-audit):
     - >-
       docker build
       --build-arg PYTHON_VERSION="${PYTHON_VERSION}"
-      -t apt-mirror2:latest
+      -t "${IMAGE_NAME}:latest"
       -f Dockerfile
       .
+  variables:
+    - IMAGE_NAME: aptmirror/apt-mirror2
   tags:
     - docker
 
@@ -138,8 +140,8 @@ build and deploy:
   script:
     - !reference [.build image, script]
     - docker login -u "${DOCKER_HUB_USERNAME}" -p "${DOCKER_HUB_PASSWORD}"
-    - docker push aptmirror/apt-mirror2:latest
+    - docker push "${IMAGE_NAME}:latest"
     - if [ -n "${CI_COMMIT_TAG}" ]; then
-    -   docker tag aptmirror/apt-mirror2:latest "aptmirror/apt-mirror2:${CI_COMMIT_TAG#v}"
-    -   docker push "aptmirror/apt-mirror2:${CI_COMMIT_TAG#v}"
+    -   docker tag "${IMAGE_NAME}:latest" "${IMAGE_NAME}:${CI_COMMIT_TAG#v}"
+    -   docker push "${IMAGE_NAME}:${CI_COMMIT_TAG#v}"
     - fi

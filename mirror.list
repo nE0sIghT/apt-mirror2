@@ -12,6 +12,11 @@ set defaultarch       amd64
 set nthreads          8
 set _tilde            0
 
+## Run script after mirror complete
+# set run_postmirror    0
+## Path to Post Mirror script
+# set postmirror_script $var_path/postmirror.sh
+
 ## By default redundand files are not removed after mirror update.
 ## Shell script is created in the path specified by `cleanscript` option
 ## that can be used to clean mirror.

@@ -35,7 +35,7 @@ class Config:
             "_autoclean": "0",
             "_tilde": "0",
             "limit_rate": "100m",
-            "run_postmirror": "1",
+            "run_postmirror": "0",
             "auth_no_challenge": "0",
             "no_check_certificate": "0",
             "unlink": "0",
@@ -232,8 +232,16 @@ class Config:
         return self.get_path("mirror_path")
 
     @property
+    def postmirror_script(self) -> Path:
+        return self.get_path("postmirror_script")
+
+    @property
     def repositories(self):
         return self._repositories.copy()
+
+    @property
+    def run_postmirror(self):
+        return self.get_bool("run_postmirror")
 
     @property
     def skel_path(self) -> Path:

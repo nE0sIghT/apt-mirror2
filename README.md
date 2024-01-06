@@ -63,10 +63,9 @@ Most of `apt-mirror` configuration directives are supported and the others will 
 
 As of now next options are not supported and ignored:
 
-- `postmirror_script` and `run_postmirror`
 - `limit_rate`
-- `unlink` - apt-mirror2 always unlink files before saving
 - `*proxy*`
+- `unlink` - apt-mirror2 always unlink files before saving
 
 In additions there are some enhancements supported:
 

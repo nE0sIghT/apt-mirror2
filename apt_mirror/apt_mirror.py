@@ -67,6 +67,30 @@ class APTMirror:
 
             self._config.cleanscript.chmod(0o750)
 
+        if self._config.run_postmirror:
+            if not self._config.postmirror_script.is_file():
+                self._log.error(
+                    "Post Mirror script is missing: {self._config.postmirror_script}"
+                )
+            else:
+                self._log.info(
+                    "Running the Post Mirror script"
+                    f" {self._config.postmirror_script}..."
+                )
+                args = [self._config.postmirror_script]
+                if not os.access(self._config.postmirror_script, os.X_OK):
+                    args = ["/bin/sh"] + args
+
+                process = await asyncio.create_subprocess_exec(
+                    *args, stdout=None, stderr=None
+                )
+                await process.wait()
+
+                self._log.info(
+                    "Post Mirror script has completed. See above output for any"
+                    " possible errors."
+                )
+
         self.unlock()
 
     async def mirror_repository(self, repository: BaseRepository):

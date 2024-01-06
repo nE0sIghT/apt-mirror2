@@ -71,6 +71,7 @@ In additions there are some enhancements supported:
 
 - Standard source.list `[ arch=arch1,arch2 ]` options are supported to specify multiple repository architectures for mirroring.
 - `mirror_path URL PATH` option may be used to specify `PATH` to use for saving mirror files instead of path that is generated from `URL`.
+- Additional configuration is loaded from the `*.list` files in the directory named same as `configfile` with the `.d` suffix. Eg `/etc/apt/mirror.list.d/*.list`.
 
 # License
 

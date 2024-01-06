@@ -11,10 +11,20 @@ from .logs import get_logger
 
 
 class Config:
+    DEFAULT_CONFIGFILE = "/etc/apt/mirror.list"
+
     def __init__(self, config_file: Path) -> None:
         self._log = get_logger(self)
-        self._file = config_file
         self._repositories: dict[URL, BaseRepository] = {}
+
+        self._files = [config_file]
+        config_directory = config_file.with_name(f"{config_file.name}.d")
+        if config_directory.is_dir():
+            for file in config_directory.glob("*"):
+                if not file.is_file() or not file.suffix == ".list":
+                    continue
+
+                self._files.append(file)
 
         try:
             default_arch = subprocess.check_output(
@@ -57,98 +67,101 @@ class Config:
         clean: list[URL] = []
         mirror_paths: dict[URL, Path] = {}
 
-        with open(self._file, "rt", encoding="utf-8") as fp:
-            for line in fp:
-                line = line.strip()
+        for file in self._files:
+            with open(file, "rt", encoding="utf-8") as fp:
+                for line in fp:
+                    line = line.strip()
 
-                match line:
-                    case line if line.startswith("set "):
-                        _, key, value = line.split(maxsplit=2)
-                        self._variables[key] = value
-                    case line if line.startswith("deb"):
-                        try:
-                            repository_type, url = line.split(maxsplit=1)
-                            source = False
+                    match line:
+                        case line if line.startswith("set "):
+                            _, key, value = line.split(maxsplit=2)
+                            self._variables[key] = value
+                        case line if line.startswith("deb"):
+                            try:
+                                repository_type, url = line.split(maxsplit=1)
+                                source = False
 
-                            arches: list[str] = []
-                            if "-" in repository_type:
-                                _, arch = repository_type.split("-", maxsplit=1)
-                                if arch != "src":
-                                    arches.append(arch)
-                                else:
-                                    source = True
+                                arches: list[str] = []
+                                if "-" in repository_type:
+                                    _, arch = repository_type.split("-", maxsplit=1)
+                                    if arch != "src":
+                                        arches.append(arch)
+                                    else:
+                                        source = True
 
-                            if url.startswith("["):
-                                options, url = url.split(sep="]", maxsplit=1)
-                                options = options.strip("[]").strip().split()
-                                for key, value in map(
-                                    lambda x: x.split("=", maxsplit=1), options
-                                ):
-                                    if key != "arch":
-                                        continue
-
-                                    for arch in value.split(","):
-                                        if arch in arches:
+                                if url.startswith("["):
+                                    options, url = url.split(sep="]", maxsplit=1)
+                                    options = options.strip("[]").strip().split()
+                                    for key, value in map(
+                                        lambda x: x.split("=", maxsplit=1), options
+                                    ):
+                                        if key != "arch":
                                             continue
 
-                                        arches.append(arch)
+                                        for arch in value.split(","):
+                                            if arch in arches:
+                                                continue
 
-                            url, codename = url.split(maxsplit=1)
-                            url = URL.from_string(url)
+                                            arches.append(arch)
 
-                            if not arches and not line.startswith("deb-src"):
-                                arches.append(self.default_arch)
+                                url, codename = url.split(maxsplit=1)
+                                url = URL.from_string(url)
 
-                            repository = self._repositories.get(url)
-                            if repository:
-                                repository.arches += [
-                                    arch
-                                    for arch in arches
-                                    if arch not in repository.arches
-                                ]
+                                if not arches and not line.startswith("deb-src"):
+                                    arches.append(self.default_arch)
 
-                                if source:
-                                    repository.source = source
-                            else:
-                                if codename.endswith("/"):
-                                    self._repositories[url] = FlatRepository(
-                                        url=url,
-                                        source=source,
-                                        arches=arches,
-                                        clean=False,
-                                        mirror_path=None,
-                                        directory=codename,
-                                    )
+                                repository = self._repositories.get(url)
+                                if repository:
+                                    repository.arches += [
+                                        arch
+                                        for arch in arches
+                                        if arch not in repository.arches
+                                    ]
+
+                                    if source:
+                                        repository.source = source
                                 else:
-                                    codename, components = codename.split(maxsplit=1)
-                                    components = components.split()
+                                    if codename.endswith("/"):
+                                        self._repositories[url] = FlatRepository(
+                                            url=url,
+                                            source=source,
+                                            arches=arches,
+                                            clean=False,
+                                            mirror_path=None,
+                                            directory=codename,
+                                        )
+                                    else:
+                                        codename, components = codename.split(
+                                            maxsplit=1
+                                        )
+                                        components = components.split()
 
-                                    self._repositories[url] = Repository(
-                                        url=url,
-                                        source=source,
-                                        arches=arches,
-                                        clean=False,
-                                        mirror_path=None,
-                                        codename=codename,
-                                        components=components,
-                                    )
+                                        self._repositories[url] = Repository(
+                                            url=url,
+                                            source=source,
+                                            arches=arches,
+                                            clean=False,
+                                            mirror_path=None,
+                                            codename=codename,
+                                            components=components,
+                                        )
 
-                        except ValueError:
-                            self._log.warning(
-                                f"Unable to parse repository config line: {line}"
-                            )
-                    case line if line.startswith("clean "):
-                        _, url = line.split()
-                        clean.append(URL.from_string(url))
-                    case line if line.startswith("mirror_path "):
-                        _, url, path = line.split(maxsplit=2)
-                        mirror_paths[URL.from_string(url)] = Path(path.strip("/"))
-                    case line if not line or any(
-                        line.startswith(prefix) for prefix in ("#", ";")
-                    ):
-                        pass
-                    case _:
-                        self._log.warning(f"Unknown line in config: {line}")
+                            except ValueError:
+                                self._log.warning(
+                                    f"Unable to parse repository config line: {line}"
+                                )
+                        case line if line.startswith("clean "):
+                            _, url = line.split()
+                            clean.append(URL.from_string(url))
+                        case line if line.startswith("mirror_path "):
+                            _, url, path = line.split(maxsplit=2)
+                            mirror_paths[URL.from_string(url)] = Path(path.strip("/"))
+                        case line if not line or any(
+                            line.startswith(prefix) for prefix in ("#", ";")
+                        ):
+                            pass
+                        case _:
+                            self._log.warning(f"Unknown line in config: {line}")
 
         self._update_clean(clean)
         self._update_mirror_paths(mirror_paths)
@@ -193,7 +206,9 @@ class Config:
 
     def __getitem__(self, key: str) -> str:
         if key not in self._variables:
-            raise KeyError(f"Variable {key} is not defined in config file {self._file}")
+            raise KeyError(
+                f"Variable {key} is not defined in the config file {self._files[0]}"
+            )
 
         return self._variables[key]
 

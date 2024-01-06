@@ -16,8 +16,6 @@ from .download import Downloader, DownloadFile
 from .logs import get_logger
 from .repository import BaseRepository
 
-DEFAULT_CONFIGFILE = "/etc/apt/mirror.list"
-
 
 class APTMirror:
     LOCK_FILE = "apt-mirror.lock"
@@ -321,9 +319,9 @@ class APTMirror:
         parser = argparse.ArgumentParser()
         parser.add_argument(
             "configfile",
-            help=f"Path to config file. Default {DEFAULT_CONFIGFILE}",
+            help=f"Path to config file. Default {Config.DEFAULT_CONFIGFILE}",
             nargs="?",
-            default=DEFAULT_CONFIGFILE,
+            default=Config.DEFAULT_CONFIGFILE,
         )
 
         args = parser.parse_args()

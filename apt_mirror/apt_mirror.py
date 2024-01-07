@@ -16,6 +16,7 @@ from .config import Config
 from .download import Downloader, DownloadFile
 from .logs import get_logger
 from .repository import BaseRepository
+from .version import __version__
 
 
 class PathCleaner:
@@ -375,6 +376,7 @@ class APTMirror:
 
     def get_config_file(self) -> Path:
         parser = argparse.ArgumentParser()
+        parser.add_argument("--version", action="store_true", help="Show version")
         parser.add_argument(
             "configfile",
             help=f"Path to config file. Default {Config.DEFAULT_CONFIGFILE}",
@@ -383,6 +385,10 @@ class APTMirror:
         )
 
         args = parser.parse_args()
+
+        if args.version:
+            print(__version__)
+            exit(0)
 
         config_file = Path(args.configfile)
         if not config_file.is_file():

@@ -747,12 +747,12 @@ class FTPDownloader(Downloader):
                 if not stat.get("link_dst"):  # type: ignore
                     ftp_stat.size = int(stat["size"])  # type: ignore
 
-                modify, _, _ = stat["modify"].rpartition(".")  # type: ignore
+                modify, _, _ = stat["modify"].partition(".")  # type: ignore
                 if len(modify) == 14:  # type: ignore
                     ftp_stat.date = datetime.strptime(
                         modify,  # type: ignore
                         "%Y%m%d%H%M%S",
-                    )
+                    ).replace(tzinfo=timezone.utc)
 
             except (AttributeError, KeyError, ValueError):
                 pass

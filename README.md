@@ -11,7 +11,7 @@ For additional dependencies look to the `pyproject.yml` and/or `requirements.txt
 # Installation
 ## Docker
 
-Docker image is available in the Docker Hub under [aptmirror/apt-mirror2](https://hub.docker.com/repository/docker/aptmirror/apt-mirror2) repository.
+Docker image is available in the Docker Hub under [aptmirror/apt-mirror2](https://hub.docker.com/r/aptmirror/apt-mirror2) repository.
 You can try it using
 
 ```

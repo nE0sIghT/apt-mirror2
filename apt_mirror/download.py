@@ -731,9 +731,11 @@ class FTPDownloader(Downloader):
             stat: dict[str, str] = await ftp.stat(path)  # type: ignore
 
             recurse_depth = 5
-            while stat.get("link_dst") and recurse_depth > 0:  # type: ignore
+            link_dst: str | None = stat.get("link_dst")  # type: ignore
+            while link_dst and recurse_depth > 0:
                 try:
-                    stat = await ftp.stat(stat.get("link_dst"))  # type: ignore
+                    path: Path = path.parent / link_dst  # type: ignore
+                    stat = await ftp.stat(path)  # type: ignore
                 except StatusCodeError:
                     # Give up if we can not stat link destination
                     break

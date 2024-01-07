@@ -16,6 +16,7 @@ classifiers = [
 ]
 dependencies = [
     "aiofile==3.8.8",
+    "aiolimiter==1.1.0",
     "aioftp==0.21.4",
     "httpx[http2]==0.26.0",
     "python-debian==0.1.49",

@@ -19,6 +19,7 @@ import httpx
 from aiofile import async_open
 from aioftp.client import Client, DataConnectionThrottleStreamIO  # type: ignore
 from aioftp.errors import StatusCodeError  # type: ignore
+from aiolimiter import AsyncLimiter
 
 from .logs import get_logger
 
@@ -192,21 +193,31 @@ class Downloader(ABC):
 
     @staticmethod
     async def for_url(
-        url: URL, target_path: Path, semaphore: asyncio.Semaphore
+        url: URL,
+        target_path: Path,
+        semaphore: asyncio.Semaphore,
+        rate_limiter: AsyncLimiter | None = None,
     ) -> "Downloader":
         if url.scheme.startswith("http"):
-            return HTTPDownloader(url, target_path, semaphore)
+            return HTTPDownloader(url, target_path, semaphore, rate_limiter)
         elif url.scheme.startswith("ftp"):
-            return FTPDownloader(url, target_path, semaphore)
+            return FTPDownloader(url, target_path, semaphore, rate_limiter)
 
         raise UnsupportedURLException(f"Unsupported URL scheme: {url.scheme}")
 
-    def __init__(self, url: URL, target_root_path: Path, semaphore: asyncio.Semaphore):
+    def __init__(
+        self,
+        url: URL,
+        target_root_path: Path,
+        semaphore: asyncio.Semaphore,
+        rate_limiter: AsyncLimiter | None = None,
+    ):
         self._log = get_logger(self)
 
         self._url = url
         self._target_root_path = target_root_path
         self._semaphore = semaphore
+        self._rate_limiter = rate_limiter
 
         # Download queue. Reseted in download()
         self._sources: list[DownloadFile] = []
@@ -419,6 +430,11 @@ class Downloader(ABC):
                 async with async_open(target_path, "wb") as fp:
                     try:
                         async for chunk in response.stream():
+                            if self._rate_limiter:
+                                await self._rate_limiter.acquire(
+                                    min(len(chunk), self._rate_limiter.max_rate)
+                                )
+
                             size += len(chunk)
                             await fp.write(chunk)
                     except Exception as ex:  # pylint: disable=W0718
@@ -482,8 +498,14 @@ class Downloader(ABC):
 
 
 class HTTPDownloader(Downloader):
-    def __init__(self, url: URL, target_root_path: Path, semaphore: asyncio.Semaphore):
-        super().__init__(url, target_root_path, semaphore)
+    def __init__(
+        self,
+        url: URL,
+        target_root_path: Path,
+        semaphore: asyncio.Semaphore,
+        rate_limiter: AsyncLimiter | None = None,
+    ):
+        super().__init__(url, target_root_path, semaphore, rate_limiter)
 
         auth = None
         if url.username and url.password:

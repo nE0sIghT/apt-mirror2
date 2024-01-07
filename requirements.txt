@@ -12,6 +12,10 @@ aioftp==0.21.4 \
     --hash=sha256:28bb26d4616c7c381a1543281f987051b8d2d1d5bfaf023d9e7e2c2105c51bb9 \
     --hash=sha256:ad7c1136754799808fca890ea41ea7ec8fcd1bb5167a1f46e04db15267242324
     # via apt-mirror (pyproject.toml)
+aiolimiter==1.1.0 \
+    --hash=sha256:0b4997961fc58b8df40279e739f9cf0d3e255e63e9a44f64df567a8c17241e24 \
+    --hash=sha256:461cf02f82a29347340d031626c92853645c099cb5ff85577b831a7bd21132b5
+    # via apt-mirror (pyproject.toml)
 anyio==4.2.0 \
     --hash=sha256:745843b39e829e108e518c489b31dc757de7d2131d53fac32bd8df268227bfee \
     --hash=sha256:e1875bb4b4e2de1669f4bc7869b6d3f54231cdced71605e6e64c9be77e3be50f

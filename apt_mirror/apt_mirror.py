@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import IO, Any, Awaitable, Iterable, Sequence
 
 import uvloop
+from aiolimiter import AsyncLimiter
 
 from .config import Config
 from .download import Downloader, DownloadFile
@@ -110,8 +111,13 @@ class APTMirror:
         self._log = get_logger(self)
         self._config = Config(self.get_config_file())
         self._lock_fd = None
+
         self._semaphore = asyncio.Semaphore(self._config.nthreads)
         self._download_semaphore = asyncio.Semaphore(self._config.nthreads)
+
+        self._rate_limiter = None
+        if self._config.limit_rate:
+            self._rate_limiter = AsyncLimiter(self._config.limit_rate * 60, 60)
 
     async def run(self):
         for variable in ("mirror_path", "base_path", "var_path"):
@@ -186,6 +192,7 @@ class APTMirror:
                 self._config.skel_path
                 / repository.get_mirror_path(self._config.encode_tilde),
                 self._download_semaphore,
+                self._rate_limiter,
             )
 
             release_files = await self.download_release_files(repository, downloader)

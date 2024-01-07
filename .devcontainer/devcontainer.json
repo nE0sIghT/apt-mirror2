@@ -35,6 +35,10 @@
                         "depth": 3
                     },
                     {
+                        "name": "aiolimiter",
+                        "depth": 3
+                    },
+                    {
                         "name": "aioftp",
                         "depth": 3
                     },

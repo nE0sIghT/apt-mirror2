@@ -10,6 +10,8 @@ set var_path          $base_path/var
 ## Used when arch is not explicitly specified for repository
 set defaultarch       amd64
 set nthreads          8
+## Rate limit in bytes per second. Suffixes `k` and `m` are allowed
+# set limit_rate        1k
 set _tilde            0
 
 ## Run script after mirror complete

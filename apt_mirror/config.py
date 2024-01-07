@@ -239,6 +239,27 @@ class Config:
         return self.get_bool("_tilde")
 
     @property
+    def limit_rate(self) -> int | None:
+        if "limit_rate" not in self._variables:
+            return None
+
+        suffix = self["limit_rate"][-1:]
+
+        if not suffix.isnumeric():
+            limit_rate = int(self["limit_rate"][:-1])
+            match suffix.lower():
+                case "k":
+                    return limit_rate * 1024
+                case "m":
+                    return limit_rate * 1024 * 1024
+                case _:
+                    raise ValueError(
+                        f"Wrong limit_rate configuration suffix: {self['limit_rate']}"
+                    )
+
+        return int(self["limit_rate"])
+
+    @property
     def nthreads(self) -> int:
         return int(self._variables["nthreads"])
 

@@ -39,10 +39,6 @@
                         "depth": 3
                     },
                     {
-                        "name": "dateutil",
-                        "depth": 3
-                    },
-                    {
                         "name": "debian",
                         "depth": 3
                     },

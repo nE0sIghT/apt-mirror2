@@ -19,7 +19,6 @@ import httpx
 from aiofile import async_open
 from aioftp.client import Client, DataConnectionThrottleStreamIO  # type: ignore
 from aioftp.errors import StatusCodeError  # type: ignore
-from dateutil import parser as dateutil_parser
 
 from .logs import get_logger
 
@@ -642,19 +641,15 @@ class FTPDownloader(Downloader):
 
             try:
                 ftp_stat.size = int(stat["size"])  # type: ignore
-                try:
-                    ftp_stat.date = datetime.fromtimestamp(
-                        int(stat["modify"]),  # type: ignore
-                        tz=timezone.utc,
+
+                modify, _, _ = stat["modify"].rpartition(".")  # type: ignore
+                if len(modify) == 14:  # type: ignore
+                    ftp_stat.date = datetime.strptime(
+                        modify,  # type: ignore
+                        "%Y%m%d%H%M%S",
                     )
-                except ValueError:
-                    try:
-                        ftp_stat.date = dateutil_parser.parse(
-                            stat["modify"]  # type: ignore
-                        )
-                    except (dateutil_parser.ParserError, OverflowError):
-                        pass
-            except (KeyError, ValueError):
+
+            except (AttributeError, KeyError, ValueError):
                 pass
         except (StatusCodeError, FTPFileMissingException) as ex:
             if isinstance(ex, FTPFileMissingException) or ex.received_codes[

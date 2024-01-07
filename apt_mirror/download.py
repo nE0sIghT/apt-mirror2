@@ -17,8 +17,9 @@ from urllib import parse
 import aioftp  # type: ignore
 import httpx
 from aiofile import async_open
-from aioftp.client import DataConnectionThrottleStreamIO  # type: ignore
+from aioftp.client import Client, DataConnectionThrottleStreamIO  # type: ignore
 from aioftp.errors import StatusCodeError  # type: ignore
+from dateutil import parser as dateutil_parser
 
 from .logs import get_logger
 
@@ -311,6 +312,18 @@ class Downloader(ABC):
 
         self.log_status("Download finished")
 
+    def need_update(self, path: Path, size: int | None, date: datetime | None) -> bool:
+        if path.exists():
+            if date and size:
+                stat = path.stat()
+                target_date = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc)
+                target_size = stat.st_size
+
+                if date == target_date and size == target_size:
+                    return False
+
+        return True
+
     async def progress_logger(self):
         while True:
             try:
@@ -396,21 +409,12 @@ class Downloader(ABC):
                     )
                     continue
 
-                if target_path.exists():
-                    if response.date and response.size:
-                        target_stat = target_path.stat()
-                        target_date = datetime.fromtimestamp(
-                            target_stat.st_mtime, tz=timezone.utc
-                        )
-                        target_size = target_stat.st_size
-
-                        if (
-                            response.date == target_date
-                            and response.size == target_size
-                        ):
-                            self._actual_count += 1
-                            self._actual_size += target_size
-                            return
+                if response.size and not self.need_update(
+                    target_path, response.size, response.date
+                ):
+                    self._actual_count += 1
+                    self._actual_size += response.size
+                    return
 
                 size = 0
                 async with async_open(target_path, "wb") as fp:
@@ -569,10 +573,16 @@ class FTPFileMissingException(Exception):
     pass
 
 
+@dataclass
+class FTPStat:
+    size: int | None = None
+    date: datetime | None = None
+
+
 class FTPDownloader(Downloader):
     def iter_by_block(self, stream: aioftp.DataConnectionThrottleStreamIO):
         def func() -> AsyncIterator[bytes]:
-            return stream.iter_by_block(chunk_size=self.BUFFER_SIZE)  # type: ignore
+            return stream.iter_by_block(count=self.BUFFER_SIZE)  # type: ignore
 
         return func
 
@@ -587,45 +597,28 @@ class FTPDownloader(Downloader):
                 user=self._url.username or aioftp.DEFAULT_USER,
                 password=self._url.password or aioftp.DEFAULT_PASSWORD,
             ) as ftp:
-                with aioftp.setlocale("C"):  # type: ignore
-                    date = None
-                    size = None
-                    try:
-                        stat: dict[str, str] = await ftp.stat(  # type: ignore
-                            source_path
-                        )
+                await ftp.change_directory(self._url.path)
 
-                        if stat.get("type") != "file":  # type: ignore
-                            raise FTPFileMissingException()
-
-                        try:
-                            size = int(stat["size"])  # type: ignore
-                            date = datetime.fromtimestamp(
-                                int(stat["modify"]),  # type: ignore
-                                tz=timezone.utc,
-                            )
-                        except (KeyError, ValueError):
-                            pass
-                    except (StatusCodeError, FTPFileMissingException) as ex:
-                        if (
-                            isinstance(ex, FTPFileMissingException)
-                            or ex.received_codes[-1] != "550"
-                        ):
-                            yield DownloadResponse(_stream=None, missing=True)
-                        else:
-                            yield DownloadResponse(_stream=None, error=str(ex))
+                try:
+                    stat = await self._get_stat(ftp, source_path)
+                except FTPFileMissingException:
+                    yield DownloadResponse(_stream=None, missing=True)
+                    return
+                except StatusCodeError as ex:
+                    yield DownloadResponse(_stream=None, error=str(ex))
+                    return
 
                 stream: aioftp.DataConnectionThrottleStreamIO
                 async with ftp.download_stream(source_path) as stream:  # type: ignore
                     yield DownloadResponse(
                         missing=False,
                         error=None,
-                        date=date,
-                        size=size,
+                        date=stat.date,
+                        size=stat.size,
                         _stream=self.iter_by_block(stream),  # type: ignore
                     )
         except OSError as ex:
-            # TODO: report aioftp issue
+            # https://github.com/aio-libs/aioftp/issues/173
             connection_refused = ex.errno == 111
             yield DownloadResponse(
                 _stream=None,
@@ -637,3 +630,40 @@ class FTPDownloader(Downloader):
                     else None
                 ),
             )
+
+    async def _get_stat(self, ftp: Client, path: Path) -> FTPStat:
+        ftp_stat = FTPStat()
+
+        try:
+            stat: dict[str, str] = await ftp.stat(path)  # type: ignore
+
+            if stat.get("type") != "file":  # type: ignore
+                raise FTPFileMissingException()
+
+            try:
+                ftp_stat.size = int(stat["size"])  # type: ignore
+                try:
+                    ftp_stat.date = datetime.fromtimestamp(
+                        int(stat["modify"]),  # type: ignore
+                        tz=timezone.utc,
+                    )
+                except ValueError:
+                    try:
+                        ftp_stat.date = dateutil_parser.parse(
+                            stat["modify"]  # type: ignore
+                        )
+                    except (dateutil_parser.ParserError, OverflowError):
+                        pass
+            except (KeyError, ValueError):
+                pass
+        except (StatusCodeError, FTPFileMissingException) as ex:
+            if isinstance(ex, FTPFileMissingException) or ex.received_codes[
+                -1
+            ].matches(  # type: ignore
+                "550"
+            ):
+                raise FTPFileMissingException() from ex
+            else:
+                raise
+
+        return ftp_stat

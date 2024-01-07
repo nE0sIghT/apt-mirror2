@@ -188,12 +188,15 @@ class APTMirror:
             self._log.info(f"Mirroring repository {repository}")
 
             downloader = await Downloader.for_url(
-                repository.url,
-                self._config.skel_path
+                url=repository.url,
+                target_root_path=self._config.skel_path
                 / repository.get_mirror_path(self._config.encode_tilde),
-                self._config.proxy,
-                self._download_semaphore,
-                self._rate_limiter,
+                proxy=self._config.proxy,
+                semaphore=self._download_semaphore,
+                rate_limiter=self._rate_limiter,
+                verify_ca_certificate=self._config.verify_ca_certificate,
+                client_certificate=self._config.client_certificate,
+                client_private_key=self._config.client_private_key,
             )
 
             release_files = await self.download_release_files(repository, downloader)

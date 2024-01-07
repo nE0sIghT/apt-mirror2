@@ -229,25 +229,44 @@ class Downloader(ABC):
     @staticmethod
     async def for_url(
         url: URL,
-        target_path: Path,
+        *,
+        target_root_path: Path,
         proxy: Proxy,
         semaphore: asyncio.Semaphore,
         rate_limiter: AsyncLimiter | None = None,
+        verify_ca_certificate: bool | str = True,
+        client_certificate: str | None = None,
+        client_private_key: str | None = None,
     ) -> "Downloader":
         if url.scheme.startswith("http"):
-            return HTTPDownloader(url, target_path, proxy, semaphore, rate_limiter)
+            cls = HTTPDownloader
         elif url.scheme.startswith("ftp"):
-            return FTPDownloader(url, target_path, proxy, semaphore, rate_limiter)
+            cls = FTPDownloader
+        else:
+            raise UnsupportedURLException(f"Unsupported URL scheme: {url.scheme}")
 
-        raise UnsupportedURLException(f"Unsupported URL scheme: {url.scheme}")
+        return cls(
+            url=url,
+            target_root_path=target_root_path,
+            proxy=proxy,
+            semaphore=semaphore,
+            rate_limiter=rate_limiter,
+            verify_ca_certificate=verify_ca_certificate,
+            client_certificate=client_certificate,
+            client_private_key=client_private_key,
+        )
 
     def __init__(
         self,
+        *,
         url: URL,
         target_root_path: Path,
         proxy: Proxy,
         semaphore: asyncio.Semaphore,
         rate_limiter: AsyncLimiter | None = None,
+        verify_ca_certificate: bool | str = True,
+        client_certificate: str | None = None,
+        client_private_key: str | None = None,
     ):
         self._log = get_logger(self)
 
@@ -256,6 +275,10 @@ class Downloader(ABC):
         self._semaphore = semaphore
         self._rate_limiter = rate_limiter
         self._proxy = proxy
+
+        self._verify_ca_certificate = verify_ca_certificate
+        self._client_certificate = client_certificate
+        self._client_private_key = client_private_key
 
         # Download queue. Reseted in download()
         self._sources: list[DownloadFile] = []
@@ -266,6 +289,11 @@ class Downloader(ABC):
         self._download_start = datetime.now()
 
         self.reset_stats()
+
+        self.__post_init__()
+
+    def __post_init__(self):
+        pass
 
     def reset_stats(self):
         self._downloaded_count = 0
@@ -536,28 +564,19 @@ class Downloader(ABC):
 
 
 class HTTPDownloader(Downloader):
-    def __init__(
-        self,
-        url: URL,
-        target_root_path: Path,
-        proxy: Proxy,
-        semaphore: asyncio.Semaphore,
-        rate_limiter: AsyncLimiter | None = None,
-    ):
-        super().__init__(url, target_root_path, proxy, semaphore, rate_limiter)
-
+    def __post_init__(self):
         auth = None
-        if url.username and url.password:
-            auth = (url.username, url.password)
+        if self._url.username and self._url.password:
+            auth = (self._url.username, self._url.password)
 
-        base_url = str(url)
+        base_url = str(self._url)
         if not base_url.endswith("/"):
             base_url += "/"
 
         proxy_mounts: dict[str, httpx.AsyncHTTPTransport] = {}
         for scheme in ("http://", "https://"):
             proxy_mounts[scheme] = httpx.AsyncHTTPTransport(
-                verify=True,
+                verify=self._verify_ca_certificate,
                 http1=True,
                 http2=True,
                 limits=httpx.Limits(
@@ -569,6 +588,16 @@ class HTTPDownloader(Downloader):
                 retries=5,
             )
 
+        client_certificate = None
+        if self._client_certificate:
+            if self._client_private_key:
+                client_certificate = (
+                    self._client_certificate,
+                    self._client_private_key,
+                )
+            else:
+                client_certificate = self._client_certificate
+
         self._httpx = httpx.AsyncClient(
             base_url=base_url,
             auth=auth,
@@ -576,7 +605,8 @@ class HTTPDownloader(Downloader):
             follow_redirects=True,
             mounts=proxy_mounts,
             transport=httpx.AsyncHTTPTransport(
-                verify=True,
+                verify=self._verify_ca_certificate,
+                cert=client_certificate,
                 http1=True,
                 http2=True,
                 limits=httpx.Limits(
@@ -724,7 +754,7 @@ class FTPDownloader(Downloader):
 
         return do_parse_list_line
 
-    async def _get_stat(self, ftp: Client, path: Path) -> FTPStat:
+    async def _get_stat(self, ftp: Client, path: Path) -> FTPStat:  # type: ignore
         ftp_stat = FTPStat()
 
         try:

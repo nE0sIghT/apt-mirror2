@@ -23,6 +23,15 @@ set _tilde            0
 # proxy_user            user
 # proxy_password        password
 
+## Certificates configuration
+## Whether to verify https certificate
+# set no_check_certificate  off
+## Path to custom CA certificates bundle
+# set ca_certificate        /etc/ssl/certs/ca-certificates.crt
+## Paths to client certificate and private key for HTTP client authentication
+# set certificate           /etc/ssl/certs/certificate.crt
+# set private_key           /etc/ssl/certs/key.pem
+
 ## Run script after mirror complete
 # set run_postmirror    0
 ## Path to Post Mirror script

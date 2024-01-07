@@ -41,20 +41,19 @@ class Config:
             "skel_path": "$base_path/skel",
             "var_path": "$base_path/var",
             "cleanscript": "$var_path/clean.sh",
+            "run_postmirror": "0",
+            "postmirror_script": "$var_path/postmirror.sh",
             "_contents": "1",
             "_autoclean": "0",
             "_tilde": "0",
             "limit_rate": "100m",
-            "run_postmirror": "0",
-            "auth_no_challenge": "0",
-            "no_check_certificate": "0",
             "unlink": "0",
-            "postmirror_script": "$var_path/postmirror.sh",
             "use_proxy": "off",
             "http_proxy": "",
             "https_proxy": "",
             "proxy_user": "",
             "proxy_password": "",
+            "no_check_certificate": "0",
             "certificate": "",
             "private_key": "",
             "ca_certificate": "",
@@ -225,6 +224,24 @@ class Config:
     @property
     def base_path(self) -> Path:
         return self.get_path("base_path")
+
+    @property
+    def verify_ca_certificate(self) -> bool | str:
+        if self.get_bool("no_check_certificate"):
+            return False
+
+        if self._variables.get("ca_certificate"):
+            return self["ca_certificate"]
+
+        return True
+
+    @property
+    def client_private_key(self) -> str:
+        return self["private_key"]
+
+    @property
+    def client_certificate(self) -> str:
+        return self["certificate"]
 
     @property
     def cleanscript(self) -> Path:

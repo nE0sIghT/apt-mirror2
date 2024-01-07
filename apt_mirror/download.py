@@ -359,8 +359,8 @@ class Downloader(ABC):
         tries = 15
         while tries > 0:
             async with (
-                self.stream(source_path) as response,
                 self._semaphore,
+                self.stream(source_path) as response,
             ):
                 target_path.parent.mkdir(parents=True, exist_ok=True)
 

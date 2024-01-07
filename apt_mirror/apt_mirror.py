@@ -191,6 +191,7 @@ class APTMirror:
                 repository.url,
                 self._config.skel_path
                 / repository.get_mirror_path(self._config.encode_tilde),
+                self._config.proxy,
                 self._download_semaphore,
                 self._rate_limiter,
             )

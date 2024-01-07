@@ -14,6 +14,15 @@ set nthreads          8
 # set limit_rate        1k
 set _tilde            0
 
+## Proxy configuration.
+## Only supported for http repositories.
+# use_proxy             off
+## If proxy scheme is ommited, `http://` assumed
+# http_proxy            127.0.0.1:3128
+# https_proxy           127.0.0.1:3128
+# proxy_user            user
+# proxy_password        password
+
 ## Run script after mirror complete
 # set run_postmirror    0
 ## Path to Post Mirror script

@@ -4,7 +4,7 @@ import subprocess
 from pathlib import Path
 from string import Template
 
-from apt_mirror.download import URL
+from apt_mirror.download import URL, Proxy
 from apt_mirror.repository import BaseRepository, FlatRepository, Repository
 
 from .logs import get_logger
@@ -286,3 +286,13 @@ class Config:
     @property
     def var_path(self) -> Path:
         return self.get_path("var_path")
+
+    @property
+    def proxy(self) -> Proxy:
+        return Proxy(
+            use_proxy=self.get_bool("use_proxy"),
+            http_proxy=self["http_proxy"],
+            https_proxy=self["https_proxy"],
+            username=self._variables.get("proxy_user"),
+            password=self._variables.get("proxy_password"),
+        )

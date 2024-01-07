@@ -113,6 +113,41 @@ class URL:
         return self.without_auth() == __value.without_auth()
 
 
+@dataclass
+class Proxy:
+    use_proxy: bool
+    http_proxy: str | None
+    https_proxy: str | None
+    username: str | None
+    password: str | None
+
+    def for_scheme(self, scheme: str) -> str | None:
+        if not self.use_proxy:
+            return None
+
+        if scheme == "http://" and self.http_proxy:
+            return self.url_for_proxy(self.http_proxy)
+
+        if scheme == "https://" and self.https_proxy:
+            return self.url_for_proxy(self.https_proxy)
+
+        return None
+
+    def url_for_proxy(self, proxy: str) -> str:
+        if "://" not in proxy:
+            proxy = f"http://{proxy}"
+
+        url = parse.urlparse(proxy)
+        if self.username:
+            auth = parse.quote(self.username, safe="")
+            if self.password:
+                auth = f"{auth}:{parse.quote(self.password, safe='')}"
+
+            url = url._replace(netloc=f"{auth}@{url.netloc}")
+
+        return parse.urlunparse(url)
+
+
 class HashType(Enum):
     SHA512 = "SHA512"
     SHA256 = "SHA256"
@@ -195,13 +230,14 @@ class Downloader(ABC):
     async def for_url(
         url: URL,
         target_path: Path,
+        proxy: Proxy,
         semaphore: asyncio.Semaphore,
         rate_limiter: AsyncLimiter | None = None,
     ) -> "Downloader":
         if url.scheme.startswith("http"):
-            return HTTPDownloader(url, target_path, semaphore, rate_limiter)
+            return HTTPDownloader(url, target_path, proxy, semaphore, rate_limiter)
         elif url.scheme.startswith("ftp"):
-            return FTPDownloader(url, target_path, semaphore, rate_limiter)
+            return FTPDownloader(url, target_path, proxy, semaphore, rate_limiter)
 
         raise UnsupportedURLException(f"Unsupported URL scheme: {url.scheme}")
 
@@ -209,6 +245,7 @@ class Downloader(ABC):
         self,
         url: URL,
         target_root_path: Path,
+        proxy: Proxy,
         semaphore: asyncio.Semaphore,
         rate_limiter: AsyncLimiter | None = None,
     ):
@@ -218,6 +255,7 @@ class Downloader(ABC):
         self._target_root_path = target_root_path
         self._semaphore = semaphore
         self._rate_limiter = rate_limiter
+        self._proxy = proxy
 
         # Download queue. Reseted in download()
         self._sources: list[DownloadFile] = []
@@ -502,10 +540,11 @@ class HTTPDownloader(Downloader):
         self,
         url: URL,
         target_root_path: Path,
+        proxy: Proxy,
         semaphore: asyncio.Semaphore,
         rate_limiter: AsyncLimiter | None = None,
     ):
-        super().__init__(url, target_root_path, semaphore, rate_limiter)
+        super().__init__(url, target_root_path, proxy, semaphore, rate_limiter)
 
         auth = None
         if url.username and url.password:
@@ -515,11 +554,27 @@ class HTTPDownloader(Downloader):
         if not base_url.endswith("/"):
             base_url += "/"
 
+        proxy_mounts: dict[str, httpx.AsyncHTTPTransport] = {}
+        for scheme in ("http://", "https://"):
+            proxy_mounts[scheme] = httpx.AsyncHTTPTransport(
+                verify=True,
+                http1=True,
+                http2=True,
+                limits=httpx.Limits(
+                    max_connections=256,
+                    max_keepalive_connections=32,
+                    keepalive_expiry=5,
+                ),
+                proxy=self._proxy.for_scheme(scheme),
+                retries=5,
+            )
+
         self._httpx = httpx.AsyncClient(
             base_url=base_url,
             auth=auth,
             timeout=None,
             follow_redirects=True,
+            mounts=proxy_mounts,
             transport=httpx.AsyncHTTPTransport(
                 verify=True,
                 http1=True,

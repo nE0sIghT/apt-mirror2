@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from enum import Enum
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any, AsyncGenerator, AsyncIterator, Callable, Sequence
 from urllib import parse
 
@@ -672,7 +672,10 @@ class FTPDownloader(Downloader):
                 port=self._url.port or aioftp.DEFAULT_PORT,
                 user=self._url.username or aioftp.DEFAULT_USER,
                 password=self._url.password or aioftp.DEFAULT_PASSWORD,
+                parse_list_line_custom_first=True,
             ) as ftp:
+                ftp.parse_list_line_custom = self.parse_list_line_unix_links(ftp)
+
                 await ftp.change_directory(self._url.path)
 
                 try:
@@ -707,17 +710,42 @@ class FTPDownloader(Downloader):
                 ),
             )
 
+    def parse_list_line_unix_links(self, client: aioftp.Client):
+        def do_parse_list_line(b: bytes) -> tuple[PurePosixPath, dict[str, str]]:
+            info: dict[str, str]
+            path, info = client.parse_list_line_unix(b)  # type: ignore
+
+            s = b.decode(encoding=client.encoding).rstrip()
+            if s[0] == "l":
+                i = s.rindex(" -> ")
+                info["link_dst"] = s[i + 4 :]
+
+            return path, info
+
+        return do_parse_list_line
+
     async def _get_stat(self, ftp: Client, path: Path) -> FTPStat:
         ftp_stat = FTPStat()
 
         try:
             stat: dict[str, str] = await ftp.stat(path)  # type: ignore
 
+            recurse_depth = 5
+            while stat.get("link_dst") and recurse_depth > 0:  # type: ignore
+                try:
+                    stat = await ftp.stat(stat.get("link_dst"))  # type: ignore
+                except StatusCodeError:
+                    # Give up if we can not stat link destination
+                    break
+
+                recurse_depth -= 1
+
             if stat.get("type") != "file":  # type: ignore
                 raise FTPFileMissingException()
 
             try:
-                ftp_stat.size = int(stat["size"])  # type: ignore
+                if not stat.get("link_dst"):  # type: ignore
+                    ftp_stat.size = int(stat["size"])  # type: ignore
 
                 modify, _, _ = stat["modify"].rpartition(".")  # type: ignore
                 if len(modify) == 14:  # type: ignore

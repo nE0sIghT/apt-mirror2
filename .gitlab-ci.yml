@@ -125,8 +125,6 @@ build image:
   stage: build
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    - if: $CI_PIPELINE_SOURCE == "schedule"
-      when: never
   needs: []
 
 build and deploy:
@@ -134,9 +132,9 @@ build and deploy:
     - .build image
   stage: deploy
   rules:
-    - if: $CI_COMMIT_REF_PROTECTED == "true"
     - if: $CI_PIPELINE_SOURCE == "schedule"
       when: never
+    - if: $CI_COMMIT_REF_PROTECTED == "true"
   script:
     - !reference [.build image, script]
     - docker login -u "${DOCKER_HUB_USERNAME}" -p "${DOCKER_HUB_PASSWORD}"

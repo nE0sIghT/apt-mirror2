@@ -58,13 +58,14 @@ apt-mirror --help
 As the drop-in replacement for the `apt-mirror` this project supports same CLI syntax.
 
 ```
-usage: apt-mirror [-h] [configfile]
+usage: apt-mirror [-h] [--version] [configfile]
 
 positional arguments:
   configfile  Path to config file. Default /etc/apt/mirror.list
 
 options:
   -h, --help  show this help message and exit
+  --version   Show version
 ```
 
 # apt-mirror configuration compatibility

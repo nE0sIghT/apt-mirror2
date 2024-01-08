@@ -158,19 +158,17 @@ update readme:
         jq
   script:
     - >-
-      token=" \
-        $( \
-            jq -n \
-               --arg username "${DOCKER_HUB_USERNAME}" \
-               --arg password "${DOCKER_HUB_PASSWORD}" \
-               '{ "username": $username, "password": $password }' | \
-            curl -H "Content-Type: application/json" \
-                 -X POST \
-                 --data-binary @- \
-                 'https://hub.docker.com/v2/users/login' | \
-            jq -r '.token' \
-        ) \
-      "
+      token="$( \
+        jq -n \
+           --arg username "${DOCKER_HUB_USERNAME}" \
+           --arg password "${DOCKER_HUB_PASSWORD}" \
+           '{ "username": $username, "password": $password }' | \
+        curl -H "Content-Type: application/json" \
+             -X POST \
+             --data-binary @- \
+             'https://hub.docker.com/v2/users/login' | \
+        jq -r '.token' \
+      )"
     - >-
       jq -n \
          --arg readme "$(cat README.md)" \
@@ -178,5 +176,6 @@ update readme:
       curl -X PATCH \
            --header "Content-Type: application/json"\
            --header "Authorization: Bearer $token" \
+           --fail-with-body \
            --data-binary @- \
            "https://hub.docker.com/v2/repositories/${IMAGE_NAME}/"

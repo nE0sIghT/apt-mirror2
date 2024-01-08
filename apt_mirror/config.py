@@ -36,6 +36,7 @@ class Config:
         self._variables: dict[str, str] = {
             "defaultarch": default_arch,
             "nthreads": "20",
+            "uvloop": "1",
             "base_path": "/var/spool/apt-mirror",
             "mirror_path": "$base_path/mirror",
             "skel_path": "$base_path/skel",
@@ -299,6 +300,10 @@ class Config:
     @property
     def skel_path(self) -> Path:
         return self.get_path("skel_path")
+
+    @property
+    def use_uvloop(self) -> bool:
+        return self.get_bool("uvloop")
 
     @property
     def var_path(self) -> Path:

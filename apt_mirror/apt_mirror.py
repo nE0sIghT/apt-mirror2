@@ -9,7 +9,6 @@ from fcntl import LOCK_EX, LOCK_NB, flock
 from pathlib import Path
 from typing import IO, Any, Awaitable, Iterable, Sequence
 
-import uvloop
 from aiolimiter import AsyncLimiter
 
 from .config import Config
@@ -17,6 +16,8 @@ from .download import Downloader, DownloadFile
 from .logs import get_logger
 from .repository import BaseRepository
 from .version import __version__
+
+LOG = get_logger(__package__)
 
 
 class PathCleaner:
@@ -108,9 +109,9 @@ class PathCleaner:
 class APTMirror:
     LOCK_FILE = "apt-mirror.lock"
 
-    def __init__(self) -> None:
+    def __init__(self, config: Config) -> None:
         self._log = get_logger(self)
-        self._config = Config(self.get_config_file())
+        self._config = config
         self._lock_fd = None
 
         self._semaphore = asyncio.Semaphore(self._config.nthreads)
@@ -374,28 +375,6 @@ class APTMirror:
         self._log.error(message)
         exit(code)
 
-    def get_config_file(self) -> Path:
-        parser = argparse.ArgumentParser()
-        parser.add_argument("--version", action="store_true", help="Show version")
-        parser.add_argument(
-            "configfile",
-            help=f"Path to config file. Default {Config.DEFAULT_CONFIGFILE}",
-            nargs="?",
-            default=Config.DEFAULT_CONFIGFILE,
-        )
-
-        args = parser.parse_args()
-
-        if args.version:
-            print(__version__)
-            exit(0)
-
-        config_file = Path(args.configfile)
-        if not config_file.is_file():
-            self.die("apt-mirror: invalid config file specified")
-
-        return config_file
-
     def get_lock_file(self):
         return self._config.var_path / self.LOCK_FILE
 
@@ -421,8 +400,43 @@ class APTMirror:
             self.get_lock_file().unlink(missing_ok=True)
 
 
+def get_config_file() -> Path:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--version", action="store_true", help="Show version")
+    parser.add_argument(
+        "configfile",
+        help=f"Path to config file. Default {Config.DEFAULT_CONFIGFILE}",
+        nargs="?",
+        default=Config.DEFAULT_CONFIGFILE,
+    )
+
+    args = parser.parse_args()
+
+    if args.version:
+        print(__version__)
+        exit(0)
+
+    config_file = Path(args.configfile)
+    if not config_file.is_file():
+        LOG.error("invalid config file specified")
+        exit(1)
+
+    return config_file
+
+
 def main():
-    uvloop.run(APTMirror().run())
+    config = Config(get_config_file())
+
+    asyncio_loop = asyncio
+    if config.use_uvloop:
+        try:
+            import uvloop  # pylint: disable=C0415
+
+            asyncio_loop = uvloop
+        except ModuleNotFoundError:
+            LOG.warning("uvloop is enabled but not available")
+
+    asyncio_loop.run(APTMirror(config).run())
 
 
 if __name__ == "__main__":

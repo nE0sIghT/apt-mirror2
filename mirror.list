@@ -14,6 +14,9 @@ set nthreads          8
 # set limit_rate        1k
 set _tilde            0
 
+## Use uvloop if available
+# set uvloop            1
+
 ## Proxy configuration.
 ## Only supported for http repositories.
 # use_proxy             off

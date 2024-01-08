@@ -20,7 +20,6 @@ dependencies = [
     "aioftp==0.21.4",
     "httpx[http2]==0.26.0",
     "python-debian==0.1.49",
-    "uvloop==0.19.0",
 ]
 
 [project.optional-dependencies]
@@ -30,6 +29,9 @@ dev = [
     "isort==5.12.0",
     "pip-tools==7.0.0",
     "pylint==3.0.3",
+]
+uvloop = [
+    "uvloop==0.19.0",
 ]
 
 [project.scripts]

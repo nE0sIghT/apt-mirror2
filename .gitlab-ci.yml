@@ -1,6 +1,7 @@
 variables:
   FF_NETWORK_PER_BUILD: 'true'
   PYTHON_VERSION: '3.10'
+  IMAGE_NAME: aptmirror/apt-mirror2
 
 workflow:
   rules:
@@ -114,8 +115,6 @@ security (pip-audit):
       -t "${IMAGE_NAME}:latest"
       -f Dockerfile
       .
-  variables:
-    IMAGE_NAME: aptmirror/apt-mirror2
   tags:
     - docker
 
@@ -127,14 +126,17 @@ build image:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
   needs: []
 
-build and deploy:
-  extends:
-    - .build image
+.deploy:
   stage: deploy
   rules:
     - if: $CI_PIPELINE_SOURCE == "schedule"
       when: never
     - if: $CI_COMMIT_REF_PROTECTED == "true"
+
+build and deploy:
+  extends:
+    - .build image
+    - .deploy
   script:
     - !reference [.build image, script]
     - docker login -u "${DOCKER_HUB_USERNAME}" -p "${DOCKER_HUB_PASSWORD}"
@@ -143,3 +145,38 @@ build and deploy:
     -   docker tag "${IMAGE_NAME}:latest" "${IMAGE_NAME}:${CI_COMMIT_TAG#v}"
     -   docker push "${IMAGE_NAME}:${CI_COMMIT_TAG#v}"
     - fi
+
+update readme:
+  image: debian:stable
+  extends:
+    - .deploy
+  before_script:
+    - apt-get update
+    - >-
+      apt-get install -y \
+        curl \
+        jq
+  script:
+    - >-
+      token=" \
+        $( \
+            jq -n \
+               --arg username "${DOCKER_HUB_USERNAME}" \
+               --arg password "${DOCKER_HUB_PASSWORD}" \
+               '{ "username": $username, "password": $password }' | \
+            curl -H "Content-Type: application/json" \
+                 -X POST \
+                 --data-binary @- \
+                 'https://hub.docker.com/v2/users/login' | \
+            jq -r '.token' \
+        ) \
+      "
+    - >-
+      jq -n \
+         --arg readme "$(cat README.md)" \
+         '{ "full_description": $readme }' | \
+      curl -X PATCH \
+           --header "Content-Type: application/json"\
+           --header "Authorization: Bearer $token" \
+           --data-binary @- \
+           "https://hub.docker.com/v2/repositories/${IMAGE_NAME}/"

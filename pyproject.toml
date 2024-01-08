@@ -1,18 +1,23 @@
 [build-system]
-requires = ["setuptools", "setuptools-scm"]
+requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "apt-mirror"
-version = "0a1"
+version = "0a2"
 authors = [
     {name = "Yuri Konotopov", email = "ykonotopov@gnome.org"},
 ]
 description = "apt-mirror Python reimplementation"
 readme = "README.md"
+license = {file = "LICENSE"}
+keywords = ["apt", "debian"]
 requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Python :: 3",
+    "Framework :: AsyncIO",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Operating System :: POSIX :: Linux",
 ]
 dependencies = [
     "aiofile==3.8.8",
@@ -36,6 +41,13 @@ uvloop = [
 
 [project.scripts]
 apt-mirror = "apt_mirror.apt_mirror:main"
+
+[project.urls]
+Homepage = "https://gitlab.com/apt-mirror2/apt-mirror2/"
+Repository = "https://gitlab.com/apt-mirror2/apt-mirror2.git"
+Github = "https://github.com/nE0sIghT/apt-mirror2.git"
+Issues = "https://gitlab.com/apt-mirror2/apt-mirror2/-/issues"
+Changelog = "https://gitlab.com/apt-mirror2/apt-mirror2/-/commits/master/"
 
 [tool.setuptools.packages.find]
 

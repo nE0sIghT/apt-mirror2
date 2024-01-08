@@ -1,7 +1,8 @@
 # apt-mirror2
 
-`apt-mirror2` is the Python/asyncio reimplementation of the [apt-mirror](https://github.com/apt-mirror/apt-mirror) developed as drop-in replacement for the latest.  
-This project is in early development stage however it should be suitable as general [apt-mirror](https://github.com/apt-mirror/apt-mirror) replacement.
+[`apt-mirror2`](https://gitlab.com/apt-mirror2/apt-mirror2) is the Python/asyncio reimplementation of the
+[apt-mirror](https://github.com/apt-mirror/apt-mirror) developed as drop-in replacement for the latest.  
+This project should be suitable as general [apt-mirror](https://github.com/apt-mirror/apt-mirror) replacement.
 
 # Requirements
 
@@ -14,13 +15,22 @@ For additional dependencies look to the `pyproject.yml` and/or `requirements.txt
 Docker image is available in the Docker Hub under [aptmirror/apt-mirror2](https://hub.docker.com/r/aptmirror/apt-mirror2) repository.
 You can try it using
 
-```
+```bash
 docker run -it --rm aptmirror/apt-mirror2 --help
 ```
 
-## Virtualenv
+## PyPi
 
-It's possible to use `apt-mirror2` from the virtualenv:
+PyPi package is available with the name [`apt-mirror`](https://pypi.org/project/apt-mirror/):
+
+```bash
+pip install apt-mirror
+apt-mirror --help
+```
+
+## Build from source with virtualenv
+
+It's possible to use `apt-mirror2` from a virtualenv:
 
 ```bash
 # Let's work in the home folder

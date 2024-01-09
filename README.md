@@ -75,6 +75,7 @@ As of now proxy for FTP repositories is not supported.
 
 In addition there are some enhancements available:
 
+- Repositories without MD5 hashsums are correctly mirrored
 - Standard source.list `[ arch=arch1,arch2 ]` can be used to specify multiple repository architectures for mirroring.
 - `mirror_path URL PATH` option may be used to specify `PATH` to use for saving mirror files instead of path that is generated from `URL`.
 - Additional configuration is loaded from the `*.list` files in the directory named same as `configfile` with the `.d` suffix. Eg `/etc/apt/mirror.list.d/*.list`.

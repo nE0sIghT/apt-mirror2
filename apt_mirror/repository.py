@@ -7,7 +7,6 @@ import lzma
 import shutil
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from enum import Enum
 from mmap import MADV_SEQUENTIAL, MAP_POPULATE, MAP_PRIVATE, mmap
 from pathlib import Path
 from typing import IO, Iterable, Sequence
@@ -16,25 +15,6 @@ from debian.deb822 import Release
 
 from .download import URL, DownloadFile, HashSum, HashType
 from .logs import get_logger
-
-
-class RepositoryType(Enum):
-    BINARY = 0
-    SOURCE = 1
-
-    class UnknownTypeException(Exception):
-        pass
-
-    @staticmethod
-    def from_string(type_string: str):
-        if type_string == "deb":
-            return RepositoryType.BINARY
-        elif type_string == "deb-src":
-            return RepositoryType.SOURCE
-
-        raise RepositoryType.UnknownTypeException(
-            f"Unknown repository type string: {type_string}"
-        )
 
 
 @dataclass
@@ -268,10 +248,6 @@ class BaseRepository(ABC):
     )
 
     url: URL
-    # Whether to mirror sources
-    source: bool
-    # Binary arches
-    arches: list[str]
 
     clean: bool
     mirror_path: Path | None
@@ -291,50 +267,62 @@ class BaseRepository(ABC):
 
     def get_metadata_files(
         self, repository_root: Path, encode_tilde: bool, missing_sources: set[Path]
-    ) -> Sequence[DownloadFile]:
-        for release_file_relative_path in (self.inrelease_file, self.release_file):
-            if release_file_relative_path in missing_sources:
-                continue
+    ) -> Iterable[DownloadFile]:
+        metadata_files: set[DownloadFile] = set()
 
-            release_file = (
-                repository_root
-                / self.get_mirror_path(encode_tilde)
-                / release_file_relative_path
-            )
+        for (
+            codename,
+            codename_release_files,
+        ) in self.release_files_per_codename.items():
+            codename_metadata_files: dict[Path, DownloadFile] = {}
 
-            if not release_file.exists():
-                continue
+            for release_file_relative_path in codename_release_files:
+                if release_file_relative_path in missing_sources:
+                    continue
 
-            with open(release_file, "rt", encoding="utf-8") as fp:
-                release = Release(fp)
+                release_file = (
+                    repository_root
+                    / self.get_mirror_path(encode_tilde)
+                    / release_file_relative_path
+                )
 
-            metadata_files: dict[Path, DownloadFile] = {}
-            use_hash = release.get("Acquire-By-Hash") == "yes"
+                if not release_file.exists():
+                    continue
 
-            for hash_type in HashType:
-                for file in release.get(hash_type.value, []):
-                    path = Path(file["name"])
+                with open(release_file, "rt", encoding="utf-8") as fp:
+                    release = Release(fp)
 
-                    if not self._metadata_file_allowed(path):
-                        continue
+                use_hash = release.get("Acquire-By-Hash") == "yes"
 
-                    hash_sum = HashSum(type=hash_type, hash=file[hash_type.value])
+                for hash_type in HashType:
+                    for file in release.get(hash_type.value, []):
+                        path = Path(file["name"])
 
-                    if path in metadata_files:
-                        metadata_files[path].hashes[hash_sum.type] = hash_sum
-                    else:
-                        metadata_files[path] = DownloadFile(
-                            release_file_relative_path.parent / path,
-                            size=int(file["size"]),
-                            hashes={
-                                hash_sum.type: hash_sum,
-                            },
-                            use_by_hash=use_hash,
-                        )
+                        if not self._metadata_file_allowed(codename, path):
+                            continue
 
-            return list(metadata_files.values())
+                        hash_sum = HashSum(type=hash_type, hash=file[hash_type.value])
 
-        return []
+                        if path in codename_metadata_files:
+                            codename_metadata_files[path].hashes[
+                                hash_sum.type
+                            ] = hash_sum
+                        else:
+                            codename_metadata_files[path] = DownloadFile(
+                                release_file_relative_path.parent / path,
+                                size=int(file["size"]),
+                                hashes={
+                                    hash_sum.type: hash_sum,
+                                },
+                                use_by_hash=use_hash,
+                            )
+
+            if not codename_metadata_files:
+                self._log.warning(f"No metadata files found for codename {codename}")
+
+            metadata_files.update(codename_metadata_files.values())
+
+        return metadata_files
 
     def _try_unpack(self, file: Path):
         for suffix, open_function in self.COMPRESSION_SUFFIXES.items():
@@ -362,7 +350,7 @@ class BaseRepository(ABC):
     ) -> Iterable[DownloadFile]:
         pool_files: set[DownloadFile] = set()
 
-        if self.source:
+        if self.mirror_source:
             pool_files.update(
                 SourcesParser(
                     repository_root / self.get_mirror_path(encode_tilde),
@@ -370,7 +358,7 @@ class BaseRepository(ABC):
                 ).parse()
             )
 
-        if self.arches:
+        if self.mirror_binaries:
             pool_files.update(
                 PackagesParser(
                     repository_root / self.get_mirror_path(encode_tilde),
@@ -381,19 +369,19 @@ class BaseRepository(ABC):
         return pool_files
 
     @abstractmethod
-    def _metadata_file_allowed(self, file_path: Path) -> bool: ...
+    def _metadata_file_allowed(self, codename: str, file_path: Path) -> bool: ...
 
     @property
     @abstractmethod
-    def release_files(self) -> Sequence[Path]: ...
+    def mirror_source(self) -> bool: ...
 
     @property
     @abstractmethod
-    def inrelease_file(self) -> Path: ...
+    def mirror_binaries(self) -> bool: ...
 
     @property
     @abstractmethod
-    def release_file(self) -> Path: ...
+    def release_files_per_codename(self) -> dict[str, Sequence[Path]]: ...
 
     @property
     @abstractmethod
@@ -403,27 +391,28 @@ class BaseRepository(ABC):
     @abstractmethod
     def packages_files(self) -> Sequence[Path]: ...
 
-    def __str__(self) -> str:
-        return (
-            f"{self.url}, arches: {self.arches}, source: {self.source}, mirror_path:"
-            f" {self.mirror_path}"
-        )
-
 
 @dataclass
 class Repository(BaseRepository):
     DISTS = Path("dists")
 
-    codename: str
-    components: list[str]
+    codenames: list[str]
+    components: dict[str, list[str]]
 
-    def _metadata_file_allowed(self, file_path: Path) -> bool:
+    # Whether to mirror sources
+    # dict[codename, dict[component, source]]
+    source: dict[str, dict[str, bool]]
+    # Binary arches
+    # dict[codename, dict[component, list[arch]]]
+    arches: dict[str, dict[str, list[str]]]
+
+    def _metadata_file_allowed(self, codename: str, file_path: Path) -> bool:
         source_files = (
             "Sources",
             "Contents-source",
         )
 
-        if self.source and (
+        if self.source.get(codename) and (
             any(
                 file_path.name.endswith(f"{name}{suffix}")
                 for name in source_files
@@ -433,61 +422,63 @@ class Repository(BaseRepository):
             return True
 
         if self.arches:
-            for arch in self.arches:
-                for suffix in self.COMPRESSION_SUFFIXES:
-                    if any(
-                        str(file_path) == name
-                        for name in (
-                            f"Contents-{arch}{suffix}",
-                            f"Contents-udeb-{arch}{suffix}",
-                        )
-                    ):
-                        return True
-
-            if any(
-                str(file_path).startswith(component) for component in self.components
-            ):
-                for arch in self.arches:
-                    if str(file_path).endswith(f"binary-{arch}/Release"):
-                        return True
-
+            for component in self.components.get(codename, []):
+                for arch in self.arches.get(codename, {}).get(component, []):
                     for suffix in self.COMPRESSION_SUFFIXES:
                         if any(
-                            str(file_path).endswith(name)
+                            str(file_path) == name
                             for name in (
                                 f"Contents-{arch}{suffix}",
                                 f"Contents-udeb-{arch}{suffix}",
-                                f"binary-{arch}/Packages{suffix}",
-                                f"binary-{arch}/Release",
-                                f"cnf/Commands-{arch}{suffix}",
-                                f"dep11/Components-{arch}.yml{suffix}",
-                            )
-                        ) or (
-                            any(
-                                f"/{part}/" in str(file_path)
-                                for part in ("dep11", "i18n")
-                            )
-                            and any(
-                                file_path.name.startswith(prefix)
-                                and file_path.suffix == suffix
-                                for prefix in ("icons-", "Translation-")
                             )
                         ):
                             return True
 
+                if str(file_path).startswith(component):
+                    for arch in self.arches.get(codename, {}).get(component, []):
+                        if str(file_path).endswith(f"binary-{arch}/Release"):
+                            return True
+
+                        for suffix in self.COMPRESSION_SUFFIXES:
+                            if any(
+                                str(file_path).endswith(name)
+                                for name in (
+                                    f"Contents-{arch}{suffix}",
+                                    f"Contents-udeb-{arch}{suffix}",
+                                    f"binary-{arch}/Packages{suffix}",
+                                    f"binary-{arch}/Release",
+                                    f"cnf/Commands-{arch}{suffix}",
+                                    f"dep11/Components-{arch}.yml{suffix}",
+                                )
+                            ) or (
+                                any(
+                                    f"/{part}/" in str(file_path)
+                                    for part in ("dep11", "i18n")
+                                )
+                                and any(
+                                    file_path.name.startswith(prefix)
+                                    and file_path.suffix == suffix
+                                    for prefix in ("icons-", "Translation-")
+                                )
+                            ):
+                                return True
+
         return False
 
     @property
-    def release_files(self) -> Sequence[Path]:
-        return [self.DISTS / self.codename / file for file in self.RELEASE_FILES]
+    def mirror_source(self) -> bool:
+        return bool(self.source)
 
     @property
-    def inrelease_file(self) -> Path:
-        return self.DISTS / self.codename / "InRelease"
+    def mirror_binaries(self) -> bool:
+        return bool(self.arches)
 
     @property
-    def release_file(self) -> Path:
-        return self.DISTS / self.codename / "Release"
+    def release_files_per_codename(self) -> dict[str, Sequence[Path]]:
+        return {
+            codename: [self.DISTS / codename / file for file in self.RELEASE_FILES]
+            for codename in self.codenames
+        }
 
     @property
     def sources_files(self) -> Sequence[Path]:
@@ -495,8 +486,9 @@ class Repository(BaseRepository):
             return []
 
         return [
-            self.DISTS / self.codename / component / "source" / "Sources"
-            for component in self.components
+            self.DISTS / codename / component / "source" / "Sources"
+            for codename in self.codenames
+            for component in self.components.get(codename, [])
         ]
 
     @property
@@ -510,30 +502,41 @@ class Repository(BaseRepository):
                 itertools.chain(
                     (
                         self.DISTS
-                        / self.codename
+                        / codename
                         / component
                         / f"binary-{arch}"
                         / "Packages"
-                        for arch in self.arches
+                        for arch in self.arches.get(codename, {}).get(component, [])
                     ),
-                    [
-                        self.DISTS
-                        / self.codename
-                        / component
-                        / "binary-all"
-                        / "Packages"
-                    ],
+                    [self.DISTS / codename / component / "binary-all" / "Packages"],
                 )
-                for component in self.components
+                for codename in self.codenames
+                for component in self.components.get(codename, [])
             )
         ]
+
+    def __str__(self) -> str:
+        return (
+            f"{self.url}, codenames: {self.codenames}, mirror_path: {self.mirror_path}"
+        )
 
 
 @dataclass
 class FlatRepository(BaseRepository):
+    # Dummy codename and component
+    FLAT_CODENAME = "flat"
+
     directory: str
 
-    def _metadata_file_allowed(self, file_path: Path) -> bool:
+    # Whether to mirror sources
+    source: bool
+    # Binary arches
+    arches: list[str]
+
+    def _metadata_file_allowed(self, codename: str, file_path: Path) -> bool:
+        if codename != self.FLAT_CODENAME:
+            return False
+
         if self.source and (
             any(
                 str(file_path) == f"Sources{suffix}"
@@ -553,16 +556,16 @@ class FlatRepository(BaseRepository):
         return False
 
     @property
-    def release_files(self) -> Sequence[Path]:
-        return [Path(file) for file in self.RELEASE_FILES]
+    def mirror_source(self) -> bool:
+        return self.source
 
     @property
-    def inrelease_file(self) -> Path:
-        return Path("InRelease")
+    def mirror_binaries(self) -> bool:
+        return bool(self.arches)
 
     @property
-    def release_file(self) -> Path:
-        return Path("Release")
+    def release_files_per_codename(self) -> dict[str, Sequence[Path]]:
+        return {self.FLAT_CODENAME: [Path(file) for file in self.RELEASE_FILES]}
 
     @property
     def sources_files(self) -> Sequence[Path]:
@@ -577,3 +580,9 @@ class FlatRepository(BaseRepository):
             return []
 
         return [Path(self.directory) / "Packages"]
+
+    def __str__(self) -> str:
+        return (
+            f"{self.url}, arches: {self.arches}, source: {self.source}, mirror_path:"
+            f" {self.mirror_path}"
+        )

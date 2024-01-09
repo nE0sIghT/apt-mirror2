@@ -254,7 +254,9 @@ class APTMirror:
         # Download release files
         self._log.info(f"Downloading release files for repository {repository}")
         release_files = [
-            DownloadFile.from_path(path) for path in repository.release_files
+            DownloadFile.from_path(path)
+            for _, paths in repository.release_files_per_codename.items()
+            for path in paths
         ]
         downloader.add(*release_files)
         await downloader.download()
@@ -263,7 +265,7 @@ class APTMirror:
 
     async def download_metadata_files(
         self, repository: BaseRepository, downloader: Downloader
-    ) -> Sequence[DownloadFile]:
+    ) -> Iterable[DownloadFile]:
         metadata_files = repository.get_metadata_files(
             self._config.skel_path,
             self._config.encode_tilde,

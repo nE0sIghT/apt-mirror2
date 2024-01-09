@@ -112,14 +112,35 @@ class Config:
 
                                 repository = self._repositories.get(url)
                                 if repository:
-                                    repository.arches += [
-                                        arch
-                                        for arch in arches
-                                        if arch not in repository.arches
-                                    ]
+                                    if isinstance(repository, Repository):
+                                        codename, components = codename.split(
+                                            maxsplit=1
+                                        )
+                                        components = components.split()
 
-                                    if source:
-                                        repository.source = source
+                                        if codename not in repository.codenames:
+                                            repository.codenames.append(codename)
+
+                                        repository.components[codename] = components
+
+                                        for component in components:
+                                            repository.arches.setdefault(
+                                                codename, {}
+                                            ).setdefault(component, []).extend(arches)
+
+                                            if source:
+                                                repository.source.setdefault(
+                                                    codename, {}
+                                                )[component] = source
+
+                                    elif isinstance(repository, FlatRepository):
+                                        repository.arches.extend(
+                                            arch
+                                            for arch in arches
+                                            if arch not in repository.arches
+                                        )
+                                        if source:
+                                            repository.source = source
                                 else:
                                     if codename.endswith("/"):
                                         self._repositories[url] = FlatRepository(
@@ -138,12 +159,22 @@ class Config:
 
                                         self._repositories[url] = Repository(
                                             url=url,
-                                            source=source,
-                                            arches=arches,
+                                            source={
+                                                codename: {
+                                                    component: source
+                                                    for component in components
+                                                }
+                                            },
+                                            arches={
+                                                codename: {
+                                                    component: arches
+                                                    for component in components
+                                                }
+                                            },
                                             clean=False,
                                             mirror_path=None,
-                                            codename=codename,
-                                            components=components,
+                                            codenames=[codename],
+                                            components={codename: components},
                                         )
 
                             except ValueError:

@@ -27,7 +27,6 @@ class PathCleaner:
         self._root_path = root_path
 
         self._bytes_cleaned = 0
-        self._files_cleaned = 0
         self._fp = None
 
         self._files_queue: list[Path] = []
@@ -49,7 +48,7 @@ class PathCleaner:
             if file.is_dir():
                 is_needed |= self._check_folder(file)
 
-        if not is_needed:
+        if not is_needed and path != self._root_path:
             self._folders_queue.append(path)
 
         return is_needed

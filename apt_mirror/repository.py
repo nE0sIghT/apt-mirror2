@@ -350,7 +350,7 @@ class BaseRepository(ABC):
     ) -> Iterable[DownloadFile]:
         pool_files: set[DownloadFile] = set()
 
-        if self.mirror_source:
+        if self.is_source_enabled:
             pool_files.update(
                 SourcesParser(
                     repository_root / self.get_mirror_path(encode_tilde),
@@ -358,7 +358,7 @@ class BaseRepository(ABC):
                 ).parse()
             )
 
-        if self.mirror_binaries:
+        if self.is_binaries_enabled:
             pool_files.update(
                 PackagesParser(
                     repository_root / self.get_mirror_path(encode_tilde),
@@ -368,16 +368,24 @@ class BaseRepository(ABC):
 
         return pool_files
 
+    @property
+    def release_files(self) -> Sequence[Path]:
+        return [
+            path
+            for _, paths in self.release_files_per_codename.items()
+            for path in paths
+        ]
+
     @abstractmethod
     def _metadata_file_allowed(self, codename: str, file_path: Path) -> bool: ...
 
     @property
     @abstractmethod
-    def mirror_source(self) -> bool: ...
+    def is_source_enabled(self) -> bool: ...
 
     @property
     @abstractmethod
-    def mirror_binaries(self) -> bool: ...
+    def is_binaries_enabled(self) -> bool: ...
 
     @property
     @abstractmethod
@@ -394,17 +402,54 @@ class BaseRepository(ABC):
 
 @dataclass
 class Repository(BaseRepository):
+    class Components(dict[str, list[str]]):
+        @classmethod
+        def for_codename(cls, codename: str, components: Sequence[str]):
+            return cls({codename: [c for c in components]})
+
+        def get_for_codename(self, codename: str) -> Sequence[str]:
+            return self.get(codename, [])
+
+    # dict[codename, dict[component, source]]
+    class MirrorSource(dict[str, dict[str, bool]]):
+        @classmethod
+        def for_components(cls, codename: str, components: Sequence[str], value: bool):
+            return cls({codename: {component: value for component in components}})
+
+        def is_enabled_for_codename(self, codename: str) -> bool:
+            return any(s for _, s in self.get(codename, {}).items())
+
+        def set_for_component(self, codename: str, component: str, value: bool):
+            self.setdefault(codename, {})[component] = value
+
+    # dict[codename, dict[component, list[arch]]]
+    class Arches(dict[str, dict[str, list[str]]]):
+        @classmethod
+        def for_components(
+            cls, codename: str, components: Sequence[str], arches: Sequence[str]
+        ):
+            return cls({
+                codename: {component: [a for a in arches] for component in components}
+            })
+
+        def get_for_component(self, codename: str, component: str):
+            return self.get(codename, {}).get(component, [])
+
+        def extend_for_component(
+            self, codename: str, component: str, arches: Sequence[str]
+        ):
+            current_arches = self.setdefault(codename, {}).setdefault(component, [])
+            current_arches.extend(a for a in arches if a not in current_arches)
+
     DISTS = Path("dists")
 
     codenames: list[str]
-    components: dict[str, list[str]]
+    components: Components
 
     # Whether to mirror sources
-    # dict[codename, dict[component, source]]
-    source: dict[str, dict[str, bool]]
+    mirror_source: MirrorSource
     # Binary arches
-    # dict[codename, dict[component, list[arch]]]
-    arches: dict[str, dict[str, list[str]]]
+    arches: Arches
 
     def _metadata_file_allowed(self, codename: str, file_path: Path) -> bool:
         source_files = (
@@ -412,7 +457,7 @@ class Repository(BaseRepository):
             "Contents-source",
         )
 
-        if self.source.get(codename) and (
+        if self.mirror_source.is_enabled_for_codename(codename) and (
             any(
                 file_path.name.endswith(f"{name}{suffix}")
                 for name in source_files
@@ -422,8 +467,8 @@ class Repository(BaseRepository):
             return True
 
         if self.arches:
-            for component in self.components.get(codename, []):
-                for arch in self.arches.get(codename, {}).get(component, []):
+            for component in self.components.get_for_codename(codename):
+                for arch in self.arches.get_for_component(codename, component):
                     for suffix in self.COMPRESSION_SUFFIXES:
                         if any(
                             str(file_path) == name
@@ -435,7 +480,7 @@ class Repository(BaseRepository):
                             return True
 
                 if str(file_path).startswith(component):
-                    for arch in self.arches.get(codename, {}).get(component, []):
+                    for arch in self.arches.get_for_component(codename, component):
                         if str(file_path).endswith(f"binary-{arch}/Release"):
                             return True
 
@@ -466,11 +511,11 @@ class Repository(BaseRepository):
         return False
 
     @property
-    def mirror_source(self) -> bool:
-        return bool(self.source)
+    def is_source_enabled(self) -> bool:
+        return bool(self.mirror_source)
 
     @property
-    def mirror_binaries(self) -> bool:
+    def is_binaries_enabled(self) -> bool:
         return bool(self.arches)
 
     @property
@@ -482,13 +527,13 @@ class Repository(BaseRepository):
 
     @property
     def sources_files(self) -> Sequence[Path]:
-        if not self.source:
+        if not self.mirror_source:
             return []
 
         return [
             self.DISTS / codename / component / "source" / "Sources"
             for codename in self.codenames
-            for component in self.components.get(codename, [])
+            for component in self.components.get_for_codename(codename)
         ]
 
     @property
@@ -556,11 +601,11 @@ class FlatRepository(BaseRepository):
         return False
 
     @property
-    def mirror_source(self) -> bool:
+    def is_source_enabled(self) -> bool:
         return self.source
 
     @property
-    def mirror_binaries(self) -> bool:
+    def is_binaries_enabled(self) -> bool:
         return bool(self.arches)
 
     @property

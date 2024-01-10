@@ -124,14 +124,15 @@ class Config:
                                         repository.components[codename] = components
 
                                         for component in components:
-                                            repository.arches.setdefault(
-                                                codename, {}
-                                            ).setdefault(component, []).extend(arches)
+                                            repository.arches.extend_for_component(
+                                                codename, component, arches
+                                            )
 
                                             if source:
-                                                repository.source.setdefault(
-                                                    codename, {}
-                                                )[component] = source
+                                                mirror_source = repository.mirror_source
+                                                mirror_source.set_for_component(
+                                                    codename, component, source
+                                                )
 
                                     elif isinstance(repository, FlatRepository):
                                         repository.arches.extend(
@@ -159,22 +160,22 @@ class Config:
 
                                         self._repositories[url] = Repository(
                                             url=url,
-                                            source={
-                                                codename: {
-                                                    component: source
-                                                    for component in components
-                                                }
-                                            },
-                                            arches={
-                                                codename: {
-                                                    component: arches
-                                                    for component in components
-                                                }
-                                            },
+                                            mirror_source=(
+                                                Repository.MirrorSource.for_components(
+                                                    codename, components, source
+                                                )
+                                            ),
+                                            arches=Repository.Arches.for_components(
+                                                codename, components, arches
+                                            ),
                                             clean=False,
                                             mirror_path=None,
                                             codenames=[codename],
-                                            components={codename: components},
+                                            components=(
+                                                Repository.Components.for_codename(
+                                                    codename, components
+                                                )
+                                            ),
                                         )
 
                             except ValueError:

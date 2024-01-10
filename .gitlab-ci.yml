@@ -10,6 +10,7 @@ workflow:
 
 stages:
   - validate
+  - test
   - security
   - build
   - deploy
@@ -64,6 +65,22 @@ black:
   variables:
     VALIDATE_TOOL: black
     VALIDATE_TOOL_ARGS: --check --diff .
+
+test:
+  extends:
+    - .test defaults
+  stage: test
+  script:
+    - pytest --junitxml=pytest-result.xml
+  artifacts:
+    reports:
+      junit: pytest-result.xml
+  parallel:
+    matrix:
+      - PYTHON_VERSION:
+          - '3.10'
+          - '3.11'
+          - '3.12'
 
 security (trivy):
   extends:

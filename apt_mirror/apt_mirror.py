@@ -36,7 +36,11 @@ class PathCleaner:
         self._check_folder(self._root_path)
 
     def _check_folder(self, path: Path) -> bool:
+        if path.relative_to(self._root_path) in self._keep_files:
+            return True
+
         is_needed = False
+
         for file in path.glob("*"):
             if file.is_symlink():
                 is_needed = True
@@ -65,6 +69,14 @@ class PathCleaner:
     @property
     def bytes_cleaned(self):
         return self._bytes_cleaned
+
+    @property
+    def files_count(self):
+        return len(self._files_queue)
+
+    @property
+    def folders_count(self):
+        return len(self._folders_queue)
 
     def write_clean_script(self, fp: IO[str], repository: BaseRepository):
         fp.write(
@@ -336,7 +348,7 @@ class APTMirror:
         cleaner = PathCleaner(
             self._config.mirror_path
             / repository.get_mirror_path(self._config.encode_tilde),
-            needed_files,
+            needed_files | repository.skip_clean,
         )
 
         if unlink:

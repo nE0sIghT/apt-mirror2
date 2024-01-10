@@ -1,0 +1,4 @@
+deb http://ftp.debian.org/debian trixie main
+
+skip-clean http://ftp.debian.org/debian/abcd
+skip-clean http://ftp.debian.org/debian/def/def/

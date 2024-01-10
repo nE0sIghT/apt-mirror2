@@ -65,6 +65,7 @@ class Config:
 
     def _parse_config_file(self):
         clean: list[URL] = []
+        skip_clean: list[URL] = []
         mirror_paths: dict[URL, Path] = {}
 
         for file in self._files:
@@ -149,6 +150,7 @@ class Config:
                                             source=source,
                                             arches=arches,
                                             clean=False,
+                                            skip_clean=set(),
                                             mirror_path=None,
                                             directory=codename,
                                         )
@@ -169,6 +171,7 @@ class Config:
                                                 codename, components, arches
                                             ),
                                             clean=False,
+                                            skip_clean=set(),
                                             mirror_path=None,
                                             codenames=[codename],
                                             components=(
@@ -185,6 +188,9 @@ class Config:
                         case line if line.startswith("clean "):
                             _, url = line.split()
                             clean.append(URL.from_string(url))
+                        case line if line.startswith("skip-clean "):
+                            _, url = line.split()
+                            skip_clean.append(URL.from_string(url))
                         case line if line.startswith("mirror_path "):
                             _, url, path = line.split(maxsplit=2)
                             mirror_paths[URL.from_string(url)] = Path(path.strip("/"))
@@ -196,6 +202,7 @@ class Config:
                             self._log.warning(f"Unknown line in config: {line}")
 
         self._update_clean(clean)
+        self._update_skip_clean(skip_clean)
         self._update_mirror_paths(mirror_paths)
 
     def _update_clean(self, clean: list[URL]):
@@ -207,6 +214,17 @@ class Config:
                 continue
 
             self._repositories[url].clean = True
+
+    def _update_skip_clean(self, skip_clean: list[URL]):
+        for url in skip_clean:
+            repositories = [
+                r for r in self._repositories.values() if r.url.is_part_of(url)
+            ]
+
+            for repository in repositories:
+                repository.skip_clean.add(
+                    Path(url.path).relative_to(Path(repository.url.path))
+                )
 
     def _update_mirror_paths(self, mirror_paths: dict[URL, Path]):
         for url, path in mirror_paths.items():

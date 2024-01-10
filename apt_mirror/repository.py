@@ -250,6 +250,7 @@ class BaseRepository(ABC):
     url: URL
 
     clean: bool
+    skip_clean: set[Path]
     mirror_path: Path | None
 
     def __post_init__(self):

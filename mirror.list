@@ -40,7 +40,7 @@ set _tilde            0
 ## Path to Post Mirror script
 # set postmirror_script $var_path/postmirror.sh
 
-## By default redundand files are not removed after mirror update.
+## By default redundant files are not removed after mirror update.
 ## Shell script is created in the path specified by `cleanscript` option
 ## that can be used to clean mirror.
 # set cleanscript     $var_path/clean.sh
@@ -71,3 +71,9 @@ deb http://archive.ubuntu.com/ubuntu mantic-backports main restricted universe m
 ## By default the name of mirrored folder constructed from mirror URL.
 ## Using mirror_path it's possible to override mirror folder name
 mirror_path http://archive.ubuntu.com/ubuntu ubuntu
+
+## If specified - clean redundant files in repository (look to _autoclean option)
+clean http://archive.ubuntu.com/ubuntu
+## If specified and repository clean enabled - skip specified paths from clean
+skip-clean http://archive.ubuntu.com/ubuntu/pool/c/curl
+skip-clean http://archive.ubuntu.com/ubuntu/dists/xenial

@@ -1,6 +1,7 @@
 from pathlib import Path
 from unittest import TestCase
 
+from apt_mirror.apt_mirror import PathCleaner
 from apt_mirror.config import Config
 from apt_mirror.download import URL
 from apt_mirror.repository import FlatRepository, Repository
@@ -111,3 +112,25 @@ class TestConfig(TestCase):
 
         self.assertTrue(flat_repository.is_binaries_enabled)
         self.assertCountEqual(flat_repository.arches, (config.default_arch,))
+
+    def test_skip_clean(self):
+        config = self.get_config("SkipCleanConfig")
+
+        debian = config.repositories[URL.from_string("http://ftp.debian.org/debian")]
+
+        if not isinstance(debian, Repository):
+            raise RuntimeError("debian repository is not Repository instance")
+
+        self.assertCountEqual(debian.skip_clean, (Path("abcd"), Path("def/def")))
+
+        cleaner = PathCleaner(
+            self.TEST_DATA / "SkipCleanConfig" / "dir1", debian.skip_clean
+        )
+        self.assertEqual(cleaner.files_count, 0)
+        self.assertEqual(cleaner.folders_count, 0)
+
+        cleaner = PathCleaner(
+            self.TEST_DATA / "SkipCleanConfig" / "dir2", debian.skip_clean
+        )
+        self.assertEqual(cleaner.files_count, 1)
+        self.assertEqual(cleaner.folders_count, 1)

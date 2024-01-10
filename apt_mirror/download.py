@@ -100,6 +100,9 @@ class URL:
             )
         )
 
+    def is_part_of(self, url: "URL"):
+        return str(url).startswith(str(self))
+
     def __str__(self) -> str:
         return self.without_auth()
 

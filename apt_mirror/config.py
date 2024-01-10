@@ -29,7 +29,7 @@ class Config:
         try:
             default_arch = subprocess.check_output(
                 ["dpkg", "--print-architecture"], encoding="utf-8"
-            )
+            ).strip()
         except subprocess.CalledProcessError:
             default_arch = "amd64"
 

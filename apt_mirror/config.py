@@ -270,6 +270,9 @@ class Config:
     def get_path(self, key: str) -> Path:
         return Path(self[key])
 
+    def as_environment(self) -> dict[str, str]:
+        return {f"APT_MIRROR_{k.upper()}": v for k, v in self._variables.items()}
+
     @property
     def autoclean(self) -> bool:
         return self.get_bool("_autoclean")

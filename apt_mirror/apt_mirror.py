@@ -191,7 +191,10 @@ class APTMirror:
                     args = ["/bin/sh"] + args
 
                 process = await asyncio.create_subprocess_exec(
-                    *args, stdout=None, stderr=None
+                    *args,
+                    stdout=None,
+                    stderr=None,
+                    env=self._config.as_environment(),
                 )
                 await process.wait()
 

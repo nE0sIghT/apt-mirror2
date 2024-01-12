@@ -41,6 +41,8 @@ set _tilde            0
 ## Run script after mirror complete
 # set run_postmirror    0
 ## Path to Post Mirror script
+# All configuration variables are available in `postmirror_script` uppercased
+# with prefix `APT_MIRROR_`, eg `${APT_MIRROR_BASE_PATH}`
 # set postmirror_script $var_path/postmirror.sh
 
 ## By default redundant files are not removed after mirror update.

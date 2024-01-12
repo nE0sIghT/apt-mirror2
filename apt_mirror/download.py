@@ -235,6 +235,7 @@ class Downloader(ABC):
         *,
         target_root_path: Path,
         proxy: Proxy,
+        user_agent: str,
         semaphore: asyncio.Semaphore,
         rate_limiter: AsyncLimiter | None = None,
         verify_ca_certificate: bool | str = True,
@@ -252,6 +253,7 @@ class Downloader(ABC):
             url=url,
             target_root_path=target_root_path,
             proxy=proxy,
+            user_agent=user_agent,
             semaphore=semaphore,
             rate_limiter=rate_limiter,
             verify_ca_certificate=verify_ca_certificate,
@@ -265,6 +267,7 @@ class Downloader(ABC):
         url: URL,
         target_root_path: Path,
         proxy: Proxy,
+        user_agent: str,
         semaphore: asyncio.Semaphore,
         rate_limiter: AsyncLimiter | None = None,
         verify_ca_certificate: bool | str = True,
@@ -278,6 +281,7 @@ class Downloader(ABC):
         self._semaphore = semaphore
         self._rate_limiter = rate_limiter
         self._proxy = proxy
+        self._user_agent = user_agent
 
         self._verify_ca_certificate = verify_ca_certificate
         self._client_certificate = client_certificate
@@ -629,6 +633,7 @@ class HTTPDownloader(Downloader):
             headers={
                 "Cache-Control": "no-cache",
                 "Pragma": "no-cache",
+                "User-Agent": self._user_agent,
             },
         )
 

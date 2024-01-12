@@ -219,6 +219,7 @@ class APTMirror:
                 target_root_path=self._config.skel_path
                 / repository.get_mirror_path(self._config.encode_tilde),
                 proxy=self._config.proxy,
+                user_agent=self._config.user_agent,
                 semaphore=self._download_semaphore,
                 rate_limiter=self._rate_limiter,
                 verify_ca_certificate=self._config.verify_ca_certificate,

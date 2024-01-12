@@ -26,6 +26,9 @@ set _tilde            0
 # proxy_user            user
 # proxy_password        password
 
+## User agent for http repositories. Default `apt-mirror2/VERSION`
+# http_user_agent       apt-mirror2
+
 ## Certificates configuration
 ## Whether to verify https certificate
 # set no_check_certificate  off

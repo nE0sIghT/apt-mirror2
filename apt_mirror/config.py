@@ -8,6 +8,7 @@ from apt_mirror.download import URL, Proxy
 from apt_mirror.repository import BaseRepository, FlatRepository, Repository
 
 from .logs import get_logger
+from .version import __version__
 
 
 class Config:
@@ -54,6 +55,7 @@ class Config:
             "https_proxy": "",
             "proxy_user": "",
             "proxy_password": "",
+            "http_user_agent": f"apt-mirror2/{__version__}",
             "no_check_certificate": "0",
             "certificate": "",
             "private_key": "",
@@ -368,3 +370,7 @@ class Config:
             username=self._variables.get("proxy_user"),
             password=self._variables.get("proxy_password"),
         )
+
+    @property
+    def user_agent(self) -> str:
+        return self["http_user_agent"]

@@ -542,6 +542,12 @@ class Downloader(ABC):
     def get_missing_sources(self):
         return self._missing_sources.copy()
 
+    def has_errors(self):
+        return self._error_count > 0
+
+    def has_missing(self):
+        return self._missing_count > 0
+
     @staticmethod
     def link_or_copy(source: Path, *targets: Path):
         if len(targets) > 1:

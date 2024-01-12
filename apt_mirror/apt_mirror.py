@@ -128,11 +128,17 @@ class APTMirror:
         self._semaphore = asyncio.Semaphore(self._config.nthreads)
         self._download_semaphore = asyncio.Semaphore(self._config.nthreads)
 
+        self._error: bool = False
+
         self._rate_limiter = None
         if self._config.limit_rate:
             self._rate_limiter = AsyncLimiter(self._config.limit_rate * 60, 60)
 
-    async def run(self):
+    async def run(self) -> int:
+        if not self._config.repositories:
+            self._log.error("No repositories are found in the configuration")
+            return 2
+
         for variable in ("mirror_path", "base_path", "var_path"):
             path = Path(self._config[variable])
             path.mkdir(parents=True, exist_ok=True)
@@ -195,6 +201,14 @@ class APTMirror:
                 )
 
         self.unlock()
+
+        if self._error:
+            self._log.error(
+                "Some files were not downloaded. Please check logs above for details."
+            )
+            return 1
+
+        return 0
 
     async def mirror_repository(self, repository: BaseRepository):
         async with self._semaphore:
@@ -285,6 +299,7 @@ class APTMirror:
             self._log.error(
                 f"Unable to obtain metadata files for repository {repository}"
             )
+            self._error = True
             return metadata_files
 
         downloader.add(*metadata_files)
@@ -295,6 +310,9 @@ class APTMirror:
         )
 
         await downloader.download()
+
+        if downloader.has_errors() or downloader.has_missing():
+            self._error = True
 
         return metadata_files
 
@@ -321,6 +339,9 @@ class APTMirror:
         )
 
         await downloader.download()
+
+        if downloader.has_errors() or downloader.has_missing():
+            self._error = True
 
         return pool_files
 
@@ -435,7 +456,7 @@ def get_config_file() -> Path:
     return config_file
 
 
-def main():
+def main() -> int:
     config = Config(get_config_file())
 
     asyncio_loop = asyncio
@@ -447,8 +468,8 @@ def main():
         except ModuleNotFoundError:
             LOG.warning("uvloop is enabled but not available")
 
-    asyncio_loop.run(APTMirror(config).run())
+    return asyncio_loop.run(APTMirror(config).run())
 
 
 if __name__ == "__main__":
-    main()
+    exit(main())

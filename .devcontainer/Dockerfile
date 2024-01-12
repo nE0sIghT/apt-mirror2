@@ -14,7 +14,6 @@ RUN \
         git \
         git-gui \
         gitk \
-        libapt-pkg-dev \
         sudo \
     ;\
     pip --disable-pip-version-check --no-cache-dir install \

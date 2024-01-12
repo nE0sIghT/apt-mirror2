@@ -83,6 +83,7 @@ In addition there are some enhancements available:
 - Rate limit is enforced for overall download rate.
 - Non-zero exit code is returned if some of required files were not downloaded due to network or server errors or
   no repositories were configured.
+- HTTP user agent can be configured via `user_agent` configuration.
 
 # License
 

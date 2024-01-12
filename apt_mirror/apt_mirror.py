@@ -296,9 +296,6 @@ class APTMirror:
         )
 
         if not metadata_files:
-            self._log.error(
-                f"Unable to obtain metadata files for repository {repository}"
-            )
             self._error = True
             return metadata_files
 

@@ -652,7 +652,7 @@ class HTTPDownloader(Downloader):
 
                 try:
                     size = int(response.headers.get("Content-Length"))
-                except ValueError:
+                except (TypeError, ValueError):
                     size = None
 
                 yield DownloadResponse(

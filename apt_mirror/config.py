@@ -126,12 +126,6 @@ class Config:
 
                                 repository = self._repositories.get(url)
                                 if repository:
-                                    if (
-                                        by_hash != ByHash.YES
-                                        and repository.by_hash == ByHash.YES
-                                    ):
-                                        repository.by_hash = by_hash
-
                                     if isinstance(repository, Repository):
                                         codename, components = codename.split(
                                             maxsplit=1
@@ -142,6 +136,9 @@ class Config:
                                             repository.codenames.append(codename)
 
                                         repository.components[codename] = components
+                                        repository.by_hash.set_if_default(
+                                            codename, by_hash
+                                        )
 
                                         for component in components:
                                             repository.arches.extend_for_component(
@@ -155,6 +152,9 @@ class Config:
                                                 )
 
                                     elif isinstance(repository, FlatRepository):
+                                        if repository.by_hash == ByHash.default():
+                                            repository.by_hash = by_hash
+
                                         repository.arches.extend(
                                             arch
                                             for arch in arches
@@ -171,8 +171,8 @@ class Config:
                                             clean=False,
                                             skip_clean=set(),
                                             mirror_path=None,
-                                            by_hash=by_hash,
                                             directory=codename,
+                                            by_hash=by_hash,
                                         )
                                     else:
                                         codename, components = codename.split(
@@ -180,6 +180,11 @@ class Config:
                                         )
                                         components = components.split()
 
+                                        repository_by_hash = (
+                                            Repository.ByHashPerCodename.for_codename(
+                                                codename, by_hash
+                                            )
+                                        )
                                         self._repositories[url] = Repository(
                                             url=url,
                                             mirror_source=(
@@ -193,13 +198,13 @@ class Config:
                                             clean=False,
                                             skip_clean=set(),
                                             mirror_path=None,
-                                            by_hash=by_hash,
                                             codenames=[codename],
                                             components=(
                                                 Repository.Components.for_codename(
                                                     codename, components
                                                 )
                                             ),
+                                            by_hash=repository_by_hash,
                                         )
 
                             except ValueError:

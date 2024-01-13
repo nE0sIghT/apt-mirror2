@@ -239,6 +239,10 @@ class ByHash(Enum):
     NO = "no"
     FORCE = "force"
 
+    @staticmethod
+    def default():
+        return ByHash.YES
+
 
 @dataclass
 class BaseRepository(ABC):
@@ -259,7 +263,6 @@ class BaseRepository(ABC):
     clean: bool
     skip_clean: set[Path]
     mirror_path: Path | None
-    by_hash: ByHash
 
     def __post_init__(self):
         self._log = get_logger(self)
@@ -303,9 +306,9 @@ class BaseRepository(ABC):
 
                 use_hash = release.get("Acquire-By-Hash") == "yes"
                 if use_hash:
-                    if self.by_hash == ByHash.NO:
+                    if self.get_by_hash_policy(codename) == ByHash.NO:
                         use_hash = False
-                elif self.by_hash == ByHash.FORCE:
+                elif self.get_by_hash_policy(codename) == ByHash.FORCE:
                     use_hash = True
 
                 for hash_type in HashType:
@@ -393,6 +396,9 @@ class BaseRepository(ABC):
     @abstractmethod
     def _metadata_file_allowed(self, codename: str, file_path: Path) -> bool: ...
 
+    @abstractmethod
+    def get_by_hash_policy(self, codename: str) -> ByHash: ...
+
     @property
     @abstractmethod
     def is_source_enabled(self) -> bool: ...
@@ -455,6 +461,19 @@ class Repository(BaseRepository):
             current_arches = self.setdefault(codename, {}).setdefault(component, [])
             current_arches.extend(a for a in arches if a not in current_arches)
 
+    # dict[codename, ByHash]
+    class ByHashPerCodename(dict[str, ByHash]):
+        @classmethod
+        def for_codename(cls, codename: str, by_hash: ByHash):
+            return cls({codename: by_hash})
+
+        def set_if_default(self, codename: str, by_hash: ByHash):
+            if codename not in self or self[codename] == ByHash.default():
+                self[codename] = by_hash
+
+        def get_for_codename(self, codename: str) -> ByHash:
+            return self.get(codename, ByHash.default())
+
     DISTS = Path("dists")
 
     codenames: list[str]
@@ -464,6 +483,7 @@ class Repository(BaseRepository):
     mirror_source: MirrorSource
     # Binary arches
     arches: Arches
+    by_hash: ByHashPerCodename
 
     def _metadata_file_allowed(self, codename: str, file_path: Path) -> bool:
         source_files = (
@@ -574,6 +594,9 @@ class Repository(BaseRepository):
             )
         ]
 
+    def get_by_hash_policy(self, codename: str) -> ByHash:
+        return self.by_hash.get_for_codename(codename)
+
     def __str__(self) -> str:
         return (
             f"{self.url}, codenames: {self.codenames}, mirror_path: {self.mirror_path}"
@@ -591,6 +614,7 @@ class FlatRepository(BaseRepository):
     source: bool
     # Binary arches
     arches: list[str]
+    by_hash: ByHash
 
     def _metadata_file_allowed(self, codename: str, file_path: Path) -> bool:
         if codename != self.FLAT_CODENAME:
@@ -639,6 +663,13 @@ class FlatRepository(BaseRepository):
             return []
 
         return [Path(self.directory) / "Packages"]
+
+    def get_by_hash_policy(self, codename: str) -> ByHash:
+        return self.by_hash
+
+    def set_by_hash_if_default(self, by_hash: ByHash):
+        if self.by_hash == ByHash.default():
+            self.by_hash = by_hash
 
     def __str__(self) -> str:
         return (

@@ -150,13 +150,15 @@ class TestConfig(TestCase):
             ]
         )
 
-        self.assertEqual(repository.by_hash, ByHash.FORCE)
+        self.assertEqual(repository.get_by_hash_policy("trixie-security"), ByHash.FORCE)
+        self.assertEqual(repository.get_by_hash_policy("bookworm-security"), ByHash.NO)
+        self.assertEqual(repository.get_by_hash_policy("stretch-security"), ByHash.YES)
 
         repository = self.ensure_repository(
             config.repositories[URL.from_string("http://archive.ubuntu.com/ubuntu")]
         )
 
-        self.assertEqual(repository.by_hash, ByHash.NO)
+        self.assertEqual(repository.get_by_hash_policy("mantic"), ByHash.NO)
 
         repository = self.ensure_repository(
             config.repositories[
@@ -164,4 +166,4 @@ class TestConfig(TestCase):
             ]
         )
 
-        self.assertEqual(repository.by_hash, ByHash.NO)
+        self.assertEqual(repository.get_by_hash_policy("codename"), ByHash.NO)

@@ -7,6 +7,7 @@ import lzma
 import shutil
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from enum import Enum
 from mmap import MADV_SEQUENTIAL, MAP_POPULATE, MAP_PRIVATE, mmap
 from pathlib import Path
 from typing import IO, Iterable, Sequence
@@ -233,6 +234,12 @@ class PackagesParser(IndexFileParser):
         return line.decode().strip().split(":", maxsplit=1)[1].strip()
 
 
+class ByHash(Enum):
+    YES = "yes"
+    NO = "no"
+    FORCE = "force"
+
+
 @dataclass
 class BaseRepository(ABC):
     COMPRESSION_SUFFIXES = {
@@ -252,6 +259,7 @@ class BaseRepository(ABC):
     clean: bool
     skip_clean: set[Path]
     mirror_path: Path | None
+    by_hash: ByHash
 
     def __post_init__(self):
         self._log = get_logger(self)
@@ -294,6 +302,11 @@ class BaseRepository(ABC):
                     release = Release(fp)
 
                 use_hash = release.get("Acquire-By-Hash") == "yes"
+                if use_hash:
+                    if self.by_hash == ByHash.NO:
+                        use_hash = False
+                elif self.by_hash == ByHash.FORCE:
+                    use_hash = True
 
                 for hash_type in HashType:
                     for file in release.get(hash_type.value, []):

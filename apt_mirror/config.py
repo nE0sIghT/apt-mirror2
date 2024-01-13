@@ -5,7 +5,7 @@ from pathlib import Path
 from string import Template
 
 from apt_mirror.download import URL, Proxy
-from apt_mirror.repository import BaseRepository, FlatRepository, Repository
+from apt_mirror.repository import BaseRepository, ByHash, FlatRepository, Repository
 
 from .logs import get_logger
 from .version import __version__
@@ -92,20 +92,31 @@ class Config:
                                     else:
                                         source = True
 
+                                by_hash = ByHash.YES
                                 if url.startswith("["):
                                     options, url = url.split(sep="]", maxsplit=1)
                                     options = options.strip("[]").strip().split()
                                     for key, value in map(
                                         lambda x: x.split("=", maxsplit=1), options
                                     ):
-                                        if key != "arch":
-                                            continue
+                                        match key:
+                                            case "arch":
+                                                for arch in value.split(","):
+                                                    if arch in arches:
+                                                        continue
 
-                                        for arch in value.split(","):
-                                            if arch in arches:
+                                                    arches.append(arch)
+                                            case "by-hash":
+                                                try:
+                                                    by_hash = ByHash(value)
+                                                except ValueError:
+                                                    self._log.warning(
+                                                        "Wrong `by-hash` value"
+                                                        f" {value}. Affected config"
+                                                        f" line: {line}"
+                                                    )
+                                            case _:
                                                 continue
-
-                                            arches.append(arch)
 
                                 url, codename = url.split(maxsplit=1)
                                 url = URL.from_string(url)
@@ -115,6 +126,12 @@ class Config:
 
                                 repository = self._repositories.get(url)
                                 if repository:
+                                    if (
+                                        by_hash != ByHash.YES
+                                        and repository.by_hash == ByHash.YES
+                                    ):
+                                        repository.by_hash = by_hash
+
                                     if isinstance(repository, Repository):
                                         codename, components = codename.split(
                                             maxsplit=1
@@ -154,6 +171,7 @@ class Config:
                                             clean=False,
                                             skip_clean=set(),
                                             mirror_path=None,
+                                            by_hash=by_hash,
                                             directory=codename,
                                         )
                                     else:
@@ -175,6 +193,7 @@ class Config:
                                             clean=False,
                                             skip_clean=set(),
                                             mirror_path=None,
+                                            by_hash=by_hash,
                                             codenames=[codename],
                                             components=(
                                                 Repository.Components.for_codename(

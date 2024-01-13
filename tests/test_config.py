@@ -4,7 +4,7 @@ from unittest import TestCase
 from apt_mirror.apt_mirror import PathCleaner
 from apt_mirror.config import Config
 from apt_mirror.download import URL
-from apt_mirror.repository import FlatRepository, Repository
+from apt_mirror.repository import BaseRepository, ByHash, FlatRepository, Repository
 
 
 class TestConfig(TestCase):
@@ -13,18 +13,34 @@ class TestConfig(TestCase):
     def get_config(self, name: str):
         return Config(self.TEST_DATA / name / "mirror.list")
 
+    def ensure_repository(self, repository: BaseRepository) -> Repository:
+        if not isinstance(repository, Repository):
+            self.assertIsInstance(repository, Repository)
+            raise RuntimeError(
+                f"{repository.url} repository is not Repository instance"
+            )
+
+        return repository
+
+    def ensure_flat_repository(self, repository: BaseRepository) -> FlatRepository:
+        if not isinstance(repository, FlatRepository):
+            self.assertIsInstance(repository, FlatRepository)
+            raise RuntimeError(
+                f"{repository.url} repository is not FlatRepository instance"
+            )
+
+        return repository
+
     def test_multiple_codenames(self):
         config = self.get_config("MixedConfig")
 
         self.assertEqual(len(config.repositories), 3)
 
-        debian_security = config.repositories[
-            URL.from_string("http://ftp.debian.org/debian-security")
-        ]
-        self.assertIsInstance(debian_security, Repository)
-
-        if not isinstance(debian_security, Repository):
-            raise RuntimeError("debian_security repository is not Repository instance")
+        debian_security = self.ensure_repository(
+            config.repositories[
+                URL.from_string("http://ftp.debian.org/debian-security")
+            ]
+        )
 
         self.assertCountEqual(
             debian_security.codenames,
@@ -76,14 +92,9 @@ class TestConfig(TestCase):
             {config.default_arch, "arm64"},
         )
 
-        ubuntu_security = config.repositories[
-            URL.from_string("http://archive.ubuntu.com/ubuntu")
-        ]
-
-        self.assertIsInstance(ubuntu_security, Repository)
-
-        if not isinstance(ubuntu_security, Repository):
-            raise RuntimeError("ubuntu_security repository is not Repository instance")
+        ubuntu_security = self.ensure_repository(
+            config.repositories[URL.from_string("http://archive.ubuntu.com/ubuntu")]
+        )
 
         self.assertCountEqual(
             ubuntu_security.codenames,
@@ -99,16 +110,11 @@ class TestConfig(TestCase):
             ),
         )
 
-        flat_repository = config.repositories[
-            URL.from_string("http://mirror.something.ru/repository")
-        ]
-
-        self.assertIsInstance(flat_repository, FlatRepository)
-
-        if not isinstance(flat_repository, FlatRepository):
-            raise RuntimeError(
-                "flat_repository repository is not FlatRepository instance"
-            )
+        flat_repository = self.ensure_flat_repository(
+            config.repositories[
+                URL.from_string("http://mirror.something.ru/repository")
+            ]
+        )
 
         self.assertTrue(flat_repository.is_binaries_enabled)
         self.assertCountEqual(flat_repository.arches, (config.default_arch,))
@@ -134,3 +140,28 @@ class TestConfig(TestCase):
         )
         self.assertEqual(cleaner.files_count, 1)
         self.assertEqual(cleaner.folders_count, 1)
+
+    def test_by_hash(self):
+        config = self.get_config("ByHashConfig")
+
+        repository = self.ensure_repository(
+            config.repositories[
+                URL.from_string("http://ftp.debian.org/debian-security")
+            ]
+        )
+
+        self.assertEqual(repository.by_hash, ByHash.FORCE)
+
+        repository = self.ensure_repository(
+            config.repositories[URL.from_string("http://archive.ubuntu.com/ubuntu")]
+        )
+
+        self.assertEqual(repository.by_hash, ByHash.NO)
+
+        repository = self.ensure_repository(
+            config.repositories[
+                URL.from_string("http://mirror.something.ru/repository")
+            ]
+        )
+
+        self.assertEqual(repository.by_hash, ByHash.NO)

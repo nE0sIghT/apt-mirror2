@@ -85,6 +85,7 @@ In addition there are some enhancements available:
   no repositories were configured.
 - HTTP user agent can be configured via `user_agent` configuration.
 - Configuration variables are exposed to postmirror_script.
+- `by-hash` list option can be used to control whether `Acquire-By-Hash` Release option should be respected or enforced.
 
 # License
 

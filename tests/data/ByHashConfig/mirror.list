@@ -1,0 +1,8 @@
+deb http://ftp.debian.org/debian-security trixie-security main contrib non-free-firmware non-free main/debian-installer
+deb-amd64 [ arch=amd64,arm64 by-hash=force ] http://ftp.debian.org/debian-security trixie-security main contrib non-free-firmware non-free main/debian-installer
+
+deb [ by-hash=no ] http://archive.ubuntu.com/ubuntu mantic main restricted universe multiverse
+
+deb [ by-hash=no ] http://mirror.something.ru/repository codename main
+deb-src [ by-hash=force ] http://mirror.something.ru/repository codename main
+

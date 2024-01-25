@@ -84,14 +84,17 @@ class IndexFileParser(ABC):
             if not compressed_file.exists():
                 continue
 
-            with open_function(compressed_file, "rb") as source_fp:
-                with open(file, "wb") as target_fp:
-                    shutil.copyfileobj(source_fp, target_fp)
-                    shutil.copystat(compressed_file, file)
+            try:
+                with open_function(compressed_file, "rb") as source_fp:
+                    with open(file, "wb") as target_fp:
+                        shutil.copyfileobj(source_fp, target_fp)
+                        shutil.copystat(compressed_file, file)
 
-                    return True
+                        return True
+            except (lzma.LZMAError, OSError):
+                return False
 
-        return False
+        return file.exists()
 
     @abstractmethod
     def _do_parse_index(self, fp: IO[bytes] | mmap): ...
@@ -518,7 +521,7 @@ class Repository(BaseRepository):
                         if str(file_path).endswith(f"binary-{arch}/Release"):
                             return True
 
-                        for suffix in self.COMPRESSION_SUFFIXES:
+                        for suffix in list(self.COMPRESSION_SUFFIXES) + [""]:
                             if any(
                                 str(file_path).endswith(name)
                                 for name in (

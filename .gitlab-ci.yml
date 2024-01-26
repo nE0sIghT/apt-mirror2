@@ -1,3 +1,4 @@
+---
 variables:
   FF_NETWORK_PER_BUILD: 'true'
   PYTHON_VERSION: '3.10'
@@ -65,6 +66,24 @@ black:
   variables:
     VALIDATE_TOOL: black
     VALIDATE_TOOL_ARGS: --check --diff .
+
+# https://gitlab.freedesktop.org/freedesktop/ci-templates/-/blob/801093be0b88f23c8dbabe9cfce7134548f7ccdc/templates/ci-fairy.yml
+# https://gitlab.gnome.org/GNOME/gnome-shell/-/blob/876ca5d2de92efbea3f2379839073747c9e0dd55/.gitlab-ci.yml#L82
+check commits:
+  stage: validate
+  image: quay.io/freedesktop.org/ci-templates:ci-fairy-sha256-eb20531b68e57da06f4e631402fd494869b1529e2c4ad05cfe24ef3fb8038815
+  script:
+    - ci-fairy check-commits --junit-xml=commit-message-junit-report.xml
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - commit-message-junit-report.xml
+    reports:
+      junit: commit-message-junit-report.xml
+  variables:
+    GIT_DEPTH: "100"
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 
 test:
   extends:

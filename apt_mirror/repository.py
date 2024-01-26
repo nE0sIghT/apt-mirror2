@@ -464,6 +464,9 @@ class Repository(BaseRepository):
             current_arches = self.setdefault(codename, {}).setdefault(component, [])
             current_arches.extend(a for a in arches if a not in current_arches)
 
+        def is_empty(self):
+            return not any(a for component in self.values() for a in component.values())
+
     # dict[codename, ByHash]
     class ByHashPerCodename(dict[str, ByHash]):
         @classmethod

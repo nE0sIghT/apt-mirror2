@@ -1,6 +1,7 @@
 # SPDX-License-Identifer: GPL-3.0-or-later
 
 import subprocess
+from dataclasses import dataclass
 from pathlib import Path
 from string import Template
 
@@ -9,6 +10,156 @@ from apt_mirror.repository import BaseRepository, ByHash, FlatRepository, Reposi
 
 from .logs import get_logger
 from .version import __version__
+
+
+@dataclass
+class RepositoryConfig:
+    url: URL
+    arches: list[str]
+    source: bool
+    codename: str
+    components: list[str]
+    by_hash: ByHash
+
+    @classmethod
+    def from_line(cls, line: str, default_arch: str):
+        log = get_logger(cls)
+
+        repository_type, url = line.split(maxsplit=1)
+        source = False
+
+        arches: list[str] = []
+        if "-" in repository_type:
+            _, arch = repository_type.split("-", maxsplit=1)
+            if arch != "src":
+                arches.append(arch)
+            else:
+                source = True
+
+        by_hash = ByHash.YES
+        if url.startswith("["):
+            options, url = url.split(sep="]", maxsplit=1)
+            options = options.strip("[]").strip().split()
+            for key, value in map(lambda x: x.split("=", maxsplit=1), options):
+                match key:
+                    case "arch":
+                        for arch in value.split(","):
+                            if arch == "src":
+                                source = True
+                                continue
+
+                            if arch in arches:
+                                continue
+
+                            arches.append(arch)
+                    case "by-hash":
+                        try:
+                            by_hash = ByHash(value)
+                        except ValueError:
+                            log.warning(
+                                "Wrong `by-hash` value"
+                                f" {value}. Affected config"
+                                f" line: {line}"
+                            )
+                    case _:
+                        continue
+
+        url, codename = url.split(maxsplit=1)
+        url = URL.from_string(url)
+
+        if not arches and not source:
+            arches.append(default_arch)
+
+        if not codename.endswith("/"):
+            codename, components = codename.split(maxsplit=1)
+            components = components.split()
+        else:
+            components = []
+
+        return cls(url, arches, source, codename, components, by_hash)
+
+    def to_repository(self) -> BaseRepository:
+        if self.is_flat():
+            return FlatRepository(
+                url=self.url,
+                source=self.source,
+                arches=self.arches,
+                clean=False,
+                skip_clean=set(),
+                mirror_path=None,
+                directory=self.codename,
+                by_hash=self.by_hash,
+            )
+        else:
+            repository_by_hash = Repository.ByHashPerCodename.for_codename(
+                self.codename,
+                self.by_hash,
+            )
+            return Repository(
+                url=self.url,
+                mirror_source=(
+                    Repository.MirrorSource.for_components(
+                        self.codename,
+                        self.components,
+                        self.source,
+                    )
+                ),
+                arches=Repository.Arches.for_components(
+                    self.codename,
+                    self.components,
+                    self.arches,
+                ),
+                clean=False,
+                skip_clean=set(),
+                mirror_path=None,
+                codenames=[self.codename],
+                components=(
+                    Repository.Components.for_codename(
+                        self.codename,
+                        self.components,
+                    )
+                ),
+                by_hash=repository_by_hash,
+            )
+
+    def update_repository(self, repository: BaseRepository):
+        if isinstance(repository, Repository):
+            if self.codename not in repository.codenames:
+                repository.codenames.append(self.codename)
+
+            repository.components[self.codename] = self.components
+            repository.by_hash.set_if_default(
+                self.codename,
+                self.by_hash,
+            )
+
+            for component in self.components:
+                repository.arches.extend_for_component(
+                    self.codename,
+                    component,
+                    self.arches,
+                )
+
+                if self.source:
+                    mirror_source = repository.mirror_source
+                    mirror_source.set_for_component(
+                        self.codename,
+                        component,
+                        self.source,
+                    )
+
+        elif isinstance(repository, FlatRepository):
+            if repository.by_hash == ByHash.default():
+                repository.by_hash = self.by_hash
+
+            repository.arches.extend(
+                arch for arch in self.arches if arch not in repository.arches
+            )
+            if self.source:
+                repository.source = self.source
+
+    def is_flat(self):
+        return self.codename.endswith("/")
 
 
 class Config:
@@ -81,135 +232,21 @@ class Config:
                             self._variables[key] = value
                         case line if line.startswith("deb"):
                             try:
-                                repository_type, url = line.split(maxsplit=1)
-                                source = False
-
-                                arches: list[str] = []
-                                if "-" in repository_type:
-                                    _, arch = repository_type.split("-", maxsplit=1)
-                                    if arch != "src":
-                                        arches.append(arch)
-                                    else:
-                                        source = True
-
-                                by_hash = ByHash.YES
-                                if url.startswith("["):
-                                    options, url = url.split(sep="]", maxsplit=1)
-                                    options = options.strip("[]").strip().split()
-                                    for key, value in map(
-                                        lambda x: x.split("=", maxsplit=1), options
-                                    ):
-                                        match key:
-                                            case "arch":
-                                                for arch in value.split(","):
-                                                    if arch in arches:
-                                                        continue
-
-                                                    arches.append(arch)
-                                            case "by-hash":
-                                                try:
-                                                    by_hash = ByHash(value)
-                                                except ValueError:
-                                                    self._log.warning(
-                                                        "Wrong `by-hash` value"
-                                                        f" {value}. Affected config"
-                                                        f" line: {line}"
-                                                    )
-                                            case _:
-                                                continue
-
-                                url, codename = url.split(maxsplit=1)
-                                url = URL.from_string(url)
-
-                                if not arches and not line.startswith("deb-src"):
-                                    arches.append(self.default_arch)
-
-                                repository = self._repositories.get(url)
-                                if repository:
-                                    if isinstance(repository, Repository):
-                                        codename, components = codename.split(
-                                            maxsplit=1
-                                        )
-                                        components = components.split()
-
-                                        if codename not in repository.codenames:
-                                            repository.codenames.append(codename)
-
-                                        repository.components[codename] = components
-                                        repository.by_hash.set_if_default(
-                                            codename, by_hash
-                                        )
-
-                                        for component in components:
-                                            repository.arches.extend_for_component(
-                                                codename, component, arches
-                                            )
-
-                                            if source:
-                                                mirror_source = repository.mirror_source
-                                                mirror_source.set_for_component(
-                                                    codename, component, source
-                                                )
-
-                                    elif isinstance(repository, FlatRepository):
-                                        if repository.by_hash == ByHash.default():
-                                            repository.by_hash = by_hash
-
-                                        repository.arches.extend(
-                                            arch
-                                            for arch in arches
-                                            if arch not in repository.arches
-                                        )
-                                        if source:
-                                            repository.source = source
-                                else:
-                                    if codename.endswith("/"):
-                                        self._repositories[url] = FlatRepository(
-                                            url=url,
-                                            source=source,
-                                            arches=arches,
-                                            clean=False,
-                                            skip_clean=set(),
-                                            mirror_path=None,
-                                            directory=codename,
-                                            by_hash=by_hash,
-                                        )
-                                    else:
-                                        codename, components = codename.split(
-                                            maxsplit=1
-                                        )
-                                        components = components.split()
-
-                                        repository_by_hash = (
-                                            Repository.ByHashPerCodename.for_codename(
-                                                codename, by_hash
-                                            )
-                                        )
-                                        self._repositories[url] = Repository(
-                                            url=url,
-                                            mirror_source=(
-                                                Repository.MirrorSource.for_components(
-                                                    codename, components, source
-                                                )
-                                            ),
-                                            arches=Repository.Arches.for_components(
-                                                codename, components, arches
-                                            ),
-                                            clean=False,
-                                            skip_clean=set(),
-                                            mirror_path=None,
-                                            codenames=[codename],
-                                            components=(
-                                                Repository.Components.for_codename(
-                                                    codename, components
-                                                )
-                                            ),
-                                            by_hash=repository_by_hash,
-                                        )
-
+                                repository_config = RepositoryConfig.from_line(
+                                    line, self.default_arch
+                                )
                             except ValueError:
                                 self._log.warning(
                                     f"Unable to parse repository config line: {line}"
+                                )
+                                continue
+
+                            repository = self._repositories.get(repository_config.url)
+                            if repository:
+                                repository_config.update_repository(repository)
+                            else:
+                                self._repositories[repository_config.url] = (
+                                    repository_config.to_repository()
                                 )
                         case line if line.startswith("clean "):
                             _, url = line.split()

@@ -1,0 +1,3 @@
+deb-src http://ftp.debian.org/debian-security trixie-security main contrib non-free-firmware non-free main/debian-installer
+
+deb [ arch=src ] http://archive.ubuntu.com/ubuntu mantic main restricted universe multiverse

@@ -167,3 +167,22 @@ class TestConfig(TestCase):
         )
 
         self.assertEqual(repository.get_by_hash_policy("codename"), ByHash.NO)
+
+    def test_src_arch(self):
+        config = self.get_config("SrcOptionConfig")
+
+        repository = self.ensure_repository(
+            config.repositories[
+                URL.from_string("http://ftp.debian.org/debian-security")
+            ]
+        )
+
+        self.assertTrue(repository.arches.is_empty())
+        self.assertTrue(repository.is_source_enabled)
+
+        repository = self.ensure_repository(
+            config.repositories[URL.from_string("http://archive.ubuntu.com/ubuntu")]
+        )
+
+        self.assertTrue(repository.arches.is_empty())
+        self.assertTrue(repository.is_source_enabled)

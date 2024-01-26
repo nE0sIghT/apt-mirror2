@@ -55,7 +55,7 @@ set _tilde            0
 # set _autoclean 0
 
 
-## Binary mirrors are configured using standard sources.list syntax
+## Mirrors are configured using standard sources.list syntax
 ## Binary mirrors
 deb [ arch=amd64,arm64 ] http://archive.ubuntu.com/ubuntu mantic main restricted universe multiverse
 
@@ -78,6 +78,9 @@ deb http://archive.ubuntu.com/ubuntu mantic-backports main restricted universe m
 # deb-src http://archive.ubuntu.com/ubuntu mantic-security main restricted universe multiverse
 # deb-src http://archive.ubuntu.com/ubuntu mantic-updates main restricted universe multiverse
 # deb-src http://archive.ubuntu.com/ubuntu mantic-backports main restricted universe multiverse
+
+## Special `src` value for `arch` option can be used to specify src repository too
+# deb [ arch=src ] http://archive.ubuntu.com/ubuntu mantic main restricted universe multiverse
 
 ## By default the name of mirrored folder constructed from mirror URL.
 ## Using mirror_path it's possible to override mirror folder name

@@ -446,7 +446,7 @@ class Downloader(ABC):
             if message:
                 self._log.warning(message)
 
-            if skip_try:
+            if not skip_try:
                 tries -= 1
 
             if sleep:

@@ -4,6 +4,7 @@ import argparse
 import asyncio
 import itertools
 import os
+import signal
 from errno import EWOULDBLOCK
 from fcntl import LOCK_EX, LOCK_NB, flock
 from pathlib import Path
@@ -121,6 +122,8 @@ class APTMirror:
     LOCK_FILE = "apt-mirror.lock"
 
     def __init__(self, config: Config) -> None:
+        self.stopped = False
+
         self._log = get_logger(self)
         self._config = config
         self._lock_fd = None
@@ -134,7 +137,13 @@ class APTMirror:
         if self._config.limit_rate:
             self._rate_limiter = AsyncLimiter(self._config.limit_rate * 60, 60)
 
+    def on_stop(self):
+        self.stopped = True
+        asyncio.get_running_loop().stop()
+
     async def run(self) -> int:
+        signal.signal(signal.SIGTERM, lambda _, __: self.on_stop())
+
         if not self._config.repositories:
             self._log.error("No repositories are found in the configuration")
             return 2
@@ -469,7 +478,16 @@ def main() -> int:
         except ModuleNotFoundError:
             LOG.warning("uvloop is enabled but not available")
 
-    return asyncio_loop.run(APTMirror(config).run())
+    apt_mirror = APTMirror(config)
+    try:
+        return asyncio_loop.run(apt_mirror.run())
+    except RuntimeError as ex:
+        if apt_mirror.stopped:
+            LOG.info("Stopped")
+            return 0
+
+        LOG.exception(ex)
+        return 1
 
 
 if __name__ == "__main__":

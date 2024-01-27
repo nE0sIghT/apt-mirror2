@@ -255,6 +255,8 @@ class BaseRepository(ABC):
         ".bz2": bz2.open,
     }
 
+    ALL_INDEX_SUFFIXES = list(COMPRESSION_SUFFIXES.keys()) + [""]
+
     RELEASE_FILES = (
         "InRelease",
         "Release",
@@ -497,63 +499,58 @@ class Repository(BaseRepository):
     by_hash: ByHashPerCodename
 
     def _metadata_file_allowed(self, codename: str, file_path: Path) -> bool:
-        source_files = (
-            "Sources",
-            "Contents-source",
+        file_path_str = str(file_path)
+
+        # Skip source metadata if not needed
+        if not self.mirror_source.is_enabled_for_codename(codename) and (
+            "/source/" in file_path_str or file_path.name.startswith("Contents-source")
+        ):
+            return False
+
+        # Skip binary metadata if not needed
+        if self.arches.is_empty() and any(
+            part in file_path_str for part in ("/binary-", "/cnf/", "/dep11/", "/i18n/")
+        ):
+            return False
+
+        # Skip redundand components
+        if file_path_str.count("/") >= 2:
+            file_component, _, _ = file_path_str.rsplit("/", maxsplit=2)
+
+            if not any(
+                file_component == component
+                for component in self.components.get_for_codename(codename)
+            ):
+                return False
+
+            if (
+                "/binary-" in file_path_str
+                and "source" not in file_path_str
+                and not any(
+                    arch in file_path_str
+                    for arch in self.arches.get_for_component(codename, file_component)
+                )
+            ):
+                return False
+
+        all_arches = set(
+            arch
+            for component in self.components.get_for_codename(codename)
+            for arch in self.arches.get_for_component(codename, component)
         )
 
-        if self.mirror_source.is_enabled_for_codename(codename) and (
+        if (
             any(
-                file_path.name.endswith(f"{name}{suffix}")
-                for name in source_files
-                for suffix in self.COMPRESSION_SUFFIXES
+                file_path.name.startswith(suffix)
+                for suffix in ("Commands-", "Components-", "Contents-")
             )
+            and "source" not in file_path.name
+            and not any(arch in file_path.name for arch in all_arches)
         ):
-            return True
+            return False
 
-        if self.arches:
-            for component in self.components.get_for_codename(codename):
-                for arch in self.arches.get_for_component(codename, component):
-                    for suffix in self.COMPRESSION_SUFFIXES:
-                        if any(
-                            str(file_path) == name
-                            for name in (
-                                f"Contents-{arch}{suffix}",
-                                f"Contents-udeb-{arch}{suffix}",
-                            )
-                        ):
-                            return True
-
-                if str(file_path).startswith(component):
-                    for arch in self.arches.get_for_component(codename, component):
-                        if str(file_path).endswith(f"binary-{arch}/Release"):
-                            return True
-
-                        for suffix in list(self.COMPRESSION_SUFFIXES) + [""]:
-                            if any(
-                                str(file_path).endswith(name)
-                                for name in (
-                                    f"Contents-{arch}{suffix}",
-                                    f"Contents-udeb-{arch}{suffix}",
-                                    f"binary-{arch}/Packages{suffix}",
-                                    f"binary-{arch}/Release",
-                                    f"cnf/Commands-{arch}{suffix}",
-                                    f"dep11/Components-{arch}.yml{suffix}",
-                                )
-                            ) or (
-                                any(
-                                    f"/{part}/" in str(file_path)
-                                    for part in ("dep11", "i18n")
-                                )
-                                and any(
-                                    file_path.name.startswith(prefix)
-                                    and file_path.suffix == suffix
-                                    for prefix in ("icons-", "Translation-")
-                                )
-                            ):
-                                return True
-
-        return False
+        # Allow any metadata not explicitly disallowed
+        return True
 
     @property
     def is_source_enabled(self) -> bool:
@@ -631,23 +628,23 @@ class FlatRepository(BaseRepository):
         if codename != self.FLAT_CODENAME:
             return False
 
-        if self.source and (
+        if not self.source and (
             any(
                 str(file_path) == f"Sources{suffix}"
-                for suffix in self.COMPRESSION_SUFFIXES
+                for suffix in self.ALL_INDEX_SUFFIXES
             )
         ):
-            return True
+            return False
 
-        if self.arches and (
+        if not self.arches and (
             any(
                 str(file_path) == f"Packages{suffix}"
-                for suffix in self.COMPRESSION_SUFFIXES
+                for suffix in self.ALL_INDEX_SUFFIXES
             )
         ):
-            return True
+            return False
 
-        return False
+        return True
 
     @property
     def is_source_enabled(self) -> bool:

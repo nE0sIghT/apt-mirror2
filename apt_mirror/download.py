@@ -171,6 +171,7 @@ class DownloadFile:
     hashes: dict[HashType, HashSum]
     use_by_hash: bool
     check_size: bool = False
+    allow_missing: bool = False
 
     @classmethod
     def from_path(cls, path: Path):
@@ -192,13 +193,19 @@ class DownloadFile:
     def get_all_paths(self) -> Sequence[Path]:
         paths: list[Path] = []
 
+        if not self.use_by_hash:
+            paths.append(self.path)
+
         if self.use_by_hash:
             paths += [
                 self.path.parent / "by-hash" / hashsum.type.value / hashsum.hash
                 for hashsum in self.hashes.values()
             ]
 
-        return paths + [self.path]
+        if self.use_by_hash:
+            paths.append(self.path)
+
+        return paths
 
     def __hash__(self) -> int:
         return hash(self.path)
@@ -356,9 +363,6 @@ class Downloader(ABC):
         while self._sources:
             source_file = self._sources.pop()
             target_path = self._target_root_path / source_file.get_source_path()
-            mirror_paths = [
-                self._target_root_path / path for path in source_file.get_all_paths()
-            ]
 
             if source_file.check_size:
                 try:
@@ -373,10 +377,9 @@ class Downloader(ABC):
             tasks.add(
                 asyncio.create_task(
                     self.download_path(
-                        source_file.path,
+                        source_file,
                         target_path,
                         expected_size=source_file.size,
-                        mirror_paths=mirror_paths,
                     )
                 )
             )
@@ -434,10 +437,9 @@ class Downloader(ABC):
 
     async def download_path(
         self,
-        source_path: Path,
+        source_file: DownloadFile,
         target_path: Path,
         expected_size: int,
-        mirror_paths: Sequence[Path],
     ):
         async def retry(
             message: str | None = None, sleep: bool = True, skip_try: bool = False
@@ -452,96 +454,117 @@ class Downloader(ABC):
             if sleep:
                 await asyncio.sleep(5)
 
-        tries = 15
-        while tries > 0:
-            async with (
-                self._semaphore,
-                self.stream(source_path) as response,
-            ):
-                target_path.parent.mkdir(parents=True, exist_ok=True)
-
-                if response.retry:
-                    await retry(skip_try=True)
-                    continue
-
-                if response.missing:
-                    self._missing_count += 1
-                    self._missing_size += expected_size
-                    self._missing_sources.update(
-                        itertools.chain([source_path], mirror_paths)
-                    )
-
-                    return
-
-                if response.error:
-                    await retry(
-                        f"Received error `{response.error}` while downloading"
-                        f" {source_path}. Retrying..."
-                    )
-                    continue
-                if (
-                    expected_size > 0
-                    and response.size
-                    and response.size > 0
-                    and expected_size != response.size
+        error = False
+        for source_path in source_file.get_all_paths():
+            tries = 15
+            while tries > 0:
+                async with (
+                    self._semaphore,
+                    self.stream(source_path) as response,
                 ):
-                    await retry(
-                        f"Server reported size {response.size} is differs from"
-                        f" expected size {expected_size} for file {source_path}."
-                        " Retrying..."
-                    )
-                    continue
+                    target_path.parent.mkdir(parents=True, exist_ok=True)
 
-                if response.size and not self.need_update(
-                    target_path, response.size, response.date
-                ):
-                    self._actual_count += 1
-                    self._actual_size += response.size
-                    return
-
-                size = 0
-                async with async_open(target_path, "wb") as fp:
-                    try:
-                        async for chunk in response.stream():
-                            if self._rate_limiter:
-                                await self._rate_limiter.acquire(
-                                    min(len(chunk), self._rate_limiter.max_rate)
-                                )
-
-                            size += len(chunk)
-                            await fp.write(chunk)
-                    except Exception as ex:  # pylint: disable=W0718
-                        await retry(
-                            f"An error `{ex.__class__.__qualname__}: {ex}` occured"
-                            f" while downloading file {source_path}. Retrying..."
-                        )
+                    if response.retry:
+                        await retry(skip_try=True)
                         continue
 
-                if expected_size > 0 and expected_size != size:
-                    await retry(
-                        f"Downloaded size {size} is differs from expected size"
-                        f" {expected_size} for file {source_path}. Retrying..."
-                    )
-                    continue
+                    if response.missing:
+                        break
 
-                if response.date:
-                    os.utime(
-                        target_path,
-                        (response.date.timestamp(), response.date.timestamp()),
-                    )
+                    if response.error:
+                        await retry(
+                            f"Received error `{response.error}` while downloading"
+                            f" {source_path}. Retrying..."
+                        )
+                        error = True
+                        continue
 
-                if mirror_paths:
-                    self.link_or_copy(target_path, *mirror_paths)
+                    if (
+                        expected_size > 0
+                        and response.size
+                        and response.size > 0
+                        and expected_size != response.size
+                    ):
+                        await retry(
+                            f"Server reported size {response.size} is differs from"
+                            f" expected size {expected_size} for file {source_path}."
+                            " Retrying..."
+                        )
+                        error = True
+                        continue
 
-                self._downloaded_count += 1
-                self._downloaded_size += size
-                return
+                    mirror_paths = [
+                        self._target_root_path / path
+                        for path in source_file.get_all_paths()
+                    ]
+
+                    if response.size and not self.need_update(
+                        target_path, response.size, response.date
+                    ):
+                        self._actual_count += 1
+                        self._actual_size += response.size
+
+                        if mirror_paths:
+                            self.link_or_copy(target_path, *mirror_paths)
+
+                        return
+
+                    size = 0
+                    async with async_open(target_path, "wb") as fp:
+                        try:
+                            async for chunk in response.stream():
+                                if self._rate_limiter:
+                                    await self._rate_limiter.acquire(
+                                        min(len(chunk), self._rate_limiter.max_rate)
+                                    )
+
+                                size += len(chunk)
+                                await fp.write(chunk)
+                        except Exception as ex:  # pylint: disable=W0718
+                            await retry(
+                                f"An error `{ex.__class__.__qualname__}: {ex}` occured"
+                                f" while downloading file {source_path}. Retrying..."
+                            )
+                            error = True
+                            continue
+
+                    if expected_size > 0 and expected_size != size:
+                        await retry(
+                            f"Downloaded size {size} is differs from expected size"
+                            f" {expected_size} for file {source_path}. Retrying..."
+                        )
+                        error = True
+                        continue
+
+                    if response.date:
+                        os.utime(
+                            target_path,
+                            (response.date.timestamp(), response.date.timestamp()),
+                        )
+
+                    if mirror_paths:
+                        self.link_or_copy(target_path, *mirror_paths)
+
+                    self._downloaded_count += 1
+                    self._downloaded_size += size
+                    return
+
+        if not source_file.allow_missing:
+            self._missing_sources.update(itertools.chain(source_file.get_all_paths()))
+
+        if not error:
+            if not source_file.allow_missing:
+                self._missing_count += 1
+                self._missing_size += expected_size
+
+            return
 
         self._error_count += 1
         self._error_size += expected_size
-        self._missing_sources.update(itertools.chain([source_path], mirror_paths))
 
-        self._log.error(f"Unable to download {source_path}: no more tries")
+        self._log.error(
+            f"Unable to download {source_file.get_source_path()}: no more tries"
+        )
 
     def get_missing_sources(self):
         return self._missing_sources.copy()

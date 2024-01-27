@@ -286,6 +286,7 @@ class BaseRepository(ABC):
         self, repository_root: Path, encode_tilde: bool, missing_sources: set[Path]
     ) -> Iterable[DownloadFile]:
         metadata_files: set[DownloadFile] = set()
+        compressed_files: dict[Path, bool] = {}
 
         for (
             codename,
@@ -323,6 +324,9 @@ class BaseRepository(ABC):
                         if not self._metadata_file_allowed(codename, path):
                             continue
 
+                        if path.suffix in self.COMPRESSION_SUFFIXES:
+                            compressed_files[path.with_suffix("")] = True
+
                         hash_sum = HashSum(type=hash_type, hash=file[hash_type.value])
 
                         if path in codename_metadata_files:
@@ -344,22 +348,10 @@ class BaseRepository(ABC):
 
             metadata_files.update(codename_metadata_files.values())
 
+        for file in metadata_files:
+            file.allow_missing = True
+
         return metadata_files
-
-    def _try_unpack(self, file: Path):
-        for suffix, open_function in self.COMPRESSION_SUFFIXES.items():
-            compressed_file = file.with_name(f"{file.name}{suffix}")
-            if not compressed_file.exists():
-                continue
-
-            with open_function(compressed_file, "rb") as source_fp:
-                with open(file, "wb") as target_fp:
-                    shutil.copyfileobj(source_fp, target_fp)
-                    shutil.copystat(compressed_file, file)
-
-                    return True
-
-        return False
 
     def _get_sources_files_field(self, hash_type: HashType):
         if hash_type == HashType.MD5:

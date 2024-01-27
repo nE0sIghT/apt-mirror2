@@ -445,6 +445,11 @@ class Repository(BaseRepository):
         def set_for_component(self, codename: str, component: str, value: bool):
             self.setdefault(codename, {})[component] = value
 
+        def is_empty(self):
+            return not any(
+                enabled for codename in self.values() for enabled in codename.values()
+            )
+
     # dict[codename, dict[component, list[arch]]]
     class Arches(dict[str, dict[str, list[str]]]):
         @classmethod
@@ -552,11 +557,11 @@ class Repository(BaseRepository):
 
     @property
     def is_source_enabled(self) -> bool:
-        return bool(self.mirror_source)
+        return not self.mirror_source.is_empty()
 
     @property
     def is_binaries_enabled(self) -> bool:
-        return bool(self.arches)
+        return not self.arches.is_empty()
 
     @property
     def release_files_per_codename(self) -> dict[str, Sequence[Path]]:

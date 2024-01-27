@@ -541,7 +541,7 @@ class Downloader(ABC):
         self._error_size += expected_size
         self._missing_sources.update(itertools.chain([source_path], mirror_paths))
 
-        self._log.error(f"Unable to download {source_path}: no more tryes")
+        self._log.error(f"Unable to download {source_path}: no more tries")
 
     def get_missing_sources(self):
         return self._missing_sources.copy()

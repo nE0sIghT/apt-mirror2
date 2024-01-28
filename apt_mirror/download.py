@@ -6,12 +6,12 @@ import os
 import shutil
 from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from enum import Enum
 from pathlib import Path, PurePosixPath
-from typing import Any, AsyncGenerator, AsyncIterator, Callable, Sequence
+from typing import Any, AsyncGenerator, AsyncIterator, Callable, Iterable, Sequence
 from urllib import parse
 
 import aioftp  # type: ignore
@@ -164,18 +164,42 @@ class HashSum:
     hash: str
 
 
+class FileCompression(Enum):
+    XZ = "xz"
+    GZ = "gz"
+    BZ2 = "bz2"
+    NONE = None
+
+    @staticmethod
+    def all_compressed() -> Iterable["FileCompression"]:
+        return (
+            compression
+            for compression in FileCompression
+            if compression != FileCompression.NONE
+        )
+
+    @staticmethod
+    def all_compressed_extensions() -> Iterable[str]:
+        return (
+            compression.file_extension
+            for compression in FileCompression.all_compressed()
+        )
+
+    @property
+    def file_extension(self) -> str:
+        if self.value:
+            return f".{self.value}"
+
+        return ""
+
+
 @dataclass
-class DownloadFile:
+class DownloadFileCompressionVariant:
     path: Path
+    compression: FileCompression
     size: int
     hashes: dict[HashType, HashSum]
     use_by_hash: bool
-    check_size: bool = False
-    allow_missing: bool = False
-
-    @classmethod
-    def from_path(cls, path: Path):
-        return cls(path=path, size=0, hashes={}, use_by_hash=False)
 
     def get_source_path(self) -> Path:
         if self.use_by_hash:
@@ -206,6 +230,96 @@ class DownloadFile:
             paths.append(self.path)
 
         return paths
+
+
+@dataclass
+class DownloadFile:
+    path: Path
+    compression_variants: dict[FileCompression, DownloadFileCompressionVariant] = field(
+        default_factory=lambda: {}
+    )
+    check_size: bool = False
+
+    @staticmethod
+    def uncompressed_path(path: Path):
+        if path.suffix in FileCompression.all_compressed_extensions():
+            return path.with_suffix("")
+
+        return path
+
+    @classmethod
+    def from_path(cls, path: Path, check_size: bool = False):
+        return cls(path=path, check_size=check_size)
+
+    @classmethod
+    def from_hashed_path(
+        cls,
+        path: Path,
+        size: int,
+        hash_type: HashType,
+        hash_sum: HashSum,
+        use_by_hash: bool,
+    ):
+        download_file = DownloadFile.from_path(cls.uncompressed_path(path))
+        download_file.add_compression_variant(
+            path=path,
+            size=size,
+            hash_type=hash_type,
+            hash_sum=hash_sum,
+            use_by_hash=use_by_hash,
+        )
+
+        return download_file
+
+    def __post_init__(self):
+        if not self.compression_variants:
+            self.add_compression_variant(self.path, size=0)
+
+    def add_compression_variant(
+        self,
+        path: Path,
+        size: int,
+        hash_type: HashType | None = None,
+        hash_sum: HashSum | None = None,
+        use_by_hash: bool = False,
+    ):
+        hashes = {}
+        if hash_type and hash_sum:
+            hashes[hash_type] = hash_sum
+
+        compression = FileCompression.NONE
+        for _compression in FileCompression:
+            if _compression.file_extension.lower() == path.suffix:
+                compression = _compression
+                break
+
+        if compression == FileCompression.NONE:
+            self.path = path
+
+        compression_variant = self.compression_variants.setdefault(
+            compression,
+            DownloadFileCompressionVariant(
+                path=path,
+                compression=compression,
+                size=size,
+                hashes=hashes,
+                use_by_hash=use_by_hash,
+            ),
+        )
+
+        compression_variant.path = path
+        compression_variant.size = size
+        compression_variant.use_by_hash = use_by_hash
+        compression_variant.hashes.update(hashes)
+
+    def iter_variants(self):
+        for compression in FileCompression:
+            if compression in self.compression_variants:
+                yield self.compression_variants[compression]
+
+    @property
+    def size(self):
+        return next(iter(self.compression_variants.values())).size
 
     def __hash__(self) -> int:
         return hash(self.path)
@@ -296,8 +410,8 @@ class Downloader(ABC):
 
         # Download queue. Reseted in download()
         self._sources: list[DownloadFile] = []
-        # All paths ever added to this instance
-        self._all_sources: set[Path] = set()
+        # Downloaded or not-changed files
+        self._downloaded: list[DownloadFileCompressionVariant] = []
         # Either missing on server files or files with errors
         self._missing_sources: set[Path] = set()
         self._download_start = datetime.now()
@@ -324,7 +438,6 @@ class Downloader(ABC):
 
     def add(self, *args: DownloadFile):
         self._sources.extend(a for a in args)
-        self._all_sources.update(path for a in args for path in a.get_all_paths())
 
         self.reset_stats()
 
@@ -362,27 +475,29 @@ class Downloader(ABC):
 
         while self._sources:
             source_file = self._sources.pop()
-            target_path = self._target_root_path / source_file.get_source_path()
 
+            file_actual = False
             if source_file.check_size:
-                try:
-                    stat = target_path.stat()
-                    if stat.st_size == source_file.size:
-                        self._actual_count += 1
-                        self._actual_size += source_file.size
-                        continue
-                except FileNotFoundError:
-                    pass
+                for variant in source_file.iter_variants():
+                    target_path = self._target_root_path / variant.get_source_path()
 
-            tasks.add(
-                asyncio.create_task(
-                    self.download_path(
-                        source_file,
-                        target_path,
-                        expected_size=source_file.size,
-                    )
-                )
-            )
+                    try:
+                        stat = target_path.stat()
+                        if stat.st_size == source_file.size:
+                            self._actual_count += 1
+                            self._actual_size += source_file.size
+
+                            self._downloaded.append(variant)
+
+                            file_actual = True
+                            break
+                    except FileNotFoundError:
+                        pass
+
+            if file_actual:
+                continue
+
+            tasks.add(asyncio.create_task(self.download_file(source_file)))
 
             if len(tasks) >= 128:  # pylint: disable=W0212
                 await remove_finished_tasks(tasks)
@@ -435,12 +550,7 @@ class Downloader(ABC):
             f" errors: {self._error_count} ({self.format_size(self._error_size)})"
         )
 
-    async def download_path(
-        self,
-        source_file: DownloadFile,
-        target_path: Path,
-        expected_size: int,
-    ):
+    async def download_file(self, source_file: DownloadFile):
         async def retry(
             message: str | None = None, sleep: bool = True, skip_try: bool = False
         ):
@@ -455,116 +565,128 @@ class Downloader(ABC):
                 await asyncio.sleep(5)
 
         error = False
-        for source_path in source_file.get_all_paths():
-            tries = 15
-            while tries > 0:
-                async with (
-                    self._semaphore,
-                    self.stream(source_path) as response,
-                ):
-                    target_path.parent.mkdir(parents=True, exist_ok=True)
+        for variant in source_file.iter_variants():
+            expected_size = variant.size
 
-                    if response.retry:
-                        await retry(skip_try=True)
-                        continue
+            for source_path in variant.get_all_paths():
+                target_path = self._target_root_path / source_path
 
-                    if response.missing:
-                        break
-
-                    if response.error:
-                        await retry(
-                            f"Received error `{response.error}` while downloading"
-                            f" {source_path}. Retrying..."
-                        )
-                        error = True
-                        continue
-
-                    if (
-                        expected_size > 0
-                        and response.size
-                        and response.size > 0
-                        and expected_size != response.size
+                tries = 10
+                while tries > 0:
+                    async with (
+                        self._semaphore,
+                        self.stream(source_path) as response,
                     ):
-                        await retry(
-                            f"Server reported size {response.size} is differs from"
-                            f" expected size {expected_size} for file {source_path}."
-                            " Retrying..."
-                        )
-                        error = True
-                        continue
+                        target_path.parent.mkdir(parents=True, exist_ok=True)
 
-                    mirror_paths = [
-                        self._target_root_path / path
-                        for path in source_file.get_all_paths()
-                    ]
+                        if response.retry:
+                            await retry(skip_try=True)
+                            continue
 
-                    if response.size and not self.need_update(
-                        target_path, response.size, response.date
-                    ):
-                        self._actual_count += 1
-                        self._actual_size += response.size
+                        if response.missing:
+                            break
 
-                        if mirror_paths:
-                            self.link_or_copy(target_path, *mirror_paths)
-
-                        return
-
-                    size = 0
-                    async with async_open(target_path, "wb") as fp:
-                        try:
-                            async for chunk in response.stream():
-                                if self._rate_limiter:
-                                    await self._rate_limiter.acquire(
-                                        min(len(chunk), self._rate_limiter.max_rate)
-                                    )
-
-                                size += len(chunk)
-                                await fp.write(chunk)
-                        except Exception as ex:  # pylint: disable=W0718
+                        if response.error:
                             await retry(
-                                f"An error `{ex.__class__.__qualname__}: {ex}` occured"
-                                f" while downloading file {source_path}. Retrying..."
+                                f"Received error `{response.error}` while downloading"
+                                f" {source_path}. Retrying..."
                             )
                             error = True
                             continue
 
-                    if expected_size > 0 and expected_size != size:
-                        await retry(
-                            f"Downloaded size {size} is differs from expected size"
-                            f" {expected_size} for file {source_path}. Retrying..."
-                        )
-                        error = True
-                        continue
+                        if (
+                            expected_size > 0
+                            and response.size
+                            and response.size > 0
+                            and expected_size != response.size
+                        ):
+                            await retry(
+                                f"Server reported size {response.size} is differs from"
+                                f" expected size {expected_size} for file"
+                                f" {source_path}. Retrying..."
+                            )
+                            error = True
+                            continue
 
-                    if response.date:
-                        os.utime(
-                            target_path,
-                            (response.date.timestamp(), response.date.timestamp()),
-                        )
+                        mirror_paths = [
+                            self._target_root_path / path
+                            for path in variant.get_all_paths()
+                        ]
 
-                    if mirror_paths:
-                        self.link_or_copy(target_path, *mirror_paths)
+                        if response.size and not self.need_update(
+                            target_path, response.size, response.date
+                        ):
+                            self._actual_count += 1
+                            self._actual_size += response.size
 
-                    self._downloaded_count += 1
-                    self._downloaded_size += size
-                    return
+                            if mirror_paths:
+                                self.link_or_copy(target_path, *mirror_paths)
 
-        if not source_file.allow_missing:
-            self._missing_sources.update(itertools.chain(source_file.get_all_paths()))
+                            self._downloaded.append(variant)
+
+                            return
+
+                        size = 0
+                        async with async_open(target_path, "wb") as fp:
+                            try:
+                                async for chunk in response.stream():
+                                    if self._rate_limiter:
+                                        await self._rate_limiter.acquire(
+                                            min(len(chunk), self._rate_limiter.max_rate)
+                                        )
+
+                                    size += len(chunk)
+                                    await fp.write(chunk)
+                            except Exception as ex:  # pylint: disable=W0718
+                                await retry(
+                                    f"An error `{ex.__class__.__qualname__}: {ex}`"
+                                    f" occured while downloading file {source_path}."
+                                    " Retrying..."
+                                )
+                                error = True
+                                continue
+
+                        if expected_size > 0 and expected_size != size:
+                            await retry(
+                                f"Downloaded size {size} is differs from expected size"
+                                f" {expected_size} for file {source_path}. Retrying..."
+                            )
+                            error = True
+                            continue
+
+                        if response.date:
+                            os.utime(
+                                target_path,
+                                (response.date.timestamp(), response.date.timestamp()),
+                            )
+
+                        if mirror_paths:
+                            self.link_or_copy(target_path, *mirror_paths)
+
+                        self._downloaded_count += 1
+                        self._downloaded_size += size
+
+                        self._downloaded.append(variant)
+                        return
+
+        self._missing_sources.update(
+            itertools.chain.from_iterable(
+                v.get_all_paths() for v in source_file.compression_variants.values()
+            )
+        )
 
         if not error:
-            if not source_file.allow_missing:
-                self._missing_count += 1
-                self._missing_size += expected_size
-
+            self._missing_count += 1
+            self._missing_size += source_file.size
             return
 
         self._error_count += 1
-        self._error_size += expected_size
+        self._error_size += source_file.size
 
-        self._log.error(
-            f"Unable to download {source_file.get_source_path()}: no more tries"
-        )
+        self._log.error(f"Unable to download {source_file.path}: no more tries")
+
+    def get_downloaded_files(self) -> list[DownloadFileCompressionVariant]:
+        return self._downloaded.copy()
 
     def get_missing_sources(self):
         return self._missing_sources.copy()

@@ -13,7 +13,7 @@ from typing import IO, Any, Awaitable, Iterable, Sequence
 from aiolimiter import AsyncLimiter
 
 from .config import Config
-from .download import Downloader, DownloadFile
+from .download import Downloader, DownloadFile, DownloadFileCompressionVariant
 from .logs import get_logger
 from .repository import BaseRepository
 from .version import __version__
@@ -239,7 +239,7 @@ class APTMirror:
                 client_private_key=self._config.client_private_key,
             )
 
-            release_files = await self.download_release_files(repository, downloader)
+            await self.download_release_files(repository, downloader)
 
             # Download other metadata files
             metadata_files = await self.download_metadata_files(repository, downloader)
@@ -249,37 +249,30 @@ class APTMirror:
                 )
                 return metadata_files
 
+            downloaded_metadata_files = downloader.get_downloaded_files()
+
             await self.clean_repository_skel(
                 repository,
                 set(
                     itertools.chain.from_iterable(
-                        file.get_all_paths()
-                        for file in itertools.chain(
-                            release_files,
-                            metadata_files,
-                        )
+                        v.get_all_paths() for v in downloaded_metadata_files
                     )
                 )
                 - downloader.get_missing_sources(),
             )
 
             # Download remaining pool
-            pool_files = await self.download_pool_files(repository, downloader)
+            await self.download_pool_files(repository, downloader)
 
             # Move skel to mirror
-            await self.move_metadata(
-                repository, itertools.chain(release_files, metadata_files)
-            )
+            await self.move_metadata(repository, downloaded_metadata_files)
 
             if repository.clean:
                 await self.clean_repository(
                     repository,
-                    set(
+                    needed_files=set(
                         itertools.chain.from_iterable(
-                            file.get_all_paths()
-                            for file in itertools.chain(
-                                release_files, metadata_files, pool_files
-                            )
+                            v.get_all_paths() for v in downloader.get_downloaded_files()
                         )
                     )
                     - downloader.get_missing_sources(),
@@ -356,7 +349,9 @@ class APTMirror:
         return pool_files
 
     async def move_metadata(
-        self, repository: BaseRepository, metadata_files: Iterable[DownloadFile]
+        self,
+        repository: BaseRepository,
+        metadata_files: Iterable[DownloadFileCompressionVariant],
     ):
         self._log.info("Moving metadata")
         for file in metadata_files:

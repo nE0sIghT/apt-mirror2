@@ -14,7 +14,7 @@ from typing import IO, Iterable, Sequence
 
 from debian.deb822 import Release
 
-from .download import URL, DownloadFile, HashSum, HashType
+from .download import URL, DownloadFile, FileCompression, HashSum, HashType
 from .logs import get_logger
 
 
@@ -25,13 +25,19 @@ class PackageFile:
     hashes: dict[HashType, HashSum]
 
     def to_download_file(self, directory: str):
-        return DownloadFile(
-            path=Path(directory) / self.path,
-            size=self.size,
-            hashes=self.hashes,
-            use_by_hash=False,
-            check_size=True,
+        download_file = DownloadFile.from_path(
+            path=Path(directory) / self.path, check_size=True
         )
+        for hash_type, hashsum in self.hashes.items():
+            download_file.add_compression_variant(
+                Path(directory) / self.path,
+                size=self.size,
+                hash_type=hash_type,
+                hash_sum=hashsum,
+                use_by_hash=False,
+            )
+
+        return download_file
 
 
 class IndexFileParser(ABC):
@@ -223,13 +229,17 @@ class PackagesParser(IndexFileParser):
                 if not self._file_path or not self._size:
                     continue
 
-                self._pool_files[self._file_path] = DownloadFile(
-                    path=self._file_path,
-                    size=self._size,
-                    hashes=self._hashes,
-                    use_by_hash=False,
-                    check_size=True,
-                )
+                download_file = DownloadFile.from_path(self._file_path, check_size=True)
+                for hash_type, hashsum in self._hashes.items():
+                    download_file.add_compression_variant(
+                        path=self._file_path,
+                        size=self._size,
+                        hash_type=hash_type,
+                        hash_sum=hashsum,
+                        use_by_hash=False,
+                    )
+
+                self._pool_files[self._file_path] = download_file
 
                 self._reset_block_parser()
 
@@ -250,9 +260,9 @@ class ByHash(Enum):
 @dataclass
 class BaseRepository(ABC):
     COMPRESSION_SUFFIXES = {
-        ".xz": lzma.open,
-        ".gz": gzip.open,
-        ".bz2": bz2.open,
+        FileCompression.XZ.file_extension: lzma.open,
+        FileCompression.GZ.file_extension: gzip.open,
+        FileCompression.BZ2.file_extension: bz2.open,
     }
 
     ALL_INDEX_SUFFIXES = list(COMPRESSION_SUFFIXES.keys()) + [""]
@@ -286,7 +296,6 @@ class BaseRepository(ABC):
         self, repository_root: Path, encode_tilde: bool, missing_sources: set[Path]
     ) -> Iterable[DownloadFile]:
         metadata_files: set[DownloadFile] = set()
-        compressed_files: dict[Path, bool] = {}
 
         for (
             codename,
@@ -320,36 +329,39 @@ class BaseRepository(ABC):
                 for hash_type in HashType:
                     for file in release.get(hash_type.value, []):
                         path = Path(file["name"])
+                        repository_path = release_file_relative_path.parent / path
 
                         if not self._metadata_file_allowed(codename, path):
                             continue
 
-                        if path.suffix in self.COMPRESSION_SUFFIXES:
-                            compressed_files[path.with_suffix("")] = True
-
                         hash_sum = HashSum(type=hash_type, hash=file[hash_type.value])
 
-                        if path in codename_metadata_files:
-                            codename_metadata_files[path].hashes[
-                                hash_sum.type
-                            ] = hash_sum
-                        else:
-                            codename_metadata_files[path] = DownloadFile(
-                                release_file_relative_path.parent / path,
+                        uncompressed_path = DownloadFile.uncompressed_path(path)
+                        if uncompressed_path in codename_metadata_files:
+                            codename_metadata_files[
+                                uncompressed_path
+                            ].add_compression_variant(
+                                path=repository_path,
                                 size=int(file["size"]),
-                                hashes={
-                                    hash_sum.type: hash_sum,
-                                },
+                                hash_type=hash_type,
+                                hash_sum=hash_sum,
                                 use_by_hash=use_hash,
+                            )
+                        else:
+                            codename_metadata_files[uncompressed_path] = (
+                                DownloadFile.from_hashed_path(
+                                    repository_path,
+                                    size=int(file["size"]),
+                                    hash_type=hash_type,
+                                    hash_sum=hash_sum,
+                                    use_by_hash=use_hash,
+                                )
                             )
 
             if not codename_metadata_files:
                 self._log.warning(f"No metadata files found for codename {codename}")
 
             metadata_files.update(codename_metadata_files.values())
-
-        for file in metadata_files:
-            file.allow_missing = True
 
         return metadata_files
 

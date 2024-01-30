@@ -678,6 +678,10 @@ class Downloader(ABC):
         if not error:
             self._missing_count += 1
             self._missing_size += source_file.size
+
+            self._log.warning(
+                f"Unable to download {source_file.path}: file is missing on server"
+            )
             return
 
         self._error_count += 1

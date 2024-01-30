@@ -329,20 +329,27 @@ class BaseRepository(ABC):
                 for hash_type in HashType:
                     for file in release.get(hash_type.value, []):
                         path = Path(file["name"])
-                        repository_path = release_file_relative_path.parent / path
+                        try:
+                            size = int(file["size"])
+                        except ValueError:
+                            size = 0
+
+                        if size <= 0:
+                            continue
 
                         if not self._metadata_file_allowed(codename, path):
                             continue
 
                         hash_sum = HashSum(type=hash_type, hash=file[hash_type.value])
 
+                        repository_path = release_file_relative_path.parent / path
                         uncompressed_path = DownloadFile.uncompressed_path(path)
                         if uncompressed_path in codename_metadata_files:
                             codename_metadata_files[
                                 uncompressed_path
                             ].add_compression_variant(
                                 path=repository_path,
-                                size=int(file["size"]),
+                                size=size,
                                 hash_type=hash_type,
                                 hash_sum=hash_sum,
                                 use_by_hash=use_hash,
@@ -351,7 +358,7 @@ class BaseRepository(ABC):
                             codename_metadata_files[uncompressed_path] = (
                                 DownloadFile.from_hashed_path(
                                     repository_path,
-                                    size=int(file["size"]),
+                                    size=size,
                                     hash_type=hash_type,
                                     hash_sum=hash_sum,
                                     use_by_hash=use_hash,

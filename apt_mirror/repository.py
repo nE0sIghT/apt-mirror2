@@ -512,6 +512,9 @@ class Repository(BaseRepository):
     def _metadata_file_allowed(self, codename: str, file_path: Path) -> bool:
         file_path_str = str(file_path)
 
+        if "/" not in file_path_str:
+            return False
+
         # Skip source metadata if not needed
         if not self.mirror_source.is_enabled_for_codename(codename) and (
             "/source/" in file_path_str or file_path.name.startswith("Contents-source")

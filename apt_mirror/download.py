@@ -627,6 +627,7 @@ class Downloader(ABC):
                             return
 
                         size = 0
+                        target_path.unlink(missing_ok=True)
                         async with async_open(target_path, "wb") as fp:
                             try:
                                 async for chunk in response.stream():

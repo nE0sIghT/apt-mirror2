@@ -584,7 +584,11 @@ class Downloader(ABC):
                             continue
 
                         if response.missing:
-                            break
+                            await retry(
+                                f"File {source_path} is missing from server."
+                                " Retrying..."
+                            )
+                            continue
 
                         if response.error:
                             await retry(

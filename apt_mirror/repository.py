@@ -18,6 +18,10 @@ from .download import URL, DownloadFile, FileCompression, HashSum, HashType
 from .logs import get_logger
 
 
+def should_ignore_errors(ignored_paths: set[str], path: Path):
+    return any(path.is_relative_to(ignored_path) for ignored_path in ignored_paths)
+
+
 @dataclass
 class PackageFile:
     path: Path
@@ -41,12 +45,15 @@ class PackageFile:
 
 
 class IndexFileParser(ABC):
-    def __init__(self, repository_path: Path, index_files: set[Path]) -> None:
+    def __init__(
+        self, repository_path: Path, index_files: set[Path], ignore_errors: set[str]
+    ) -> None:
         super().__init__()
 
         self._log = get_logger(self)
         self._repository_path = repository_path
         self._index_files = index_files
+        self._ignore_errors = ignore_errors
         self._pool_files: dict[Path, DownloadFile] = {}
 
     def parse(self) -> set[DownloadFile]:
@@ -102,13 +109,18 @@ class IndexFileParser(ABC):
 
         return file.exists()
 
+    def _should_ignore_errors(self, path: Path):
+        return should_ignore_errors(self._ignore_errors, path)
+
     @abstractmethod
     def _do_parse_index(self, fp: IO[bytes] | mmap): ...
 
 
 class SourcesParser(IndexFileParser):
-    def __init__(self, repository_path: Path, index_files: set[Path]) -> None:
-        super().__init__(repository_path, index_files)
+    def __init__(
+        self, repository_path: Path, index_files: set[Path], ignore_errors: set[str]
+    ) -> None:
+        super().__init__(repository_path, index_files, ignore_errors)
         self._reset_block_parser()
 
     # https://github.com/pylint-dev/pylint/issues/5214
@@ -175,14 +187,19 @@ class SourcesParser(IndexFileParser):
 
                 for package_file in self._package_files.values():
                     download_file = package_file.to_download_file(self._directory)
+                    download_file.ignore_errors = self._should_ignore_errors(
+                        download_file.path
+                    )
                     self._pool_files[download_file.path] = download_file
 
                 self._reset_block_parser()
 
 
 class PackagesParser(IndexFileParser):
-    def __init__(self, repository_path: Path, index_files: set[Path]) -> None:
-        super().__init__(repository_path, index_files)
+    def __init__(
+        self, repository_path: Path, index_files: set[Path], ignore_errors: set[str]
+    ) -> None:
+        super().__init__(repository_path, index_files, ignore_errors)
         self._reset_block_parser()
 
     def _reset_block_parser(self):
@@ -230,6 +247,9 @@ class PackagesParser(IndexFileParser):
                     continue
 
                 download_file = DownloadFile.from_path(self._file_path, check_size=True)
+                download_file.ignore_errors = self._should_ignore_errors(
+                    download_file.path
+                )
                 for hash_type, hashsum in self._hashes.items():
                     download_file.add_compression_variant(
                         path=self._file_path,
@@ -278,6 +298,7 @@ class BaseRepository(ABC):
     clean: bool
     skip_clean: set[Path]
     mirror_path: Path | None
+    ignore_errors: set[str]
 
     def __post_init__(self):
         self._log = get_logger(self)
@@ -365,6 +386,10 @@ class BaseRepository(ABC):
                                 )
                             )
 
+                        codename_metadata_files[uncompressed_path].ignore_errors = (
+                            should_ignore_errors(self.ignore_errors, uncompressed_path)
+                        )
+
             if not codename_metadata_files:
                 self._log.warning(f"No metadata files found for codename {codename}")
 
@@ -388,6 +413,7 @@ class BaseRepository(ABC):
                 SourcesParser(
                     repository_root / self.get_mirror_path(encode_tilde),
                     set(self.sources_files) - missing_sources,
+                    ignore_errors=self.ignore_errors,
                 ).parse()
             )
 
@@ -396,6 +422,7 @@ class BaseRepository(ABC):
                 PackagesParser(
                     repository_root / self.get_mirror_path(encode_tilde),
                     set(self.packages_files) - missing_sources,
+                    ignore_errors=self.ignore_errors,
                 ).parse()
             )
 

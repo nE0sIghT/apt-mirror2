@@ -1,0 +1,9 @@
+deb [ arch=amd64 ] https://packages.gitlab.com/runner/gitlab-runner/debian bullseye main
+deb [ arch=amd64 ] http://ftp.debian.org/debian-security bullseye-security main contrib non-free-firmware non-free main/debian-installer
+
+ignore_errors https://packages.gitlab.com/runner/gitlab-runner/debian pool/bullseye/main/g/gitlab-runner/gitlab-runner_14.8.1_amd64.deb
+ignore_errors https://packages.gitlab.com/runner/gitlab-runner/debian pool/bullseye/main/d
+
+mirror_path https://packages.gitlab.com/runner/gitlab-runner/debian repository
+
+clean https://packages.gitlab.com/runner/gitlab-runner/debian

@@ -1,0 +1,12 @@
+Origin: packages.gitlab.com/runner/gitlab-runner
+Label: gitlab-runner
+Date: Fri, 19 Jan 2024 00:34:38 +0000
+Suite: bullseye
+Codename: bullseye
+Version: 1
+Components: main
+Architectures: amd64
+Description: 
+Acquire-By-Hash: no
+SHA256:
+ 9d78cbfe639caa67870f52ce58577ac976e30e21d7beafc667f8155745d43592 58468 main/binary-amd64/Packages

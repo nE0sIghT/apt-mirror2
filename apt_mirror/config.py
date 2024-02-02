@@ -87,6 +87,7 @@ class RepositoryConfig:
                 clean=False,
                 skip_clean=set(),
                 mirror_path=None,
+                ignore_errors=set(),
                 directory=self.codename,
                 by_hash=self.by_hash,
             )
@@ -112,6 +113,7 @@ class RepositoryConfig:
                 clean=False,
                 skip_clean=set(),
                 mirror_path=None,
+                ignore_errors=set(),
                 codenames=[self.codename],
                 components=(
                     Repository.Components.for_codename(
@@ -220,6 +222,7 @@ class Config:
         clean: list[URL] = []
         skip_clean: list[URL] = []
         mirror_paths: dict[URL, Path] = {}
+        ignore_errors: dict[URL, set[str]] = {}
 
         for file in self._files:
             with open(file, "rt", encoding="utf-8") as fp:
@@ -257,6 +260,11 @@ class Config:
                         case line if line.startswith("mirror_path "):
                             _, url, path = line.split(maxsplit=2)
                             mirror_paths[URL.from_string(url)] = Path(path.strip("/"))
+                        case line if line.startswith("ignore_errors "):
+                            _, url, path = line.split(maxsplit=2)
+                            ignore_errors.setdefault(URL.from_string(url), set()).add(
+                                path
+                            )
                         case line if not line or any(
                             line.startswith(prefix) for prefix in ("#", ";")
                         ):
@@ -267,6 +275,7 @@ class Config:
         self._update_clean(clean)
         self._update_skip_clean(skip_clean)
         self._update_mirror_paths(mirror_paths)
+        self._update_ignore_errors(ignore_errors)
 
     def _update_clean(self, clean: list[URL]):
         for url in clean:
@@ -298,6 +307,16 @@ class Config:
                 continue
 
             self._repositories[url].mirror_path = path
+
+    def _update_ignore_errors(self, ignore_errors: dict[URL, set[str]]):
+        for url, paths in ignore_errors.items():
+            if url not in self._repositories:
+                self._log.warning(
+                    f"ignore_errors was specified for missing repository URL: {url}"
+                )
+                continue
+
+            self._repositories[url].ignore_errors.update(paths)
 
     def _substitute_variables(self):
         max_tries = 16

@@ -239,6 +239,7 @@ class DownloadFile:
         default_factory=lambda: {}
     )
     check_size: bool = False
+    ignore_errors: bool = False
 
     @staticmethod
     def uncompressed_path(path: Path):
@@ -584,6 +585,9 @@ class Downloader(ABC):
                             continue
 
                         if response.missing:
+                            if source_file.ignore_errors:
+                                break
+
                             await retry(
                                 f"File {source_path} is missing from server."
                                 " Retrying..."
@@ -591,6 +595,9 @@ class Downloader(ABC):
                             continue
 
                         if response.error:
+                            if source_file.ignore_errors:
+                                break
+
                             await retry(
                                 f"Received error `{response.error}` while downloading"
                                 f" {source_path}. Retrying..."
@@ -604,6 +611,9 @@ class Downloader(ABC):
                             and response.size > 0
                             and expected_size != response.size
                         ):
+                            if source_file.ignore_errors:
+                                break
+
                             await retry(
                                 f"Server reported size {response.size} is differs from"
                                 f" expected size {expected_size} for file"
@@ -673,6 +683,10 @@ class Downloader(ABC):
 
                         self._downloaded.append(variant)
                         return
+
+        if source_file.ignore_errors:
+            self._log.info(f"Unable to download {source_file.path}: ignoring")
+            return
 
         self._missing_sources.update(
             itertools.chain.from_iterable(

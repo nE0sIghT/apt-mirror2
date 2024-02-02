@@ -1,36 +1,12 @@
 from pathlib import Path
-from unittest import TestCase
 
 from apt_mirror.apt_mirror import PathCleaner
-from apt_mirror.config import Config
 from apt_mirror.download import URL
-from apt_mirror.repository import BaseRepository, ByHash, FlatRepository, Repository
+from apt_mirror.repository import ByHash, Repository
+from tests.base import BaseTest
 
 
-class TestConfig(TestCase):
-    TEST_DATA = Path(__file__).parent / "data"
-
-    def get_config(self, name: str):
-        return Config(self.TEST_DATA / name / "mirror.list")
-
-    def ensure_repository(self, repository: BaseRepository) -> Repository:
-        if not isinstance(repository, Repository):
-            self.assertIsInstance(repository, Repository)
-            raise RuntimeError(
-                f"{repository.url} repository is not Repository instance"
-            )
-
-        return repository
-
-    def ensure_flat_repository(self, repository: BaseRepository) -> FlatRepository:
-        if not isinstance(repository, FlatRepository):
-            self.assertIsInstance(repository, FlatRepository)
-            raise RuntimeError(
-                f"{repository.url} repository is not FlatRepository instance"
-            )
-
-        return repository
-
+class TestConfig(BaseTest):
     def test_multiple_codenames(self):
         config = self.get_config("MixedConfig")
 
@@ -186,3 +162,22 @@ class TestConfig(TestCase):
 
         self.assertTrue(repository.arches.is_empty())
         self.assertTrue(repository.is_source_enabled)
+
+    def test_ignore_errors(self):
+        config = self.get_config("IgnoreErrorsConfig")
+
+        repository = self.ensure_repository(
+            config.repositories[
+                URL.from_string(
+                    "https://packages.gitlab.com/runner/gitlab-runner/debian"
+                )
+            ]
+        )
+
+        self.assertCountEqual(
+            repository.ignore_errors,
+            [
+                "pool/bullseye/main/g/gitlab-runner/gitlab-runner_14.8.1_amd64.deb",
+                "pool/bullseye/main/d",
+            ],
+        )

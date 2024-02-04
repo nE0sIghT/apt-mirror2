@@ -799,6 +799,7 @@ class HTTPDownloader(Downloader):
             ),
             max_redirects=5,
             headers={
+                "Accept-Encoding": "identity",
                 "Cache-Control": "no-cache",
                 "Pragma": "no-cache",
                 "User-Agent": self._user_agent,

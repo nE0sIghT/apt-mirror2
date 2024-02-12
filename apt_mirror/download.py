@@ -352,7 +352,7 @@ class Downloader(ABC):
     BUFFER_SIZE = 8 * 1024 * 1024
 
     @staticmethod
-    async def for_url(
+    def for_url(
         url: URL,
         *,
         target_root_path: Path,

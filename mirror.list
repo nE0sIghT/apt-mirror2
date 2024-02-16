@@ -53,6 +53,12 @@ set _tilde            0
 ## If `_autoclean` option is specified and enabled, clean script will
 ## not be created and mirror will be cleaned
 # set _autoclean 0
+## To protect repositories against erroneous wiping do not perform repository cleanup
+## when more than `repository_size * wipe_size_ratio` total size to be cleaned or
+## more than `repository_files_count * wipe_count_ratio` total files to be removed.
+## Use 0 to disable wipe protection.
+# set wipe_size_ratio 0.4
+# set wipe_count_ratio 0.4
 
 
 ## Mirrors are configured using standard sources.list syntax

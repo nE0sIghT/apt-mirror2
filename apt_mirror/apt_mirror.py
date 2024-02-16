@@ -23,13 +23,23 @@ LOG = LoggerFactory.get_logger(__package__)
 
 class PathCleaner:
     def __init__(
-        self, root_path: Path, keep_files: set[Path], logger_id: Any | None = None
+        self,
+        root_path: Path,
+        keep_files: set[Path],
+        wipe_size_ratio: float | None = None,
+        wipe_count_ratio: float | None = None,
+        logger_id: Any | None = None,
     ) -> None:
         self._log = LoggerFactory.get_logger(self, logger_id=logger_id)
 
         self._root_path = root_path
 
+        self._wipe_size_ratio = wipe_size_ratio
+        self._wipe_count_ratio = wipe_count_ratio
+
         self._bytes_cleaned = 0
+        self._bytes_total = 0
+        self._files_count = 0
         self._fp = None
 
         self._files_queue: list[Path] = []
@@ -61,21 +71,49 @@ class PathCleaner:
         return is_needed
 
     def _check_file(self, path: Path) -> bool:
+        self._files_count += 1
+        file_size = path.stat().st_size
+        self._bytes_total += file_size
+
         if path.relative_to(self._root_path) in self._keep_files:
             return True
 
-        self._bytes_cleaned += path.stat().st_size
+        self._bytes_cleaned += file_size
         self._files_queue.append(path)
 
         return False
+
+    def _clean_allowed(self) -> bool:
+        if (
+            self._wipe_size_ratio
+            and self.bytes_cleaned / self.bytes_total >= self._wipe_size_ratio
+        ):
+            return False
+
+        if (
+            self._wipe_count_ratio
+            and self.clean_files_count / self.total_files_count
+            >= self._wipe_count_ratio
+        ):
+            return False
+
+        return True
 
     @property
     def bytes_cleaned(self):
         return self._bytes_cleaned
 
     @property
-    def files_count(self):
+    def bytes_total(self):
+        return self._bytes_total
+
+    @property
+    def clean_files_count(self):
         return len(self._files_queue)
+
+    @property
+    def total_files_count(self):
+        return self._files_count
 
     @property
     def folders_count(self):
@@ -83,11 +121,22 @@ class PathCleaner:
 
     def write_clean_script(self, fp: IO[str], repository: BaseRepository):
         fp.write(
+            "\n".join([
+                "#!/bin/bash",
+                "set -e",
+                "",
+            ])
+        )
+
+        if not self._clean_allowed():
+            self._log_wipe_threashold_warning()
+            fp.write("echo ")
+            fp.write(self._wipe_threashold_warning())
+            fp.write(os.sep)
+
+        fp.write(
             "\n".join(
                 [
-                    "#!/bin/bash",
-                    "set -e",
-                    "",
                     (
                         f"echo 'Removing {len(self._files_queue)}"
                         f" [{Downloader.format_size(self._bytes_cleaned)}]"
@@ -106,7 +155,22 @@ class PathCleaner:
         for folder in self._folders_queue:
             fp.write(f"rm -r '{folder.absolute()}'\n")
 
+    def _wipe_threashold_warning(self) -> str:
+        return (
+            "Wipe threshold reached. Clean will not be performed. Total size:"
+            f" {self.bytes_total}, about to clean: {self.bytes_cleaned}. Total"
+            f" files: {self.total_files_count}, about to clean:"
+            f" {self.clean_files_count}"
+        )
+
+    def _log_wipe_threashold_warning(self):
+        self._log.warning(self._wipe_threashold_warning())
+
     def clean(self):
+        if not self._clean_allowed():
+            self._log_wipe_threashold_warning()
+            return
+
         for file in self._files_queue:
             file.unlink(missing_ok=True)
 
@@ -292,6 +356,8 @@ class RepositoryMirror:
             self._config.mirror_path
             / self._repository.get_mirror_path(self._config.encode_tilde),
             needed_files | self._repository.skip_clean,
+            wipe_size_ratio=self._config.wipe_size_ratio,
+            wipe_count_ratio=self._config.wipe_count_ratio,
         )
 
         if unlink:

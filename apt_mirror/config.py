@@ -200,6 +200,8 @@ class Config:
             "postmirror_script": "$var_path/postmirror.sh",
             "_contents": "1",
             "_autoclean": "0",
+            "wipe_size_ratio": "0.4",
+            "wipe_count_ratio": "0.4",
             "_tilde": "0",
             "limit_rate": "100m",
             "unlink": "0",
@@ -356,6 +358,14 @@ class Config:
     @property
     def autoclean(self) -> bool:
         return self.get_bool("_autoclean")
+
+    @property
+    def wipe_size_ratio(self) -> float:
+        return float(self._variables["wipe_size_ratio"])
+
+    @property
+    def wipe_count_ratio(self) -> float:
+        return float(self._variables["wipe_count_ratio"])
 
     @property
     def base_path(self) -> Path:

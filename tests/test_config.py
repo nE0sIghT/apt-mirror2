@@ -108,13 +108,13 @@ class TestConfig(BaseTest):
         cleaner = PathCleaner(
             self.TEST_DATA / "SkipCleanConfig" / "dir1", debian.skip_clean
         )
-        self.assertEqual(cleaner.files_count, 0)
+        self.assertEqual(cleaner.clean_files_count, 0)
         self.assertEqual(cleaner.folders_count, 0)
 
         cleaner = PathCleaner(
             self.TEST_DATA / "SkipCleanConfig" / "dir2", debian.skip_clean
         )
-        self.assertEqual(cleaner.files_count, 1)
+        self.assertEqual(cleaner.clean_files_count, 1)
         self.assertEqual(cleaner.folders_count, 1)
 
     def test_by_hash(self):

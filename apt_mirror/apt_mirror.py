@@ -8,22 +8,24 @@ import signal
 from errno import EWOULDBLOCK
 from fcntl import LOCK_EX, LOCK_NB, flock
 from pathlib import Path
-from typing import IO, Awaitable, Iterable, Sequence
+from typing import IO, Any, Awaitable, Iterable, Sequence
 
 from aiolimiter import AsyncLimiter
 
 from .config import Config
 from .download import Downloader, DownloadFile, DownloadFileCompressionVariant
-from .logs import get_logger
+from .logs import LoggerFactory
 from .repository import BaseRepository
 from .version import __version__
 
-LOG = get_logger(__package__)
+LOG = LoggerFactory.get_logger(__package__)
 
 
 class PathCleaner:
-    def __init__(self, root_path: Path, keep_files: set[Path]) -> None:
-        self._log = get_logger(self)
+    def __init__(
+        self, root_path: Path, keep_files: set[Path], logger_id: Any | None = None
+    ) -> None:
+        self._log = LoggerFactory.get_logger(self, logger_id=logger_id)
 
         self._root_path = root_path
 
@@ -127,7 +129,8 @@ class RepositoryMirror:
         download_semaphore: asyncio.Semaphore,
         rate_limiter: AsyncLimiter | None,
     ) -> None:
-        self._log = get_logger(self)
+        self._log = LoggerFactory.get_logger(self, logger_id=repository.url)
+
         self._error = False
 
         self._repository = repository
@@ -327,7 +330,7 @@ class APTMirror:
     def __init__(self, config: Config) -> None:
         self.stopped = False
 
-        self._log = get_logger(self)
+        self._log = LoggerFactory.get_logger(self)
         self._config = config
         self._lock_fd = None
 
@@ -487,6 +490,10 @@ def get_config_file() -> Path:
 
 def main() -> int:
     config = Config(get_config_file())
+
+    for repository_url, repository in config.repositories.items():
+        log_name = repository.as_filename(config.encode_tilde)
+        LoggerFactory.add_log_file(repository_url, config.var_path / f"{log_name}.log")
 
     asyncio_loop = asyncio
     if config.use_uvloop:

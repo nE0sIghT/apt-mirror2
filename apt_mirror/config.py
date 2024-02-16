@@ -8,7 +8,7 @@ from string import Template
 from apt_mirror.download import URL, Proxy
 from apt_mirror.repository import BaseRepository, ByHash, FlatRepository, Repository
 
-from .logs import get_logger
+from .logs import LoggerFactory
 from .version import __version__
 
 
@@ -23,7 +23,7 @@ class RepositoryConfig:
 
     @classmethod
     def from_line(cls, line: str, default_arch: str):
-        log = get_logger(cls)
+        log = LoggerFactory.get_logger(cls)
 
         repository_type, url = line.split(maxsplit=1)
         source = False
@@ -168,7 +168,7 @@ class Config:
     DEFAULT_CONFIGFILE = "/etc/apt/mirror.list"
 
     def __init__(self, config_file: Path) -> None:
-        self._log = get_logger(self)
+        self._log = LoggerFactory.get_logger(self)
         self._repositories: dict[URL, BaseRepository] = {}
 
         self._files = [config_file]

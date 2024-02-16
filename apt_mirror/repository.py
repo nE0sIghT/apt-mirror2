@@ -4,6 +4,7 @@ import bz2
 import gzip
 import itertools
 import lzma
+import os
 import shutil
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -15,7 +16,7 @@ from typing import IO, Iterable, Sequence
 from debian.deb822 import Release
 
 from .download import URL, DownloadFile, FileCompression, HashSum, HashType
-from .logs import get_logger
+from .logs import LoggerFactory
 
 
 def should_ignore_errors(ignored_paths: set[str], path: Path):
@@ -50,7 +51,7 @@ class IndexFileParser(ABC):
     ) -> None:
         super().__init__()
 
-        self._log = get_logger(self)
+        self._log = LoggerFactory.get_logger(self)
         self._repository_path = repository_path
         self._index_files = index_files
         self._ignore_errors = ignore_errors
@@ -301,13 +302,18 @@ class BaseRepository(ABC):
     ignore_errors: set[str]
 
     def __post_init__(self):
-        self._log = get_logger(self)
+        self._log = LoggerFactory.get_logger(self)
 
     def get_mirror_path(self, encode_tilde: bool):
         if self.mirror_path:
             return self.mirror_path
 
         return self.url.as_filesystem_path(encode_tilde)
+
+    def as_filename(self, encode_tilde: bool) -> Path:
+        return Path(
+            str(self.get_mirror_path(encode_tilde=encode_tilde)).replace(os.sep, "_")
+        )
 
     def get_clean_script_name(self, encode_tilde: bool):
         path = Path(str(self.get_mirror_path(encode_tilde)).replace("/", "_"))

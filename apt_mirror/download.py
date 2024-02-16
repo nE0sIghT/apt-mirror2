@@ -21,7 +21,7 @@ from aioftp.client import Client, DataConnectionThrottleStreamIO  # type: ignore
 from aioftp.errors import StatusCodeError  # type: ignore
 from aiolimiter import AsyncLimiter
 
-from .logs import get_logger
+from .logs import LoggerFactory
 
 
 class UnsupportedURLException(ValueError):
@@ -284,7 +284,7 @@ class DownloadFile:
         hash_sum: HashSum | None = None,
         use_by_hash: bool = False,
     ):
-        hashes = {}
+        hashes: dict[HashType, HashSum] = {}
         if hash_type and hash_sum:
             hashes[hash_type] = hash_sum
 
@@ -396,7 +396,10 @@ class Downloader(ABC):
         client_certificate: str | None = None,
         client_private_key: str | None = None,
     ):
-        self._log = get_logger(self)
+        self._log = LoggerFactory.get_logger(
+            self,
+            logger_id=url,
+        )
 
         self._url = url
         self._target_root_path = target_root_path

@@ -414,6 +414,7 @@ class APTMirror:
         asyncio.get_running_loop().stop()
 
     async def run(self) -> int:
+        self._log.info(f"apt-mirror2 version {__version__}")
         signal.signal(signal.SIGTERM, lambda _, __: self.on_stop())
 
         if not self._config.repositories:
@@ -557,6 +558,7 @@ def get_config_file() -> Path:
 def main() -> int:
     config = Config(get_config_file())
 
+    LoggerFactory.add_log_file(None, config.var_path / "apt-mirror2.log")
     for repository_url, repository in config.repositories.items():
         log_name = repository.as_filename(config.encode_tilde)
         LoggerFactory.add_log_file(repository_url, config.var_path / f"{log_name}.log")

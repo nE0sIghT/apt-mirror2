@@ -132,7 +132,7 @@ class PathCleaner:
             self._log_wipe_threashold_warning()
             fp.write("echo ")
             fp.write(self._wipe_threashold_warning())
-            fp.write(os.sep)
+            fp.write(os.linesep)
             return
 
         fp.write(

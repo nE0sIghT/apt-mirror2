@@ -358,6 +358,7 @@ class RepositoryMirror:
             needed_files | self._repository.skip_clean,
             wipe_size_ratio=self._config.wipe_size_ratio,
             wipe_count_ratio=self._config.wipe_count_ratio,
+            logger_id=self._repository.url,
         )
 
         if unlink:

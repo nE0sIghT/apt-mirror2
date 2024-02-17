@@ -159,9 +159,9 @@ class PathCleaner:
     def _wipe_threashold_warning(self) -> str:
         return (
             "Wipe threshold reached. Clean will not be performed. Total size:"
-            f" {self.bytes_total}, about to clean: {self.bytes_cleaned}. Total"
-            f" files: {self.total_files_count}, about to clean:"
-            f" {self.clean_files_count}"
+            f" {Downloader.format_size(self.bytes_total)}, about to clean:"
+            f" {Downloader.format_size(self.bytes_cleaned)}. Total files:"
+            f" {self.total_files_count}, about to clean: {self.clean_files_count}."
         )
 
     def _log_wipe_threashold_warning(self):

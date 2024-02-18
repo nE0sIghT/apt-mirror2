@@ -470,7 +470,7 @@ class APTMirror:
         if self._config.run_postmirror:
             if not self._config.postmirror_script.is_file():
                 self._log.error(
-                    "Post Mirror script is missing: {self._config.postmirror_script}"
+                    f"Post Mirror script is missing: {self._config.postmirror_script}"
                 )
             else:
                 self._log.info(

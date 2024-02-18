@@ -503,7 +503,7 @@ class Downloader(ABC):
 
             tasks.add(asyncio.create_task(self.download_file(source_file)))
 
-            if len(tasks) >= 128:  # pylint: disable=W0212
+            if len(tasks) >= 128:
                 await remove_finished_tasks(tasks)
 
         while tasks:

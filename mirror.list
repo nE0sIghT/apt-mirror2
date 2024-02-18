@@ -69,6 +69,10 @@ deb [ arch=amd64,arm64 ] http://archive.ubuntu.com/ubuntu mantic main restricted
 # deb-amd64 http://archive.ubuntu.com/ubuntu mantic main restricted universe multiverse
 # deb-arm64 http://archive.ubuntu.com/ubuntu mantic main restricted universe multiverse
 
+## Although not supported by sources.list it's possible to specify codenames separated
+## by commas without spaces here.
+# deb-amd64 http://archive.ubuntu.com/ubuntu mantic,jammy main restricted universe multiverse
+
 ## `by-hash` option can be used to control mirroring using hashsums paths.
 ## A `yes` or `no` value activates/disables the use of this feature if this source indicates support for it,
 ## while `force` will enable the feature regardless of what the source indicates.

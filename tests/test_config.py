@@ -10,7 +10,7 @@ class TestConfig(BaseTest):
     def test_multiple_codenames(self):
         config = self.get_config("MixedConfig")
 
-        self.assertEqual(len(config.repositories), 3)
+        self.assertEqual(len(config.repositories), 4)
 
         debian_security = self.ensure_repository(
             config.repositories[
@@ -94,6 +94,40 @@ class TestConfig(BaseTest):
 
         self.assertTrue(flat_repository.is_binaries_enabled)
         self.assertCountEqual(flat_repository.arches, (config.default_arch,))
+
+    def test_codenames_list(self):
+        config = self.get_config("MixedConfig")
+
+        proxmox_apqa = self.ensure_repository(
+            config.repositories[
+                URL.from_string("https://mirrors.apqa.cn/proxmox/debian/pve")
+            ]
+        )
+
+        self.assertCountEqual(
+            proxmox_apqa.codenames,
+            ("bookworm", "bullseye"),
+        )
+
+        self.assertCountEqual(
+            proxmox_apqa.arches.get_for_component("bookworm", "port"),
+            {
+                config.default_arch,
+                "amd64",
+                "arm64",
+                "i386",
+            },
+        )
+
+        self.assertCountEqual(
+            proxmox_apqa.arches.get_for_component("bullseye", "port"),
+            {
+                config.default_arch,
+                "amd64",
+                "arm64",
+                "i386",
+            },
+        )
 
     def test_skip_clean(self):
         config = self.get_config("SkipCleanConfig")

@@ -473,8 +473,8 @@ class BaseRepository(ABC):
 class Repository(BaseRepository):
     class Components(dict[str, list[str]]):
         @classmethod
-        def for_codename(cls, codename: str, components: Sequence[str]):
-            return cls({codename: [c for c in components]})
+        def for_codenames(cls, codenames: list[str], components: Sequence[str]):
+            return cls({codename: [c for c in components] for codename in codenames})
 
         def get_for_codename(self, codename: str) -> Sequence[str]:
             return self.get(codename, [])
@@ -482,8 +482,13 @@ class Repository(BaseRepository):
     # dict[codename, dict[component, source]]
     class MirrorSource(dict[str, dict[str, bool]]):
         @classmethod
-        def for_components(cls, codename: str, components: Sequence[str], value: bool):
-            return cls({codename: {component: value for component in components}})
+        def for_components(
+            cls, codenames: list[str], components: Sequence[str], value: bool
+        ):
+            return cls({
+                codename: {component: value for component in components}
+                for codename in codenames
+            })
 
         def is_enabled_for_codename(self, codename: str) -> bool:
             return any(s for _, s in self.get(codename, {}).items())
@@ -500,10 +505,11 @@ class Repository(BaseRepository):
     class Arches(dict[str, dict[str, list[str]]]):
         @classmethod
         def for_components(
-            cls, codename: str, components: Sequence[str], arches: Sequence[str]
+            cls, codenames: list[str], components: Sequence[str], arches: Sequence[str]
         ):
             return cls({
                 codename: {component: [a for a in arches] for component in components}
+                for codename in codenames
             })
 
         def get_for_component(self, codename: str, component: str):
@@ -521,8 +527,8 @@ class Repository(BaseRepository):
     # dict[codename, ByHash]
     class ByHashPerCodename(dict[str, ByHash]):
         @classmethod
-        def for_codename(cls, codename: str, by_hash: ByHash):
-            return cls({codename: by_hash})
+        def for_codenames(cls, codenames: Iterable[str], by_hash: ByHash):
+            return cls({codename: by_hash for codename in codenames})
 
         def set_if_default(self, codename: str, by_hash: ByHash):
             if codename not in self or self[codename] == ByHash.default():

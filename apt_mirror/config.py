@@ -12,12 +12,16 @@ from .logs import LoggerFactory
 from .version import __version__
 
 
+class RepositoryConfigException(Exception):
+    pass
+
+
 @dataclass
 class RepositoryConfig:
     url: URL
     arches: list[str]
     source: bool
-    codename: str
+    codenames: list[str]
     components: list[str]
     by_hash: ByHash
 
@@ -72,14 +76,21 @@ class RepositoryConfig:
 
         if not codename.endswith("/"):
             codename, components = codename.split(maxsplit=1)
+            codenames = codename.split(",")
             components = components.split()
         else:
+            codenames = [codename]
             components = []
 
-        return cls(url, arches, source, codename, components, by_hash)
+        return cls(url, arches, source, codenames, components, by_hash)
 
     def to_repository(self) -> BaseRepository:
         if self.is_flat():
+            if len(self.codenames) != 1:
+                raise RepositoryConfigException(
+                    f"Multiple folders are specified for flat repository {self.url}"
+                )
+
             return FlatRepository(
                 url=self.url,
                 source=self.source,
@@ -88,25 +99,25 @@ class RepositoryConfig:
                 skip_clean=set(),
                 mirror_path=None,
                 ignore_errors=set(),
-                directory=self.codename,
+                directory=self.codenames[0],
                 by_hash=self.by_hash,
             )
         else:
-            repository_by_hash = Repository.ByHashPerCodename.for_codename(
-                self.codename,
+            repository_by_hash = Repository.ByHashPerCodename.for_codenames(
+                self.codenames,
                 self.by_hash,
             )
             return Repository(
                 url=self.url,
                 mirror_source=(
                     Repository.MirrorSource.for_components(
-                        self.codename,
+                        self.codenames,
                         self.components,
                         self.source,
                     )
                 ),
                 arches=Repository.Arches.for_components(
-                    self.codename,
+                    self.codenames,
                     self.components,
                     self.arches,
                 ),
@@ -114,10 +125,10 @@ class RepositoryConfig:
                 skip_clean=set(),
                 mirror_path=None,
                 ignore_errors=set(),
-                codenames=[self.codename],
+                codenames=self.codenames,
                 components=(
-                    Repository.Components.for_codename(
-                        self.codename,
+                    Repository.Components.for_codenames(
+                        self.codenames,
                         self.components,
                     )
                 ),
@@ -132,29 +143,30 @@ class RepositoryConfig:
             )
 
         if isinstance(repository, Repository):
-            if self.codename not in repository.codenames:
-                repository.codenames.append(self.codename)
+            for codename in self.codenames:
+                if codename not in repository.codenames:
+                    repository.codenames.append(codename)
 
-            repository.components[self.codename] = self.components
-            repository.by_hash.set_if_default(
-                self.codename,
-                self.by_hash,
-            )
-
-            for component in self.components:
-                repository.arches.extend_for_component(
-                    self.codename,
-                    component,
-                    self.arches,
+                repository.components[codename] = self.components.copy()
+                repository.by_hash.set_if_default(
+                    codename,
+                    self.by_hash,
                 )
 
-                if self.source:
-                    mirror_source = repository.mirror_source
-                    mirror_source.set_for_component(
-                        self.codename,
+                for component in self.components:
+                    repository.arches.extend_for_component(
+                        codename,
                         component,
-                        self.source,
+                        self.arches,
                     )
+
+                    if self.source:
+                        mirror_source = repository.mirror_source
+                        mirror_source.set_for_component(
+                            codename,
+                            component,
+                            self.source,
+                        )
 
         elif isinstance(repository, FlatRepository):
             if repository.by_hash == ByHash.default():
@@ -167,7 +179,7 @@ class RepositoryConfig:
                 repository.source = self.source
 
     def is_flat(self):
-        return self.codename.endswith("/")
+        return any(codename.endswith("/") for codename in self.codenames)
 
 
 class Config:

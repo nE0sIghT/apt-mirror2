@@ -125,6 +125,12 @@ class RepositoryConfig:
             )
 
     def update_repository(self, repository: BaseRepository):
+        if isinstance(repository, FlatRepository) != self.is_flat():
+            raise RepositoryConfigException(
+                "Mixing of flat and non flat repositories is not supported for url"
+                f" {self.url}"
+            )
+
         if isinstance(repository, Repository):
             if self.codename not in repository.codenames:
                 repository.codenames.append(self.codename)

@@ -4,6 +4,7 @@ import argparse
 import asyncio
 import itertools
 import os
+import shutil
 import signal
 from errno import EWOULDBLOCK
 from fcntl import LOCK_EX, LOCK_NB, flock
@@ -186,6 +187,10 @@ class PathCleaner:
 
 
 class RepositoryMirror:
+    MOVE_FOLDER_PREFIX = ".apt_mirror_"
+    MOVE_FOLDER_OLD_SUFFIX = f"{MOVE_FOLDER_PREFIX}old"
+    MOVE_FOLDER_NEW_SUFFIX = f"{MOVE_FOLDER_PREFIX}new"
+
     def __init__(
         self,
         repository: BaseRepository,
@@ -338,19 +343,83 @@ class RepositoryMirror:
         metadata_files: Iterable[DownloadFileCompressionVariant],
     ):
         self._log.info("Moving metadata")
+        mirror_path = self._repository.get_mirror_path(self._config.encode_tilde)
+        mirror_full_path = self._config.mirror_path / mirror_path
+
+        move_folders: set[Path] = set()
+
+        # Drop any temporary leftovers
+        for folder in mirror_full_path.glob(f"*{self.MOVE_FOLDER_PREFIX}*"):
+            if not folder.is_dir():
+                continue
+
+            shutil.rmtree(folder)
+
         for file in metadata_files:
-            mirror_path = self._repository.get_mirror_path(self._config.encode_tilde)
-            file_relative_path = mirror_path / file.path
-            file_skel_path = self._config.skel_path / file_relative_path
+            file_alternate_paths: list[Path] = []
+            file_skel_path = self._config.skel_path / mirror_path / file.path
+
+            if len(file.path.parents) > 1:
+                # Get first level directory
+                top_parent = file.path.parents[-2]
+                top_parent_new_path = top_parent.with_name(
+                    f"{top_parent.name}{self.MOVE_FOLDER_NEW_SUFFIX}"
+                )
+
+                for file_path in file.get_all_paths():
+                    if file_path.is_relative_to(top_parent):
+                        file_alternate_paths.append(
+                            mirror_full_path
+                            / top_parent_new_path
+                            / file_path.relative_to(top_parent)
+                        )
+                    else:
+                        file_alternate_paths.append(mirror_full_path / file_path)
+
+                move_folders.add(top_parent)
+            else:
+                file_alternate_paths = [
+                    mirror_full_path / f for f in file.get_all_paths()
+                ]
 
             if file_skel_path.exists():
                 Downloader.link_or_copy(
                     file_skel_path,
-                    *[
-                        self._config.mirror_path / mirror_path / f
-                        for f in file.get_all_paths()
-                    ],
+                    *file_alternate_paths,
                 )
+
+        for top_parent in move_folders:
+            mirror_parent_path = mirror_full_path / top_parent
+
+            mirror_parent_old_path = mirror_full_path / top_parent.with_name(
+                f"{top_parent.name}{self.MOVE_FOLDER_OLD_SUFFIX}"
+            )
+            mirror_parent_new_path = mirror_full_path / top_parent.with_name(
+                f"{top_parent.name}{self.MOVE_FOLDER_NEW_SUFFIX}"
+            )
+
+            if not mirror_parent_new_path.exists():
+                continue
+
+            # Move dists > dists.apt_mirror_old
+            if mirror_parent_path.exists():
+                if mirror_parent_old_path.exists():
+                    shutil.rmtree(mirror_parent_old_path)
+
+                shutil.move(
+                    mirror_parent_path,
+                    mirror_parent_old_path,
+                )
+
+            # Move dists.apt_mirror_new > dists
+            shutil.move(
+                mirror_parent_new_path,
+                mirror_parent_path,
+            )
+
+            # Drop dists.apt_mirror_old
+            if mirror_parent_old_path.exists():
+                shutil.rmtree(mirror_parent_old_path)
 
     async def clean_repository(self, needed_files: set[Path], unlink: bool):
         cleaner = PathCleaner(

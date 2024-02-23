@@ -364,6 +364,10 @@ class BaseRepository(ABC):
                         if size <= 0:
                             continue
 
+                        # Ignore release files in release files
+                        if file["name"] in self.RELEASE_FILES:
+                            continue
+
                         if not self._metadata_file_allowed(codename, path):
                             continue
 

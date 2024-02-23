@@ -669,8 +669,6 @@ class FlatRepository(BaseRepository):
     # Dummy codename and component
     FLAT_CODENAME = "flat"
 
-    directory: str
-
     # Whether to mirror sources
     source: bool
     # Binary arches
@@ -716,14 +714,14 @@ class FlatRepository(BaseRepository):
         if not self.source:
             return []
 
-        return [Path(self.directory) / "Sources"]
+        return [Path("Sources")]
 
     @property
     def packages_files(self) -> Sequence[Path]:
         if not self.arches:
             return []
 
-        return [Path(self.directory) / "Packages"]
+        return [Path("Packages")]
 
     def get_by_hash_policy(self, codename: str) -> ByHash:
         return self.by_hash

@@ -88,7 +88,7 @@ class TestConfig(BaseTest):
 
         flat_repository = self.ensure_flat_repository(
             config.repositories[
-                URL.from_string("http://mirror.something.ru/repository")
+                URL.from_string("http://mirror.something.ru/repository/subpath/")
             ]
         )
 

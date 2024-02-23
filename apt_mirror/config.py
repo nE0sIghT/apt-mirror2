@@ -69,7 +69,6 @@ class RepositoryConfig:
                         continue
 
         url, codename = url.split(maxsplit=1)
-        url = URL.from_string(url)
 
         if not arches and not source:
             arches.append(default_arch)
@@ -79,10 +78,12 @@ class RepositoryConfig:
             codenames = codename.split(",")
             components = components.split()
         else:
+            url = f"{url.rstrip('/')}/{codename.lstrip('/')}"
+
             codenames = [codename]
             components = []
 
-        return cls(url, arches, source, codenames, components, by_hash)
+        return cls(URL.from_string(url), arches, source, codenames, components, by_hash)
 
     def to_repository(self) -> BaseRepository:
         if self.is_flat():
@@ -99,7 +100,6 @@ class RepositoryConfig:
                 skip_clean=set(),
                 mirror_path=None,
                 ignore_errors=set(),
-                directory=self.codenames[0],
                 by_hash=self.by_hash,
             )
         else:

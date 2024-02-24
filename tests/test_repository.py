@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Iterable
 
-from apt_mirror.download import URL, DownloadFile
+from apt_mirror.download import DownloadFile
 from tests.base import BaseTest
 
 
@@ -19,9 +19,7 @@ class TestRepository(BaseTest):
 
         repository = self.ensure_repository(
             config.repositories[
-                URL.from_string(
-                    "https://packages.gitlab.com/runner/gitlab-runner/debian"
-                )
+                "https://packages.gitlab.com/runner/gitlab-runner/debian"
             ]
         )
 
@@ -44,8 +42,6 @@ class TestRepository(BaseTest):
         self.assertFalse(file.ignore_errors)
 
         repository = self.ensure_repository(
-            config.repositories[
-                URL.from_string("http://ftp.debian.org/debian-security")
-            ]
+            config.repositories["http://ftp.debian.org/debian-security"]
         )
         self.assertFalse(repository.ignore_errors)

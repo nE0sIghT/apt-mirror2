@@ -32,3 +32,5 @@ deb-src http://archive.ubuntu.com/ubuntu noble-backports main restricted univers
 deb http://mirror.something.ru/repository subpath/
 
 deb [arch=arm64,amd64,i386] https://mirrors.apqa.cn/proxmox/debian/pve bookworm,bullseye port
+
+clean http://mirror.something.ru/repository

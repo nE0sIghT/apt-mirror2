@@ -18,6 +18,7 @@ class RepositoryConfigException(Exception):
 
 @dataclass
 class RepositoryConfig:
+    key: str
     url: URL
     arches: list[str]
     source: bool
@@ -68,12 +69,13 @@ class RepositoryConfig:
                     case _:
                         continue
 
-        url, codename = url.split(maxsplit=1)
+        key, codename = url.split(maxsplit=1)
 
         if not arches and not source:
             arches.append(default_arch)
 
         if not codename.endswith("/"):
+            url = key
             codename, components = codename.split(maxsplit=1)
             codenames = codename.split(",")
             components = components.split()
@@ -83,7 +85,9 @@ class RepositoryConfig:
             codenames = [codename]
             components = []
 
-        return cls(URL.from_string(url), arches, source, codenames, components, by_hash)
+        return cls(
+            key, URL.from_string(url), arches, source, codenames, components, by_hash
+        )
 
     def to_repository(self) -> BaseRepository:
         if self.is_flat():
@@ -187,7 +191,7 @@ class Config:
 
     def __init__(self, config_file: Path) -> None:
         self._log = LoggerFactory.get_logger(self)
-        self._repositories: dict[URL, BaseRepository] = {}
+        self._repositories: dict[str, BaseRepository] = {}
 
         self._files = [config_file]
         config_directory = config_file.with_name(f"{config_file.name}.d")
@@ -239,10 +243,10 @@ class Config:
         self._substitute_variables()
 
     def _parse_config_file(self):
-        clean: list[URL] = []
-        skip_clean: list[URL] = []
-        mirror_paths: dict[URL, Path] = {}
-        ignore_errors: dict[URL, set[str]] = {}
+        clean: list[str] = []
+        skip_clean: list[str] = []
+        mirror_paths: dict[str, Path] = {}
+        ignore_errors: dict[str, set[str]] = {}
 
         for file in self._files:
             with open(file, "rt", encoding="utf-8") as fp:
@@ -264,27 +268,25 @@ class Config:
                                 )
                                 continue
 
-                            repository = self._repositories.get(repository_config.url)
+                            repository = self._repositories.get(repository_config.key)
                             if repository:
                                 repository_config.update_repository(repository)
                             else:
-                                self._repositories[repository_config.url] = (
+                                self._repositories[repository_config.key] = (
                                     repository_config.to_repository()
                                 )
                         case line if line.startswith("clean "):
                             _, url = line.split()
-                            clean.append(URL.from_string(url))
+                            clean.append(url)
                         case line if line.startswith("skip-clean "):
                             _, url = line.split()
-                            skip_clean.append(URL.from_string(url))
+                            skip_clean.append(url)
                         case line if line.startswith("mirror_path "):
                             _, url, path = line.split(maxsplit=2)
-                            mirror_paths[URL.from_string(url)] = Path(path.strip("/"))
+                            mirror_paths[url] = Path(path.strip("/"))
                         case line if line.startswith("ignore_errors "):
                             _, url, path = line.split(maxsplit=2)
-                            ignore_errors.setdefault(URL.from_string(url), set()).add(
-                                path
-                            )
+                            ignore_errors.setdefault(url, set()).add(path)
                         case line if not line or any(
                             line.startswith(prefix) for prefix in ("#", ";")
                         ):
@@ -297,7 +299,7 @@ class Config:
         self._update_mirror_paths(mirror_paths)
         self._update_ignore_errors(ignore_errors)
 
-    def _update_clean(self, clean: list[URL]):
+    def _update_clean(self, clean: list[str]):
         for url in clean:
             if url not in self._repositories:
                 self._log.warning(
@@ -307,8 +309,9 @@ class Config:
 
             self._repositories[url].clean = True
 
-    def _update_skip_clean(self, skip_clean: list[URL]):
-        for url in skip_clean:
+    def _update_skip_clean(self, skip_clean: list[str]):
+        for key in skip_clean:
+            url = URL.from_string(key)
             repositories = [
                 r for r in self._repositories.values() if r.url.is_part_of(url)
             ]
@@ -318,7 +321,7 @@ class Config:
                     Path(url.path).relative_to(Path(repository.url.path))
                 )
 
-    def _update_mirror_paths(self, mirror_paths: dict[URL, Path]):
+    def _update_mirror_paths(self, mirror_paths: dict[str, Path]):
         for url, path in mirror_paths.items():
             if url not in self._repositories:
                 self._log.warning(
@@ -328,7 +331,7 @@ class Config:
 
             self._repositories[url].mirror_path = path
 
-    def _update_ignore_errors(self, ignore_errors: dict[URL, set[str]]):
+    def _update_ignore_errors(self, ignore_errors: dict[str, set[str]]):
         for url, paths in ignore_errors.items():
             if url not in self._repositories:
                 self._log.warning(

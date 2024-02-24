@@ -1,8 +1,7 @@
 from pathlib import Path
 
 from apt_mirror.apt_mirror import PathCleaner
-from apt_mirror.download import URL
-from apt_mirror.repository import ByHash, Repository
+from apt_mirror.repository import ByHash
 from tests.base import BaseTest
 
 
@@ -13,9 +12,7 @@ class TestConfig(BaseTest):
         self.assertEqual(len(config.repositories), 4)
 
         debian_security = self.ensure_repository(
-            config.repositories[
-                URL.from_string("http://ftp.debian.org/debian-security")
-            ]
+            config.repositories["http://ftp.debian.org/debian-security"]
         )
 
         self.assertCountEqual(
@@ -69,7 +66,7 @@ class TestConfig(BaseTest):
         )
 
         ubuntu_security = self.ensure_repository(
-            config.repositories[URL.from_string("http://archive.ubuntu.com/ubuntu")]
+            config.repositories["http://archive.ubuntu.com/ubuntu"]
         )
 
         self.assertCountEqual(
@@ -87,9 +84,7 @@ class TestConfig(BaseTest):
         )
 
         flat_repository = self.ensure_flat_repository(
-            config.repositories[
-                URL.from_string("http://mirror.something.ru/repository/subpath/")
-            ]
+            config.repositories["http://mirror.something.ru/repository"]
         )
 
         self.assertTrue(flat_repository.is_binaries_enabled)
@@ -99,9 +94,7 @@ class TestConfig(BaseTest):
         config = self.get_config("MixedConfig")
 
         proxmox_apqa = self.ensure_repository(
-            config.repositories[
-                URL.from_string("https://mirrors.apqa.cn/proxmox/debian/pve")
-            ]
+            config.repositories["https://mirrors.apqa.cn/proxmox/debian/pve"]
         )
 
         self.assertCountEqual(
@@ -132,10 +125,9 @@ class TestConfig(BaseTest):
     def test_skip_clean(self):
         config = self.get_config("SkipCleanConfig")
 
-        debian = config.repositories[URL.from_string("http://ftp.debian.org/debian")]
-
-        if not isinstance(debian, Repository):
-            raise RuntimeError("debian repository is not Repository instance")
+        debian = self.ensure_repository(
+            config.repositories["http://ftp.debian.org/debian"]
+        )
 
         self.assertCountEqual(debian.skip_clean, (Path("abcd"), Path("def/def")))
 
@@ -155,9 +147,7 @@ class TestConfig(BaseTest):
         config = self.get_config("ByHashConfig")
 
         repository = self.ensure_repository(
-            config.repositories[
-                URL.from_string("http://ftp.debian.org/debian-security")
-            ]
+            config.repositories["http://ftp.debian.org/debian-security"]
         )
 
         self.assertEqual(repository.get_by_hash_policy("trixie-security"), ByHash.FORCE)
@@ -165,33 +155,38 @@ class TestConfig(BaseTest):
         self.assertEqual(repository.get_by_hash_policy("stretch-security"), ByHash.YES)
 
         repository = self.ensure_repository(
-            config.repositories[URL.from_string("http://archive.ubuntu.com/ubuntu")]
+            config.repositories["http://archive.ubuntu.com/ubuntu"]
         )
 
         self.assertEqual(repository.get_by_hash_policy("mantic"), ByHash.NO)
 
         repository = self.ensure_repository(
-            config.repositories[
-                URL.from_string("http://mirror.something.ru/repository")
-            ]
+            config.repositories["http://mirror.something.ru/repository"]
         )
 
         self.assertEqual(repository.get_by_hash_policy("codename"), ByHash.NO)
+
+    def test_clean(self):
+        config = self.get_config("MixedConfig")
+
+        repository = self.ensure_flat_repository(
+            config.repositories["http://mirror.something.ru/repository"]
+        )
+
+        self.assertTrue(repository.clean, True)
 
     def test_src_arch(self):
         config = self.get_config("SrcOptionConfig")
 
         repository = self.ensure_repository(
-            config.repositories[
-                URL.from_string("http://ftp.debian.org/debian-security")
-            ]
+            config.repositories["http://ftp.debian.org/debian-security"]
         )
 
         self.assertTrue(repository.arches.is_empty())
         self.assertTrue(repository.is_source_enabled)
 
         repository = self.ensure_repository(
-            config.repositories[URL.from_string("http://archive.ubuntu.com/ubuntu")]
+            config.repositories["http://archive.ubuntu.com/ubuntu"]
         )
 
         self.assertTrue(repository.arches.is_empty())
@@ -202,9 +197,7 @@ class TestConfig(BaseTest):
 
         repository = self.ensure_repository(
             config.repositories[
-                URL.from_string(
-                    "https://packages.gitlab.com/runner/gitlab-runner/debian"
-                )
+                "https://packages.gitlab.com/runner/gitlab-runner/debian"
             ]
         )
 

@@ -88,6 +88,9 @@ class TestConfig(BaseTest):
         )
 
         self.assertTrue(flat_repository.is_binaries_enabled)
+        self.assertEqual(
+            str(flat_repository.url), "http://mirror.something.ru/repository/subpath/"
+        )
         self.assertCountEqual(flat_repository.arches, (config.default_arch,))
 
     def test_codenames_list(self):

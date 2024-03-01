@@ -80,7 +80,7 @@ class RepositoryConfig:
             codenames = codename.split(",")
             components = components.split()
         else:
-            url = f"{url.rstrip('/')}/{codename.lstrip('/')}"
+            url = f"{key.rstrip('/')}/{codename.lstrip('/')}"
 
             codenames = [codename]
             components = []

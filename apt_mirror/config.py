@@ -69,24 +69,21 @@ class RepositoryConfig:
                     case _:
                         continue
 
-        key, codename = url.split(maxsplit=1)
+        url, codename = url.split(maxsplit=1)
 
         if not arches and not source:
             arches.append(default_arch)
 
         if not codename.endswith("/"):
-            url = key
             codename, components = codename.split(maxsplit=1)
             codenames = codename.split(",")
             components = components.split()
         else:
-            url = f"{key.rstrip('/')}/{codename.lstrip('/')}"
-
             codenames = [codename]
             components = []
 
         return cls(
-            key, URL.from_string(url), arches, source, codenames, components, by_hash
+            url, URL.from_string(url), arches, source, codenames, components, by_hash
         )
 
     def to_repository(self) -> BaseRepository:
@@ -104,6 +101,7 @@ class RepositoryConfig:
                 skip_clean=set(),
                 mirror_path=None,
                 ignore_errors=set(),
+                directory=Path(self.codenames[0].rstrip("/")),
                 by_hash=self.by_hash,
             )
         else:

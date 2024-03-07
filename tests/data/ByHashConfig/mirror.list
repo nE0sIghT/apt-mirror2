@@ -7,4 +7,3 @@ deb [ by-hash=no ] http://archive.ubuntu.com/ubuntu mantic main restricted unive
 
 deb [ by-hash=no ] http://mirror.something.ru/repository codename main
 deb-src [ by-hash=force ] http://mirror.something.ru/repository codename main
-

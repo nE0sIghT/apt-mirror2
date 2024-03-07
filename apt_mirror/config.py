@@ -6,7 +6,14 @@ from pathlib import Path
 from string import Template
 
 from apt_mirror.download import URL, Proxy
-from apt_mirror.repository import BaseRepository, ByHash, FlatRepository, Repository
+from apt_mirror.repository import (
+    BaseRepository,
+    ByHash,
+    Codename,
+    FlatDirectory,
+    FlatRepository,
+    Repository,
+)
 
 from .logs import LoggerFactory
 from .version import __version__
@@ -41,7 +48,7 @@ class RepositoryConfig:
             else:
                 source = True
 
-        by_hash = ByHash.YES
+        by_hash = ByHash.default()
         if url.startswith("["):
             options, url = url.split(sep="]", maxsplit=1)
             options = options.strip("[]").strip().split()
@@ -95,46 +102,46 @@ class RepositoryConfig:
 
             return FlatRepository(
                 url=self.url,
-                source=self.source,
-                arches=self.arches,
                 clean=False,
                 skip_clean=set(),
                 mirror_path=None,
                 ignore_errors=set(),
-                directory=Path(self.codenames[0].rstrip("/")),
-                by_hash=self.by_hash,
+                directories=FlatRepository.FlatDirectories(
+                    (
+                        directory,
+                        FlatDirectory(
+                            self.by_hash,
+                            directory,
+                            self.source,
+                            bool(self.arches),
+                        ),
+                    )
+                    for directory in (Path(c.rstrip("/")) for c in self.codenames)
+                ),
             )
         else:
-            repository_by_hash = Repository.ByHashPerCodename.for_codenames(
-                self.codenames,
-                self.by_hash,
-            )
             return Repository(
                 url=self.url,
-                mirror_source=(
-                    Repository.MirrorSource.for_components(
-                        self.codenames,
-                        self.components,
-                        self.source,
-                    )
-                ),
-                arches=Repository.Arches.for_components(
-                    self.codenames,
-                    self.components,
-                    self.arches,
-                ),
                 clean=False,
                 skip_clean=set(),
                 mirror_path=None,
                 ignore_errors=set(),
-                codenames=self.codenames,
-                components=(
-                    Repository.Components.for_codenames(
-                        self.codenames,
-                        self.components,
+                codenames=Repository.Codenames(
+                    (
+                        codename,
+                        Codename(
+                            self.by_hash,
+                            codename,
+                            {
+                                component: Codename.Component(
+                                    component, self.source, self.arches
+                                )
+                                for component in self.components
+                            },
+                        ),
                     )
+                    for codename in self.codenames
                 ),
-                by_hash=repository_by_hash,
             )
 
     def update_repository(self, repository: BaseRepository):
@@ -144,41 +151,55 @@ class RepositoryConfig:
                 f" {self.url}"
             )
 
-        if isinstance(repository, Repository):
-            for codename in self.codenames:
-                if codename not in repository.codenames:
-                    repository.codenames.append(codename)
-
-                repository.components[codename] = self.components.copy()
-                repository.by_hash.set_if_default(
+        for codename in self.codenames:
+            if isinstance(repository, Repository):
+                codename = repository.codenames.setdefault(
                     codename,
-                    self.by_hash,
+                    Codename(
+                        self.by_hash,
+                        codename,
+                        {
+                            component: Codename.Component(
+                                component, self.source, self.arches
+                            )
+                            for component in self.components
+                        },
+                    ),
                 )
 
+                if codename.by_hash == ByHash.default():
+                    codename.by_hash = self.by_hash
+
                 for component in self.components:
-                    repository.arches.extend_for_component(
-                        codename,
+                    component = codename.components.setdefault(
                         component,
-                        self.arches,
+                        Codename.Component(component, self.source, self.arches),
                     )
 
+                    for arch in self.arches:
+                        if arch not in component.arches:
+                            component.arches.append(arch)
+
                     if self.source:
-                        mirror_source = repository.mirror_source
-                        mirror_source.set_for_component(
-                            codename,
-                            component,
-                            self.source,
-                        )
+                        component.mirror_source = True
 
-        elif isinstance(repository, FlatRepository):
-            if repository.by_hash == ByHash.default():
-                repository.by_hash = self.by_hash
+            elif isinstance(repository, FlatRepository):
+                directory_path = Path(codename.rstrip("/"))
+                directory = repository.directories.setdefault(
+                    directory_path,
+                    FlatDirectory(
+                        self.by_hash, directory_path, self.source, bool(self.arches)
+                    ),
+                )
 
-            repository.arches.extend(
-                arch for arch in self.arches if arch not in repository.arches
-            )
-            if self.source:
-                repository.source = self.source
+                if directory.by_hash == ByHash.default():
+                    directory.by_hash = self.by_hash
+
+                if not directory.mirror_binaries and bool(self.arches):
+                    directory.mirror_binaries = True
+
+                if self.source:
+                    directory.mirror_source = True
 
     def is_flat(self):
         return any(codename.endswith("/") for codename in self.codenames)

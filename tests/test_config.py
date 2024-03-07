@@ -21,17 +21,17 @@ class TestConfig(BaseTest):
         )
 
         self.assertFalse(
-            debian_security.mirror_source.is_enabled_for_codename("bookworm-security")
+            debian_security.codenames["bookworm-security"].should_mirror_source()
         )
         self.assertFalse(
-            debian_security.mirror_source.is_enabled_for_codename("trixie-security")
+            debian_security.codenames["trixie-security"].should_mirror_source()
         )
         self.assertTrue(
-            debian_security.mirror_source.is_enabled_for_codename("bullseye-security")
+            debian_security.codenames["bullseye-security"].should_mirror_source()
         )
 
         self.assertCountEqual(
-            debian_security.arches.get_for_component("trixie-security", "main"),
+            debian_security.codenames["trixie-security"].components["main"].arches,
             {
                 config.default_arch,
                 "amd64",
@@ -46,7 +46,7 @@ class TestConfig(BaseTest):
         )
 
         self.assertCountEqual(
-            debian_security.arches.get_for_component("bullseye-security", "main"),
+            debian_security.codenames["bullseye-security"].components["main"].arches,
             {
                 config.default_arch,
                 "amd64",
@@ -61,7 +61,7 @@ class TestConfig(BaseTest):
         )
 
         self.assertCountEqual(
-            debian_security.arches.get_for_component("bookworm-security", "main"),
+            debian_security.codenames["bookworm-security"].components["main"].arches,
             {config.default_arch, "arm64"},
         )
 
@@ -91,8 +91,10 @@ class TestConfig(BaseTest):
         self.assertEqual(
             str(flat_repository.url), "http://mirror.something.ru/repository"
         )
-        self.assertEqual(flat_repository.directory, Path("subpath"))
-        self.assertCountEqual(flat_repository.arches, (config.default_arch,))
+        self.assertCountEqual(flat_repository.directories.keys(), [Path("subpath")])
+        self.assertTrue(
+            flat_repository.directories[Path("subpath")].mirror_binaries, True
+        )
 
     def test_codenames_list(self):
         config = self.get_config("MixedConfig")
@@ -107,7 +109,7 @@ class TestConfig(BaseTest):
         )
 
         self.assertCountEqual(
-            proxmox_apqa.arches.get_for_component("bookworm", "port"),
+            proxmox_apqa.codenames["bookworm"].components["port"].arches,
             {
                 config.default_arch,
                 "amd64",
@@ -117,7 +119,7 @@ class TestConfig(BaseTest):
         )
 
         self.assertCountEqual(
-            proxmox_apqa.arches.get_for_component("bullseye", "port"),
+            proxmox_apqa.codenames["bullseye"].components["port"].arches,
             {
                 config.default_arch,
                 "amd64",
@@ -154,21 +156,21 @@ class TestConfig(BaseTest):
             config.repositories["http://ftp.debian.org/debian-security"]
         )
 
-        self.assertEqual(repository.get_by_hash_policy("trixie-security"), ByHash.FORCE)
-        self.assertEqual(repository.get_by_hash_policy("bookworm-security"), ByHash.NO)
-        self.assertEqual(repository.get_by_hash_policy("stretch-security"), ByHash.YES)
+        self.assertEqual(repository.codenames["trixie-security"].by_hash, ByHash.FORCE)
+        self.assertEqual(repository.codenames["bookworm-security"].by_hash, ByHash.NO)
+        self.assertEqual(repository.codenames["stretch-security"].by_hash, ByHash.YES)
 
         repository = self.ensure_repository(
             config.repositories["http://archive.ubuntu.com/ubuntu"]
         )
 
-        self.assertEqual(repository.get_by_hash_policy("mantic"), ByHash.NO)
+        self.assertEqual(repository.codenames["mantic"].by_hash, ByHash.NO)
 
         repository = self.ensure_repository(
             config.repositories["http://mirror.something.ru/repository"]
         )
 
-        self.assertEqual(repository.get_by_hash_policy("codename"), ByHash.NO)
+        self.assertEqual(repository.codenames["codename"].by_hash, ByHash.NO)
 
     def test_clean(self):
         config = self.get_config("MixedConfig")
@@ -186,14 +188,14 @@ class TestConfig(BaseTest):
             config.repositories["http://ftp.debian.org/debian-security"]
         )
 
-        self.assertTrue(repository.arches.is_empty())
+        self.assertFalse(repository.is_binaries_enabled)
         self.assertTrue(repository.is_source_enabled)
 
         repository = self.ensure_repository(
             config.repositories["http://archive.ubuntu.com/ubuntu"]
         )
 
-        self.assertTrue(repository.arches.is_empty())
+        self.assertFalse(repository.is_binaries_enabled)
         self.assertTrue(repository.is_source_enabled)
 
     def test_ignore_errors(self):
@@ -212,3 +214,21 @@ class TestConfig(BaseTest):
                 "pool/bullseye/main/d",
             ],
         )
+
+    def test_multiple_flat_directories(self):
+        config = self.get_config("FlatConfig")
+
+        repository = self.ensure_flat_repository(
+            config.repositories["https://packages.ntop.org/apt-stable/20.04/"]
+        )
+
+        self.assertEqual(len(repository.directories), 3)
+
+        self.assertTrue(repository.directories[Path("x64")].mirror_binaries)
+        self.assertFalse(repository.directories[Path("x64")].mirror_source)
+
+        self.assertFalse(repository.directories[Path("x32")].mirror_binaries)
+        self.assertTrue(repository.directories[Path("x32")].mirror_source)
+
+        self.assertTrue(repository.directories[Path("all")].mirror_binaries)
+        self.assertFalse(repository.directories[Path("all")].mirror_source)

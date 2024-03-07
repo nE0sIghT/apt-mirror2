@@ -279,6 +279,57 @@ class ByHash(Enum):
 
 
 @dataclass
+class BaseRepositoryMetadata:
+    by_hash: ByHash
+
+    @abstractmethod
+    def as_path(self) -> Path: ...
+
+    def as_string(self) -> str:
+        return str(self)
+
+    def __hash__(self) -> int:
+        return hash(str(self))
+
+
+@dataclass(eq=False)
+class Codename(BaseRepositoryMetadata):
+    @dataclass
+    class Component:
+        name: str
+        mirror_source: bool
+        arches: list[str]
+
+    codename: str
+    components: dict[str, Component]
+
+    def as_path(self) -> Path:
+        return Path("dists") / self.codename
+
+    def should_mirror_source(self):
+        return any(c.mirror_source for c in self.components.values())
+
+    def should_mirror_binaries(self):
+        return any(c.arches for c in self.components.values())
+
+    def __str__(self) -> str:
+        return self.codename
+
+
+@dataclass(eq=False)
+class FlatDirectory(BaseRepositoryMetadata):
+    directory: Path
+    mirror_source: bool
+    mirror_binaries: bool
+
+    def as_path(self) -> Path:
+        return self.directory
+
+    def __str__(self) -> str:
+        return str(self.directory)
+
+
+@dataclass
 class BaseRepository(ABC):
     COMPRESSION_SUFFIXES = {
         FileCompression.XZ.file_extension: lzma.open,
@@ -325,12 +376,12 @@ class BaseRepository(ABC):
         metadata_files: set[DownloadFile] = set()
 
         for (
-            codename,
-            codename_release_files,
-        ) in self.release_files_per_codename.items():
+            metadata,
+            metadata_release_files,
+        ) in self.release_files_per_metadata.items():
             codename_metadata_files: dict[Path, DownloadFile] = {}
 
-            for release_file_relative_path in codename_release_files:
+            for release_file_relative_path in metadata_release_files:
                 if release_file_relative_path in missing_sources:
                     continue
 
@@ -348,9 +399,9 @@ class BaseRepository(ABC):
 
                 use_hash = release.get("Acquire-By-Hash") == "yes"
                 if use_hash:
-                    if self.get_by_hash_policy(codename) == ByHash.NO:
+                    if self.get_by_hash_policy(metadata) == ByHash.NO:
                         use_hash = False
-                elif self.get_by_hash_policy(codename) == ByHash.FORCE:
+                elif self.get_by_hash_policy(metadata) == ByHash.FORCE:
                     use_hash = True
 
                 for hash_type in HashType:
@@ -368,7 +419,7 @@ class BaseRepository(ABC):
                         if file["name"] in self.RELEASE_FILES:
                             continue
 
-                        if not self._metadata_file_allowed(codename, path):
+                        if not self._metadata_file_allowed(metadata, path):
                             continue
 
                         hash_sum = HashSum(type=hash_type, hash=file[hash_type.value])
@@ -401,7 +452,7 @@ class BaseRepository(ABC):
                         )
 
             if not codename_metadata_files:
-                self._log.warning(f"No metadata files found for codename {codename}")
+                self._log.warning(f"No metadata files found for codename {metadata}")
 
             metadata_files.update(codename_metadata_files.values())
 
@@ -442,15 +493,17 @@ class BaseRepository(ABC):
     def release_files(self) -> Sequence[Path]:
         return [
             path
-            for _, paths in self.release_files_per_codename.items()
+            for _, paths in self.release_files_per_metadata.items()
             for path in paths
         ]
 
     @abstractmethod
-    def _metadata_file_allowed(self, codename: str, file_path: Path) -> bool: ...
+    def _metadata_file_allowed(
+        self, metadata: BaseRepositoryMetadata, file_path: Path
+    ) -> bool: ...
 
     @abstractmethod
-    def get_by_hash_policy(self, codename: str) -> ByHash: ...
+    def get_by_hash_policy(self, metadata: BaseRepositoryMetadata) -> ByHash: ...
 
     @property
     @abstractmethod
@@ -462,7 +515,9 @@ class BaseRepository(ABC):
 
     @property
     @abstractmethod
-    def release_files_per_codename(self) -> dict[str, Sequence[Path]]: ...
+    def release_files_per_metadata(
+        self,
+    ) -> dict[BaseRepositoryMetadata, Sequence[Path]]: ...
 
     @property
     @abstractmethod
@@ -475,94 +530,31 @@ class BaseRepository(ABC):
 
 @dataclass
 class Repository(BaseRepository):
-    class Components(dict[str, list[str]]):
-        @classmethod
-        def for_codenames(cls, codenames: list[str], components: Sequence[str]):
-            return cls({codename: [c for c in components] for codename in codenames})
+    class Codenames(dict[str, Codename]):
+        def get_codename(self, codename: str) -> Codename:
+            if codename not in self:
+                raise RuntimeError(f"Requested codename was not found: {codename}")
 
-        def get_for_codename(self, codename: str) -> Sequence[str]:
-            return self.get(codename, [])
-
-    # dict[codename, dict[component, source]]
-    class MirrorSource(dict[str, dict[str, bool]]):
-        @classmethod
-        def for_components(
-            cls, codenames: list[str], components: Sequence[str], value: bool
-        ):
-            return cls({
-                codename: {component: value for component in components}
-                for codename in codenames
-            })
-
-        def is_enabled_for_codename(self, codename: str) -> bool:
-            return any(s for _, s in self.get(codename, {}).items())
-
-        def set_for_component(self, codename: str, component: str, value: bool):
-            self.setdefault(codename, {})[component] = value
-
-        def is_empty(self):
-            return not any(
-                enabled for codename in self.values() for enabled in codename.values()
-            )
-
-    # dict[codename, dict[component, list[arch]]]
-    class Arches(dict[str, dict[str, list[str]]]):
-        @classmethod
-        def for_components(
-            cls, codenames: list[str], components: Sequence[str], arches: Sequence[str]
-        ):
-            return cls({
-                codename: {component: [a for a in arches] for component in components}
-                for codename in codenames
-            })
-
-        def get_for_component(self, codename: str, component: str):
-            return self.get(codename, {}).get(component, [])
-
-        def extend_for_component(
-            self, codename: str, component: str, arches: Sequence[str]
-        ):
-            current_arches = self.setdefault(codename, {}).setdefault(component, [])
-            current_arches.extend(a for a in arches if a not in current_arches)
-
-        def is_empty(self):
-            return not any(a for component in self.values() for a in component.values())
-
-    # dict[codename, ByHash]
-    class ByHashPerCodename(dict[str, ByHash]):
-        @classmethod
-        def for_codenames(cls, codenames: Iterable[str], by_hash: ByHash):
-            return cls({codename: by_hash for codename in codenames})
-
-        def set_if_default(self, codename: str, by_hash: ByHash):
-            if codename not in self or self[codename] == ByHash.default():
-                self[codename] = by_hash
-
-        def get_for_codename(self, codename: str) -> ByHash:
-            return self.get(codename, ByHash.default())
+            return self[codename]
 
     DISTS = Path("dists")
 
-    codenames: list[str]
-    components: Components
+    codenames: Codenames
 
-    # Whether to mirror sources
-    mirror_source: MirrorSource
-    # Binary arches
-    arches: Arches
-    by_hash: ByHashPerCodename
-
-    def _metadata_file_allowed(self, codename: str, file_path: Path) -> bool:
+    def _metadata_file_allowed(
+        self, metadata: BaseRepositoryMetadata, file_path: Path
+    ) -> bool:
+        codename = self.codenames.get_codename(metadata.as_string())
         file_path_str = str(file_path)
 
         # Skip source metadata if not needed
-        if not self.mirror_source.is_enabled_for_codename(codename) and (
+        if not codename.should_mirror_source() and (
             "/source/" in file_path_str or file_path.name.startswith("Contents-source")
         ):
             return False
 
         # Skip binary metadata if not needed
-        if self.arches.is_empty() and any(
+        if not codename.should_mirror_binaries() and any(
             part in file_path_str for part in ("/binary-", "/cnf/", "/dep11/", "/i18n/")
         ):
             return False
@@ -572,8 +564,8 @@ class Repository(BaseRepository):
             file_component, _, _ = file_path_str.rsplit("/", maxsplit=2)
 
             if not any(
-                file_component == component
-                for component in self.components.get_for_codename(codename)
+                file_component == component.name
+                for component in codename.components.values()
             ):
                 return False
 
@@ -582,15 +574,15 @@ class Repository(BaseRepository):
                 and "source" not in file_path_str
                 and not any(
                     arch in file_path_str
-                    for arch in self.arches.get_for_component(codename, file_component)
+                    for arch in codename.components[file_component].arches
                 )
             ):
                 return False
 
         all_arches = set(
             arch
-            for component in self.components.get_for_codename(codename)
-            for arch in self.arches.get_for_component(codename, component)
+            for component in codename.components.values()
+            for arch in component.arches
         )
 
         if (
@@ -608,56 +600,60 @@ class Repository(BaseRepository):
 
     @property
     def is_source_enabled(self) -> bool:
-        return not self.mirror_source.is_empty()
+        return any(c.should_mirror_source() for c in self.codenames.values())
 
     @property
     def is_binaries_enabled(self) -> bool:
-        return not self.arches.is_empty()
+        return any(c.should_mirror_binaries() for c in self.codenames.values())
 
     @property
-    def release_files_per_codename(self) -> dict[str, Sequence[Path]]:
+    def release_files_per_metadata(
+        self,
+    ) -> dict[BaseRepositoryMetadata, Sequence[Path]]:
         return {
-            codename: [self.DISTS / codename / file for file in self.RELEASE_FILES]
-            for codename in self.codenames
+            codename: [
+                self.DISTS / codename.as_string() / file for file in self.RELEASE_FILES
+            ]
+            for codename in self.codenames.values()
         }
 
     @property
     def sources_files(self) -> Sequence[Path]:
-        if not self.mirror_source:
-            return []
-
         return [
-            self.DISTS / codename / component / "source" / "Sources"
-            for codename in self.codenames
-            for component in self.components.get_for_codename(codename)
+            self.DISTS / codename.as_string() / component.name / "source" / "Sources"
+            for codename in self.codenames.values()
+            for component in codename.components.values()
         ]
 
     @property
     def packages_files(self) -> Sequence[Path]:
-        if not self.arches:
-            return []
-
         return [
             path
             for path in itertools.chain.from_iterable(
                 itertools.chain(
                     (
                         self.DISTS
-                        / codename
-                        / component
+                        / codename.as_string()
+                        / component.name
                         / f"binary-{arch}"
                         / "Packages"
-                        for arch in self.arches.get(codename, {}).get(component, [])
+                        for arch in component.arches
                     ),
-                    [self.DISTS / codename / component / "binary-all" / "Packages"],
+                    [
+                        self.DISTS
+                        / codename.as_string()
+                        / component.name
+                        / "binary-all"
+                        / "Packages"
+                    ],
                 )
-                for codename in self.codenames
-                for component in self.components.get(codename, [])
+                for codename in self.codenames.values()
+                for component in codename.components.values()
             )
         ]
 
-    def get_by_hash_policy(self, codename: str) -> ByHash:
-        return self.by_hash.get_for_codename(codename)
+    def get_by_hash_policy(self, metadata: BaseRepositoryMetadata) -> ByHash:
+        return self.codenames.get_codename(metadata.as_string()).by_hash
 
     def __str__(self) -> str:
         return (
@@ -667,22 +663,24 @@ class Repository(BaseRepository):
 
 @dataclass
 class FlatRepository(BaseRepository):
-    # Dummy codename and component
-    FLAT_CODENAME = "flat"
+    class FlatDirectories(dict[Path, FlatDirectory]):
+        def get_directory(self, directory: Path) -> FlatDirectory:
+            if directory not in self:
+                raise RuntimeError(f"Requested directory was not found: {directory}")
 
-    directory: Path
+            return self[directory]
 
-    # Whether to mirror sources
-    source: bool
-    # Binary arches
-    arches: list[str]
-    by_hash: ByHash
+        def __str__(self) -> str:
+            return str([d.as_string() for d in self.values()])
 
-    def _metadata_file_allowed(self, codename: str, file_path: Path) -> bool:
-        if codename != self.FLAT_CODENAME:
-            return False
+    directories: FlatDirectories
 
-        if not self.source and (
+    def _metadata_file_allowed(
+        self, metadata: BaseRepositoryMetadata, file_path: Path
+    ) -> bool:
+        directory = self.directories.get_directory(metadata.as_path())
+
+        if not directory.mirror_source and (
             any(
                 str(file_path) == f"Sources{suffix}"
                 for suffix in self.ALL_INDEX_SUFFIXES
@@ -690,7 +688,7 @@ class FlatRepository(BaseRepository):
         ):
             return False
 
-        if not self.arches and (
+        if not directory.mirror_binaries and (
             any(
                 str(file_path) == f"Packages{suffix}"
                 for suffix in self.ALL_INDEX_SUFFIXES
@@ -702,41 +700,38 @@ class FlatRepository(BaseRepository):
 
     @property
     def is_source_enabled(self) -> bool:
-        return self.source
+        return any(d.mirror_source for d in self.directories.values())
 
     @property
     def is_binaries_enabled(self) -> bool:
-        return bool(self.arches)
+        return any(d.mirror_binaries for d in self.directories.values())
 
     @property
-    def release_files_per_codename(self) -> dict[str, Sequence[Path]]:
+    def release_files_per_metadata(
+        self,
+    ) -> dict[BaseRepositoryMetadata, Sequence[Path]]:
         return {
-            self.FLAT_CODENAME: [self.directory / file for file in self.RELEASE_FILES]
+            directory: [directory.as_path() / file for file in self.RELEASE_FILES]
+            for directory in self.directories.values()
         }
 
     @property
     def sources_files(self) -> Sequence[Path]:
-        if not self.source:
-            return []
-
-        return [self.directory / "Sources"]
+        return [
+            directory.as_path() / "Sources" for directory in self.directories.values()
+        ]
 
     @property
     def packages_files(self) -> Sequence[Path]:
-        if not self.arches:
-            return []
+        return [
+            directory.as_path() / "Packages" for directory in self.directories.values()
+        ]
 
-        return [self.directory / "Packages"]
-
-    def get_by_hash_policy(self, codename: str) -> ByHash:
-        return self.by_hash
-
-    def set_by_hash_if_default(self, by_hash: ByHash):
-        if self.by_hash == ByHash.default():
-            self.by_hash = by_hash
+    def get_by_hash_policy(self, metadata: BaseRepositoryMetadata) -> ByHash:
+        return self.directories.get_directory(metadata.as_path()).by_hash
 
     def __str__(self) -> str:
         return (
-            f"{self.url}, arches: {self.arches}, source: {self.source}, mirror_path:"
-            f" {self.mirror_path}"
+            f"{self.url}, directories: {self.directories},"
+            f" mirror_path: {self.mirror_path}"
         )

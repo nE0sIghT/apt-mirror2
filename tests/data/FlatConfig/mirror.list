@@ -1,0 +1,3 @@
+deb https://packages.ntop.org/apt-stable/20.04/ x64/
+deb-src https://packages.ntop.org/apt-stable/20.04/ x32/
+deb https://packages.ntop.org/apt-stable/20.04/ all/

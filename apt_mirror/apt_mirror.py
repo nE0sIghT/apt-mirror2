@@ -492,10 +492,6 @@ class APTMirror:
             self._log.error("No repositories are found in the configuration")
             return 2
 
-        for variable in ("mirror_path", "base_path", "var_path"):
-            path = Path(self._config[variable])
-            path.mkdir(parents=True, exist_ok=True)
-
         self.lock()
 
         tasks: list[Awaitable[bool]] = []
@@ -628,6 +624,11 @@ def get_config_file() -> Path:
 
 def main() -> int:
     config = Config(get_config_file())
+
+    # We should create working directories before using file logs
+    for variable in ("mirror_path", "base_path", "var_path"):
+        path = Path(config[variable])
+        path.mkdir(parents=True, exist_ok=True)
 
     LoggerFactory.add_log_file(None, config.var_path / "apt-mirror2.log")
     for repository_url, repository in config.repositories.items():

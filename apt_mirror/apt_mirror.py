@@ -204,6 +204,7 @@ class RepositoryMirror:
         self._error = False
 
         self._repository = repository
+        self._pool_folders: set[Path] = set()
 
         self._config = config
         self._download_semaphore = download_semaphore
@@ -336,6 +337,14 @@ class RepositoryMirror:
         if self._downloader.has_errors() or self._downloader.has_missing():
             self._error = True
 
+        self._pool_folders = {
+            p.parents[-2]
+            for f in pool_files
+            for v in f.compression_variants.values()
+            for p in v.get_all_paths()
+            if len(p.parents) > 1
+        }
+
         return pool_files
 
     async def move_metadata(
@@ -359,7 +368,10 @@ class RepositoryMirror:
             file_alternate_paths: list[Path] = []
             file_skel_path = self._config.skel_path / mirror_path / file.path
 
-            if len(file.path.parents) > 1:
+            if (
+                len(file.path.parents) > 1
+                and file.path.parents[-2] not in self._pool_folders
+            ):
                 # Get first level directory
                 top_parent = file.path.parents[-2]
                 top_parent_new_path = top_parent.with_name(

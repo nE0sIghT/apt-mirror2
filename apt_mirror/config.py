@@ -386,6 +386,11 @@ class Config:
 
         return self._variables[key]
 
+    def create_working_directories(self):
+        for variable in ("mirror_path", "base_path", "var_path"):
+            path = Path(self[variable])
+            path.mkdir(parents=True, exist_ok=True)
+
     def get_bool(self, key: str) -> bool:
         return bool(self[key]) and self[key].lower() not in ("0", "off", "no")
 

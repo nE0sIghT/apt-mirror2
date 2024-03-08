@@ -638,9 +638,7 @@ def main() -> int:
     config = Config(get_config_file())
 
     # We should create working directories before using file logs
-    for variable in ("mirror_path", "base_path", "var_path"):
-        path = Path(config[variable])
-        path.mkdir(parents=True, exist_ok=True)
+    config.create_working_directories()
 
     LoggerFactory.add_log_file(None, config.var_path / "apt-mirror2.log")
     for repository_url, repository in config.repositories.items():

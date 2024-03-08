@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from apt_mirror.apt_mirror import PathCleaner
+from apt_mirror.config import RepositoryConfigException
 from apt_mirror.repository import ByHash
 from tests.base import BaseTest
 
@@ -232,3 +233,23 @@ class TestConfig(BaseTest):
 
         self.assertTrue(repository.directories[Path("all")].mirror_binaries)
         self.assertFalse(repository.directories[Path("all")].mirror_source)
+
+        repository = self.ensure_flat_repository(
+            config.repositories["http://localhost:8080/repo"]
+        )
+
+        self.assertEqual(len(repository.directories), 2)
+
+        self.assertTrue(repository.directories[Path("bin1/")].mirror_binaries)
+        self.assertTrue(repository.directories[Path("bin1/")].mirror_source)
+
+        self.assertTrue(repository.directories[Path("bin2/")].mirror_binaries)
+        self.assertTrue(repository.directories[Path("bin2/")].mirror_source)
+
+    def test_broken(self):
+        with self.assertRaises(RepositoryConfigException):
+            self.get_config("BrokenConfig")
+
+    def test_broken_flat(self):
+        with self.assertRaises(RepositoryConfigException):
+            self.get_config("FlatBrokenConfig")

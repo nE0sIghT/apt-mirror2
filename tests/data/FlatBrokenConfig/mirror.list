@@ -1,0 +1,1 @@
+deb [ arch=amd64,src ] http://localhost:8080/repo bin1/,bin2

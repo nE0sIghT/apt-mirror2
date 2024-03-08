@@ -69,19 +69,16 @@ deb [ arch=amd64,arm64 ] http://archive.ubuntu.com/ubuntu mantic main restricted
 # deb-amd64 http://archive.ubuntu.com/ubuntu mantic main restricted universe multiverse
 # deb-arm64 http://archive.ubuntu.com/ubuntu mantic main restricted universe multiverse
 
-## Although not supported by sources.list it's possible to specify codenames separated
-## by commas without spaces here.
+## Although not supported by sources.list it's possible to specify codenames or directories
+## separated by commas without spaces here.
 # deb-amd64 http://archive.ubuntu.com/ubuntu mantic,jammy main restricted universe multiverse
+# deb https://packages.ntop.org/apt-stable/20.04/ x64/,all/
 
 ## `by-hash` option can be used to control mirroring using hashsums paths.
 ## A `yes` or `no` value activates/disables the use of this feature if this source indicates support for it,
 ## while `force` will enable the feature regardless of what the source indicates.
 ## Default - `yes`.
-# deb [ arch=amd64,arm64 ] http://archive.ubuntu.com/ubuntu mantic main restricted universe multiverse
-
-deb http://archive.ubuntu.com/ubuntu mantic-security main restricted universe multiverse
-deb http://archive.ubuntu.com/ubuntu mantic-updates main restricted universe multiverse
-deb http://archive.ubuntu.com/ubuntu mantic-backports main restricted universe multiverse
+# deb [ arch=amd64,arm64 by-hash=no ] http://archive.ubuntu.com/ubuntu mantic main restricted universe multiverse
 
 ## Source mirrors
 # deb-src http://archive.ubuntu.com/ubuntu mantic main restricted universe multiverse
@@ -94,11 +91,11 @@ deb http://archive.ubuntu.com/ubuntu mantic-backports main restricted universe m
 
 ## By default the name of mirrored folder constructed from mirror URL.
 ## Using mirror_path it's possible to override mirror folder name
-mirror_path http://archive.ubuntu.com/ubuntu ubuntu
+# mirror_path http://archive.ubuntu.com/ubuntu ubuntu
 
 ## Ignore errors for specified repository path.
 ## Can be exact file or folder.
-ignore_errors https://packages.gitlab.com/runner/gitlab-runner/debian pool/bullseye/main/g/gitlab-runner/gitlab-runner_14.8.1_amd64.deb
+# ignore_errors https://packages.gitlab.com/runner/gitlab-runner/debian pool/bullseye/main/g/gitlab-runner/gitlab-runner_14.8.1_amd64.deb
 
 ## If specified - clean redundant files in repository (look to _autoclean option)
 clean http://archive.ubuntu.com/ubuntu

@@ -1,3 +1,5 @@
 deb https://packages.ntop.org/apt-stable/20.04/ x64/
 deb-src https://packages.ntop.org/apt-stable/20.04/ x32/
 deb https://packages.ntop.org/apt-stable/20.04/ all/
+
+deb [ arch=amd64,src ] http://localhost:8080/repo bin1/,bin2/

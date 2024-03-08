@@ -81,13 +81,21 @@ class RepositoryConfig:
         if not arches and not source:
             arches.append(default_arch)
 
-        if not codename.endswith("/"):
+        if " " in codename:
             codename, components = codename.split(maxsplit=1)
-            codenames = codename.split(",")
             components = components.split()
         else:
-            codenames = [codename]
             components = []
+
+        codenames = codename.split(",")
+
+        if not all(c.endswith("/") for c in codenames) and not all(
+            not c.endswith("/") for c in codenames
+        ):
+            raise RepositoryConfigException(
+                f"Mixing flat and non-flat configuration for repository {url} is not"
+                f" supported. Wrong codenames: {codenames}"
+            )
 
         return cls(
             url, URL.from_string(url), arches, source, codenames, components, by_hash
@@ -95,11 +103,6 @@ class RepositoryConfig:
 
     def to_repository(self) -> BaseRepository:
         if self.is_flat():
-            if len(self.codenames) != 1:
-                raise RepositoryConfigException(
-                    f"Multiple folders are specified for flat repository {self.url}"
-                )
-
             return FlatRepository(
                 url=self.url,
                 clean=False,

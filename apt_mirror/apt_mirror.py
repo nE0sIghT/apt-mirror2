@@ -639,11 +639,7 @@ def main() -> int:
 
     # We should create working directories before using file logs
     config.create_working_directories()
-
-    LoggerFactory.add_log_file(None, config.var_path / "apt-mirror2.log")
-    for repository_url, repository in config.repositories.items():
-        log_name = repository.as_filename(config.encode_tilde)
-        LoggerFactory.add_log_file(repository_url, config.var_path / f"{log_name}.log")
+    config.init_log_files()
 
     asyncio_loop = asyncio
     if config.use_uvloop:

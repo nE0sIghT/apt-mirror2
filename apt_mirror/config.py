@@ -391,6 +391,14 @@ class Config:
             path = Path(self[variable])
             path.mkdir(parents=True, exist_ok=True)
 
+    def init_log_files(self):
+        LoggerFactory.add_log_file(None, self.var_path / "apt-mirror2.log")
+        for repository_url, repository in self.repositories.items():
+            log_name = repository.as_filename(self.encode_tilde)
+            LoggerFactory.add_log_file(
+                repository_url, self.var_path / f"{log_name}.log"
+            )
+
     def get_bool(self, key: str) -> bool:
         return bool(self[key]) and self[key].lower() not in ("0", "off", "no")
 

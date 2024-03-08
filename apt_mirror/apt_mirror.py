@@ -278,7 +278,8 @@ class RepositoryMirror:
         # Download release files
         self._log.info(f"Downloading release files for repository {self._repository}")
         release_files = [
-            DownloadFile.from_path(path) for path in self._repository.release_files
+            DownloadFile.from_path(path, ignore_missing=True)
+            for path in self._repository.release_files
         ]
         self._downloader.add(*release_files)
         await self._downloader.download()

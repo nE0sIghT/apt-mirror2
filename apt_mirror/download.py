@@ -240,6 +240,7 @@ class DownloadFile:
     )
     check_size: bool = False
     ignore_errors: bool = False
+    ignore_missing: bool = False
 
     @staticmethod
     def uncompressed_path(path: Path):
@@ -249,8 +250,10 @@ class DownloadFile:
         return path
 
     @classmethod
-    def from_path(cls, path: Path, check_size: bool = False):
-        return cls(path=path, check_size=check_size)
+    def from_path(
+        cls, path: Path, check_size: bool = False, ignore_missing: bool = False
+    ):
+        return cls(path=path, check_size=check_size, ignore_missing=ignore_missing)
 
     @classmethod
     def from_hashed_path(
@@ -588,7 +591,7 @@ class Downloader(ABC):
                             continue
 
                         if response.missing:
-                            if source_file.ignore_errors:
+                            if source_file.ignore_errors or source_file.ignore_missing:
                                 break
 
                             await retry(
@@ -618,7 +621,7 @@ class Downloader(ABC):
                                 break
 
                             await retry(
-                                f"Server reported size {response.size} is differs from"
+                                f"Server reported size {response.size} differs from"
                                 f" expected size {expected_size} for file"
                                 f" {source_path}. Retrying..."
                             )
@@ -687,7 +690,7 @@ class Downloader(ABC):
                         self._downloaded.append(variant)
                         return
 
-        if source_file.ignore_errors:
+        if source_file.ignore_errors or (source_file.ignore_missing and not error):
             self._log.info(f"Unable to download {source_file.path}: ignoring")
             return
 

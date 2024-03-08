@@ -537,6 +537,9 @@ class Repository(BaseRepository):
 
             return self[codename]
 
+        def __str__(self) -> str:
+            return str([c for c in self])
+
     DISTS = Path("dists")
 
     codenames: Codenames

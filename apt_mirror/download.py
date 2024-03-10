@@ -81,19 +81,21 @@ class URL:
 
         return path
 
-    def for_path(self, path: str) -> str:
+    def for_path(self, path: Path | str) -> str:
+        str_path = str(path)
+
         base_path = self.path
         if base_path.endswith("/"):
             base_path = base_path[:-1]
 
-        if path.startswith("/"):
-            path = path[1:]
+        if str_path.startswith("/"):
+            str_path = str_path[1:]
 
         return parse.urlunparse(
             (
                 self.scheme,
                 self.get_host(),
-                f"{base_path}/{path}",
+                f"{base_path}/{str_path}",
                 self.params,
                 self.query,
                 self.fragment,
@@ -417,8 +419,10 @@ class Downloader(ABC):
 
         # Download queue. Reseted in download()
         self._sources: list[DownloadFile] = []
-        # Downloaded or not-changed files
+        # Downloaded files
         self._downloaded: list[DownloadFileCompressionVariant] = []
+        # Umnodified files
+        self._unmodified: list[DownloadFileCompressionVariant] = []
         # Either missing on server files or files with errors
         self._missing_sources: set[Path] = set()
         self._download_start = datetime.now()
@@ -433,8 +437,8 @@ class Downloader(ABC):
     def reset_stats(self):
         self._downloaded_count = 0
         self._downloaded_size = 0
-        self._actual_count = 0
-        self._actual_size = 0
+        self._unmodified_count = 0
+        self._unmodified_size = 0
         self._missing_count = 0
         self._missing_size = 0
         self._error_count = 0
@@ -483,7 +487,7 @@ class Downloader(ABC):
         while self._sources:
             source_file = self._sources.pop()
 
-            file_actual = False
+            file_unmodified = False
             if source_file.check_size:
                 for variant in source_file.iter_variants():
                     target_path = self._target_root_path / variant.get_source_path()
@@ -491,17 +495,16 @@ class Downloader(ABC):
                     try:
                         stat = target_path.stat()
                         if stat.st_size == source_file.size:
-                            self._actual_count += 1
-                            self._actual_size += source_file.size
+                            self._unmodified_count += 1
+                            self._unmodified_size += source_file.size
+                            self._unmodified.append(variant)
 
-                            self._downloaded.append(variant)
-
-                            file_actual = True
+                            file_unmodified = True
                             break
                     except FileNotFoundError:
                         pass
 
-            if file_actual:
+            if file_unmodified:
                 continue
 
             tasks.add(asyncio.create_task(self.download_file(source_file)))
@@ -551,8 +554,8 @@ class Downloader(ABC):
             message
             + f": {self._downloaded_count} ({self.format_size(self._downloaded_size)},"
             f" {download_rate});"
-            " not changed:"
-            f" {self._actual_count} ({self.format_size(self._actual_size)});"
+            " unmodified:"
+            f" {self._unmodified_count} ({self.format_size(self._unmodified_size)});"
             f" missing: {self._missing_count} ({self.format_size(self._missing_size)});"
             f" errors: {self._error_count} ({self.format_size(self._error_size)})"
         )
@@ -636,8 +639,8 @@ class Downloader(ABC):
                         if response.size and not self.need_update(
                             target_path, response.size, response.date
                         ):
-                            self._actual_count += 1
-                            self._actual_size += response.size
+                            self._unmodified_count += 1
+                            self._unmodified_size += response.size
 
                             if mirror_paths:
                                 self.link_or_copy(target_path, *mirror_paths)
@@ -716,6 +719,12 @@ class Downloader(ABC):
 
     def get_downloaded_files(self) -> list[DownloadFileCompressionVariant]:
         return self._downloaded.copy()
+
+    def get_unmodified_files(self) -> list[DownloadFileCompressionVariant]:
+        return self._unmodified.copy()
+
+    def get_all_files(self) -> list[DownloadFileCompressionVariant]:
+        return self.get_downloaded_files() + self.get_unmodified_files()
 
     def get_missing_sources(self):
         return self._missing_sources.copy()

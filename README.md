@@ -73,6 +73,8 @@ options:
 Most of `apt-mirror` configuration directives are supported.  
 As of now proxy for FTP repositories is not supported.  
 
+File lists (ALL, NEW, MD5, SHA256, SHA512) are not written by default, but you can enable them with the `write_file_lists` option.
+
 In addition there are some enhancements available:
 
 - Repositories without MD5 hashsums are correctly mirrored

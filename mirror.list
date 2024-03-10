@@ -38,6 +38,10 @@ set _tilde            0
 # set certificate           /etc/ssl/certs/certificate.crt
 # set private_key           /etc/ssl/certs/key.pem
 
+## Whether to write file lists (ALL, NEW, MD5, SHA256, SHA512 files) as apt-mirror does.
+## Default - off, since apt-mirror2 doesn't use them.
+# set write_file_lists        off
+
 ## Run script after mirror complete
 # set run_postmirror    0
 ## Path to Post Mirror script

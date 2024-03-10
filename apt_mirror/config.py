@@ -240,6 +240,7 @@ class Config:
             "skel_path": "$base_path/skel",
             "var_path": "$base_path/var",
             "cleanscript": "$var_path/clean.sh",
+            "write_file_lists": "off",
             "run_postmirror": "0",
             "postmirror_script": "$var_path/postmirror.sh",
             "_contents": "1",
@@ -494,6 +495,10 @@ class Config:
     @property
     def repositories(self):
         return self._repositories.copy()
+
+    @property
+    def write_file_lists(self):
+        return self.get_bool("write_file_lists")
 
     @property
     def run_postmirror(self):

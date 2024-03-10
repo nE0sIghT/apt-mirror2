@@ -6,6 +6,7 @@ import itertools
 import os
 import shutil
 import signal
+from contextlib import ExitStack
 from errno import EWOULDBLOCK
 from fcntl import LOCK_EX, LOCK_NB, flock
 from pathlib import Path
@@ -14,7 +15,7 @@ from typing import IO, Any, Awaitable, Iterable, Sequence
 from aiolimiter import AsyncLimiter
 
 from .config import Config
-from .download import Downloader, DownloadFile, DownloadFileCompressionVariant
+from .download import Downloader, DownloadFile, DownloadFileCompressionVariant, HashType
 from .logs import LoggerFactory
 from .repository import BaseRepository
 from .version import __version__
@@ -243,7 +244,7 @@ class RepositoryMirror:
                 )
                 return False
 
-            downloaded_metadata_files = self._downloader.get_downloaded_files()
+            downloaded_metadata_files = self._downloader.get_all_files()
 
             await self.clean_repository_skel(
                 set(
@@ -264,8 +265,7 @@ class RepositoryMirror:
                 await self.clean_repository(
                     needed_files=set(
                         itertools.chain.from_iterable(
-                            v.get_all_paths()
-                            for v in self._downloader.get_downloaded_files()
+                            v.get_all_paths() for v in self._downloader.get_all_files()
                         )
                     )
                     - self._downloader.get_missing_sources(),
@@ -473,6 +473,15 @@ class RepositoryMirror:
 
         cleaner.clean()
 
+    def get_repository(self) -> BaseRepository:
+        return self._repository
+
+    def get_downloaded_files(self) -> list[DownloadFileCompressionVariant]:
+        return self._downloader.get_downloaded_files()
+
+    def get_unmodified_files(self) -> list[DownloadFileCompressionVariant]:
+        return self._downloader.get_unmodified_files()
+
 
 class APTMirror:
     LOCK_FILE = "apt-mirror.lock"
@@ -508,6 +517,7 @@ class APTMirror:
         self.lock()
 
         tasks: list[Awaitable[bool]] = []
+        mirrors: list[RepositoryMirror] = []
         for repository in self._config.repositories.values():
             mirror = RepositoryMirror(
                 repository,
@@ -517,6 +527,7 @@ class APTMirror:
                 self._rate_limiter,
             )
             tasks.append(asyncio.create_task(mirror.mirror()))
+            mirrors.append(mirror)
 
         self._error = not all(await asyncio.gather(*tasks))
 
@@ -544,6 +555,38 @@ class APTMirror:
                     fp.write(f"sh '{clean_script}'\n")
 
             self._config.cleanscript.chmod(0o750)
+
+        if self._config.write_file_lists:
+            with ExitStack() as stack:
+                fp_all = stack.enter_context(
+                    open(self._config.var_path / "ALL", "wt", encoding="utf-8")
+                )
+                fp_new = stack.enter_context(
+                    open(self._config.var_path / "NEW", "wt", encoding="utf-8")
+                )
+
+                fp_hash_types: dict[HashType, IO[str]] = {}
+                for hash_type in HashType:
+                    fp_hash_types[hash_type] = stack.enter_context(
+                        open(
+                            self._config.var_path / hash_type.name,
+                            "wt",
+                            encoding="utf-8",
+                        )
+                    )
+
+                for mirror in mirrors:
+                    for download_variant in mirror.get_downloaded_files():
+                        fp_all.write(f"{download_variant.path}{os.linesep}")
+                        fp_new.write(
+                            mirror.get_repository().url.for_path(download_variant.path)
+                            + os.linesep
+                        )
+
+                        self._write_hashsums(fp_hash_types, download_variant)
+
+                    for download_variant in mirror.get_unmodified_files():
+                        self._write_hashsums(fp_hash_types, download_variant)
 
         if self._config.run_postmirror:
             if not self._config.postmirror_script.is_file():
@@ -609,6 +652,16 @@ class APTMirror:
             self._lock_fd = None
 
             self.get_lock_file().unlink(missing_ok=True)
+
+    def _write_hashsums(
+        self,
+        fp_hash_types: dict[HashType, IO[str]],
+        download_variant: DownloadFileCompressionVariant,
+    ):
+        for hashsum in download_variant.hashes.values():
+            fp_hash_types[hashsum.type].write(
+                f"{hashsum.hash}  {download_variant.path}{os.linesep}"
+            )
 
 
 def get_config_file() -> Path:

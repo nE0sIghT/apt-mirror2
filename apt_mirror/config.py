@@ -396,11 +396,12 @@ class Config:
 
     def init_log_files(self):
         LoggerFactory.add_log_file(None, self.var_path / "apt-mirror2.log")
-        for repository_url, repository in self.repositories.items():
+        for repository in self.repositories.values():
             log_name = repository.as_filename(self.encode_tilde)
-            LoggerFactory.add_log_file(
-                repository_url, self.var_path / f"{log_name}.log"
-            )
+            self._add_url_log_file(repository.url, self.var_path / f"{log_name}.log")
+
+    def _add_url_log_file(self, repository_url: URL, log_file: Path):
+        LoggerFactory.add_log_file(repository_url, log_file)
 
     def get_bool(self, key: str) -> bool:
         return bool(self[key]) and self[key].lower() not in ("0", "off", "no")

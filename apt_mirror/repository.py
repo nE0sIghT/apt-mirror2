@@ -80,11 +80,9 @@ class IndexFileParser(ABC):
                         length=0,
                         flags=MAP_PRIVATE | MAP_POPULATE,
                     )
+                    mfp.madvise(MADV_SEQUENTIAL)
 
                 try:
-                    if isinstance(mfp, mmap):
-                        mfp.madvise(MADV_SEQUENTIAL)
-
                     self._do_parse_index(mfp)
                 finally:
                     if isinstance(mfp, mmap):

@@ -325,7 +325,13 @@ class DownloadFile:
 
     @property
     def size(self):
-        return next(iter(self.compression_variants.values())).size
+        for compression in FileCompression:
+            if compression not in self.compression_variants:
+                continue
+
+            return self.compression_variants[compression].size
+
+        raise RuntimeError(f"{self.__class__.__name__} {self} is empty")
 
     def __hash__(self) -> int:
         return hash(self.path)

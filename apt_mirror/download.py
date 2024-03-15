@@ -969,7 +969,9 @@ class FTPDownloader(Downloader):
             while link_dst and recurse_depth > 0:
                 try:
                     path: Path = path.parent / link_dst  # type: ignore
+
                     stat = await ftp.stat(path)  # type: ignore
+                    link_dst = stat.get("link_dst")  # type: ignore
                 except StatusCodeError:
                     # Give up if we can not stat link destination
                     break
@@ -980,7 +982,7 @@ class FTPDownloader(Downloader):
                 raise FTPFileMissingException()
 
             try:
-                if not stat.get("link_dst"):  # type: ignore
+                if not link_dst:  # type: ignore
                     ftp_stat.size = int(stat["size"])  # type: ignore
 
                 modify, _, _ = stat["modify"].partition(".")  # type: ignore

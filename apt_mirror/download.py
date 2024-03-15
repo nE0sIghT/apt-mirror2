@@ -932,16 +932,11 @@ class FTPDownloader(Downloader):
                     )
         except OSError as ex:
             # https://github.com/aio-libs/aioftp/issues/173
-            connection_refused = ex.errno == 111
+            connection_refused = ex.errno == 111 or "111" in str(ex)
             yield DownloadResponse(
                 _stream=None,
                 retry=connection_refused,
-                error=(
-                    "Received `Connection refused` error while downloading"
-                    f" {source_path}. Retrying..."
-                    if not connection_refused
-                    else None
-                ),
+                error=(str(ex) if not connection_refused else None),
             )
 
     def parse_list_line_unix_links(self, client: aioftp.Client):

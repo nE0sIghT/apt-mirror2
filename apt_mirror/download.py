@@ -17,7 +17,7 @@ from urllib import parse
 import aioftp  # type: ignore
 import httpx
 from aiofile import async_open
-from aioftp.client import Client, DataConnectionThrottleStreamIO  # type: ignore
+from aioftp.client import Client  # type: ignore
 from aioftp.errors import StatusCodeError  # type: ignore
 from aiolimiter import AsyncLimiter
 
@@ -890,16 +890,18 @@ class FTPStat:
 
 
 class FTPDownloader(Downloader):
-    def iter_by_block(self, stream: aioftp.DataConnectionThrottleStreamIO):
-        def func() -> AsyncIterator[bytes]:
-            return stream.iter_by_block(count=self.BUFFER_SIZE)  # type: ignore
+    def iter_by_block(self, ftp: Client, path: Path):
+        async def func() -> AsyncIterator[bytes]:
+            async with ftp.download_stream(path) as stream:  # type: ignore
+                async for data in stream.iter_by_block(  # type: ignore
+                    count=self.BUFFER_SIZE
+                ):
+                    yield data
 
         return func
 
     @asynccontextmanager
     async def stream(self, source_path: Path):
-        stream: DataConnectionThrottleStreamIO
-
         try:
             async with aioftp.Client.context(  # type: ignore
                 self._url.hostname,
@@ -921,15 +923,13 @@ class FTPDownloader(Downloader):
                     yield DownloadResponse(_stream=None, error=str(ex))
                     return
 
-                stream: aioftp.DataConnectionThrottleStreamIO
-                async with ftp.download_stream(source_path) as stream:  # type: ignore
-                    yield DownloadResponse(
-                        missing=False,
-                        error=None,
-                        date=stat.date,
-                        size=stat.size,
-                        _stream=self.iter_by_block(stream),  # type: ignore
-                    )
+                yield DownloadResponse(
+                    missing=False,
+                    error=None,
+                    date=stat.date,
+                    size=stat.size,
+                    _stream=self.iter_by_block(ftp, source_path),  # type: ignore
+                )
         except OSError as ex:
             # https://github.com/aio-libs/aioftp/issues/173
             connection_refused = ex.errno == 111 or "111" in str(ex)
@@ -937,6 +937,11 @@ class FTPDownloader(Downloader):
                 _stream=None,
                 retry=connection_refused,
                 error=(str(ex) if not connection_refused else None),
+            )
+        except Exception as ex:  # pylint: disable=W0718
+            yield DownloadResponse(
+                _stream=None,
+                error=f"{ex.__class__.__qualname__}: {str(ex)}",
             )
 
     def parse_list_line_unix_links(self, client: aioftp.Client):

@@ -80,6 +80,7 @@ In addition there are some enhancements available:
 - Repositories without MD5 hashsums are correctly mirrored
 - Old index files are properly cleaned and don't produces errors in mirror processing
 - Standard source.list `[ arch=arch1,arch2 ]` can be used to specify multiple repository architectures for mirroring.
+- multiple codenames (or flat folders) can be specified using comma as delimiter.
 - `mirror_path URL PATH` option may be used to specify `PATH` to use for saving mirror files instead of path that is generated from `URL`.
 - Additional configuration is loaded from the `*.list` files in the directory named same as `configfile` with the `.d` suffix. Eg `/etc/apt/mirror.list.d/*.list`.
 - Rate limit is enforced for overall download rate.
@@ -88,6 +89,9 @@ In addition there are some enhancements available:
 - HTTP user agent can be configured via `user_agent` configuration.
 - Configuration variables are exposed to postmirror_script.
 - `by-hash` list option can be used to control whether `Acquire-By-Hash` Release option should be respected or enforced.
+- mirror wipe protection is available and configurable via `wipe_size_ratio` and `wipe_count_ratio` settings.
+- per-repository log files are available in the `var_path` folder
+- `dists` folder is almost atomicaly replaced using move instead of copy/link
 
 # License
 

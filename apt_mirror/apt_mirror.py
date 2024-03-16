@@ -15,7 +15,13 @@ from typing import IO, Any, Awaitable, Iterable, Sequence
 from aiolimiter import AsyncLimiter
 
 from .config import Config
-from .download import Downloader, DownloadFile, DownloadFileCompressionVariant, HashType
+from .download import (
+    Downloader,
+    DownloaderFactory,
+    DownloadFile,
+    DownloadFileCompressionVariant,
+    HashType,
+)
 from .logs import LoggerFactory
 from .repository import BaseRepository
 from .version import __version__
@@ -212,7 +218,7 @@ class RepositoryMirror:
         self._semaphore = semaphore
         self._rate_limiter = rate_limiter
 
-        self._downloader = Downloader.for_url(
+        self._downloader = DownloaderFactory.for_url(
             url=self._repository.url,
             target_root_path=self._config.skel_path
             / self._repository.get_mirror_path(self._config.encode_tilde),

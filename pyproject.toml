@@ -51,7 +51,7 @@ Issues = "https://gitlab.com/apt-mirror2/apt-mirror2/-/issues"
 Changelog = "https://gitlab.com/apt-mirror2/apt-mirror2/-/commits/master/"
 
 [tool.setuptools.packages.find]
-include = ["apt_mirror"]
+include = ["apt_mirror*"]
 
 [tool.black]
 preview = true

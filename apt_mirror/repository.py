@@ -277,7 +277,7 @@ class ByHash(Enum):
 
 
 @dataclass
-class BaseRepositoryMetadata:
+class BaseRepositoryMetadata(ABC):
     by_hash: ByHash
 
     @abstractmethod

@@ -54,16 +54,16 @@ class DownloadFileCompressionVariant:
     hashes: dict[HashType, HashSum]
     use_by_hash: bool
 
+    def _get_hashed_path(self, hash_type: HashType):
+        return (
+            self.path.parent / "by-hash" / hash_type.value / self.hashes[hash_type].hash
+        )
+
     def get_source_path(self) -> Path:
         if self.use_by_hash:
             for hash_type in HashType:
                 if hash_type in self.hashes:
-                    return (
-                        self.path.parent
-                        / "by-hash"
-                        / hash_type.value
-                        / self.hashes[hash_type].hash
-                    )
+                    return self._get_hashed_path(hash_type)
 
         return self.path
 
@@ -75,8 +75,7 @@ class DownloadFileCompressionVariant:
 
         if self.use_by_hash:
             paths += [
-                self.path.parent / "by-hash" / hashsum.type.value / hashsum.hash
-                for hashsum in self.hashes.values()
+                self._get_hashed_path(hash_type) for hash_type in self.hashes.keys()
             ]
 
         if self.use_by_hash:

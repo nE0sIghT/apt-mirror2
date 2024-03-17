@@ -7,8 +7,8 @@ from typing import AsyncIterator
 import aioftp  # type: ignore
 from aioftp.errors import StatusCodeError  # type: ignore
 
-from .downloader import Downloader
-from .response import DownloadResponse
+from ..downloader import Downloader
+from ..response import DownloadResponse
 
 
 class FTPFileMissingException(Exception):

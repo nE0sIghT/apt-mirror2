@@ -5,8 +5,8 @@ from pathlib import Path
 
 import httpx
 
-from .downloader import Downloader
-from .response import DownloadResponse
+from ..downloader import Downloader
+from ..response import DownloadResponse
 
 
 class HTTPDownloader(Downloader):

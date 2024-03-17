@@ -1,12 +1,12 @@
-from .downloader import Downloader
-from .factory import DownloaderFactory
-from .file import (
+from .download_file import (
     DownloadFile,
     DownloadFileCompressionVariant,
     FileCompression,
     HashSum,
     HashType,
 )
+from .downloader import Downloader
+from .factory import DownloaderFactory
 from .proxy import Proxy
 from .url import URL
 

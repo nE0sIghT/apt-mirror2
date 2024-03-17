@@ -14,7 +14,7 @@ from aiofile import async_open
 from aiolimiter import AsyncLimiter
 
 from ..logs import LoggerFactory
-from .file import DownloadFile, DownloadFileCompressionVariant
+from .download_file import DownloadFile, DownloadFileCompressionVariant
 from .proxy import Proxy
 from .response import DownloadResponse
 from .url import URL

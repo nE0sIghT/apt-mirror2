@@ -4,8 +4,8 @@ from pathlib import Path
 from aiolimiter import AsyncLimiter
 
 from .downloader import Downloader
-from .ftp import FTPDownloader
-from .http import HTTPDownloader
+from .protocols.ftp import FTPDownloader
+from .protocols.http import HTTPDownloader
 from .proxy import Proxy
 from .url import URL
 

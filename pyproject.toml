@@ -29,7 +29,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "black==23.11.0",
+    "black==24.3.0",
     "flake8==6.0.0",
     "isort==5.12.0",
     "pip-tools==7.0.0",

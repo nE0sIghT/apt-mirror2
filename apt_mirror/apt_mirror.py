@@ -129,11 +129,13 @@ class PathCleaner:
 
     def write_clean_script(self, fp: IO[str], repository: BaseRepository):
         fp.write(
-            "\n".join([
-                "#!/bin/bash",
-                "set -e",
-                "",
-            ])
+            "\n".join(
+                [
+                    "#!/bin/bash",
+                    "set -e",
+                    "",
+                ]
+            )
         )
 
         if not self._clean_allowed():
@@ -543,11 +545,13 @@ class APTMirror:
             self._log.info(f"Writing clean script {self._config.cleanscript}")
             with open(self._config.cleanscript, "wt", encoding="utf-8") as fp:
                 fp.write(
-                    "\n".join([
-                        "#!/bin/sh",
-                        "set -e",
-                        "",
-                    ])
+                    "\n".join(
+                        [
+                            "#!/bin/sh",
+                            "set -e",
+                            "",
+                        ]
+                    )
                 )
 
                 for repository in self._config.repositories.values():

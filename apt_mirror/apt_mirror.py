@@ -280,6 +280,8 @@ class RepositoryMirror:
                     unlink=self._config.autoclean,
                 )
 
+            self._log.info(f"Repository {self._repository} mirroring complete")
+
         return not self._error
 
     async def download_release_files(self) -> Sequence[DownloadFile]:
@@ -441,6 +443,8 @@ class RepositoryMirror:
             # Drop dists.apt_mirror_old
             if mirror_parent_old_path.exists():
                 shutil.rmtree(mirror_parent_old_path)
+
+        self._log.info("Metadata moved")
 
     async def clean_repository(self, needed_files: set[Path], unlink: bool):
         cleaner = PathCleaner(

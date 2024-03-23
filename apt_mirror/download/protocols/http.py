@@ -1,3 +1,5 @@
+# SPDX-License-Identifer: GPL-3.0-or-later
+
 from contextlib import asynccontextmanager
 from datetime import datetime
 from email.utils import parsedate_to_datetime

@@ -1,3 +1,5 @@
+# SPDX-License-Identifer: GPL-3.0-or-later
+
 import asyncio
 from pathlib import Path
 

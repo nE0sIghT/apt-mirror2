@@ -1,3 +1,5 @@
+# SPDX-License-Identifer: GPL-3.0-or-later
+
 from dataclasses import dataclass
 from pathlib import Path
 from urllib import parse

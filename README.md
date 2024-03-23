@@ -92,6 +92,7 @@ In addition there are some enhancements available:
 - mirror wipe protection is available and configurable via `wipe_size_ratio` and `wipe_count_ratio` settings.
 - per-repository log files are available in the `var_path` folder
 - `dists` folder is almost atomicaly replaced using move instead of copy/link
+- native Prometheus metrics are supported
 
 # License
 

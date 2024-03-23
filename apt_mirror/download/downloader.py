@@ -88,12 +88,48 @@ class Downloader(ABC):
         self.reset_stats()
 
     @property
-    def queue_files_count(self):
+    def queue_files_count(self) -> int:
         return len(self._sources)
 
     @property
-    def queue_files_size(self):
-        return self.format_size(sum(file.size for file in self._sources))
+    def queue_files_size(self) -> int:
+        return sum(file.size for file in self._sources)
+
+    @property
+    def queue_files_formatted_size(self) -> str:
+        return self.format_size(self.queue_files_size)
+
+    @property
+    def downloaded_files_count(self) -> int:
+        return self._downloaded_count
+
+    @property
+    def downloaded_files_size(self) -> int:
+        return self._downloaded_size
+
+    @property
+    def error_files_count(self) -> int:
+        return self._error_count
+
+    @property
+    def error_files_size(self) -> int:
+        return self._error_size
+
+    @property
+    def missing_files_count(self) -> int:
+        return self._missing_count
+
+    @property
+    def missing_files_size(self) -> int:
+        return self._missing_size
+
+    @property
+    def unmodified_files_count(self) -> int:
+        return self._unmodified_count
+
+    @property
+    def unmodified_files_size(self) -> int:
+        return self._unmodified_size
 
     # Fred Cirera
     # https://stackoverflow.com/a/1094933

@@ -23,6 +23,7 @@ from .download import (
     HashType,
 )
 from .logs import LoggerFactory
+from .prometheus import DownloaderCollector
 from .repository import BaseRepository
 from .version import __version__
 
@@ -233,6 +234,8 @@ class RepositoryMirror:
             client_private_key=self._config.client_private_key,
         )
 
+        DownloaderCollector.register(self._downloader, self._repository)
+
     async def mirror(self) -> bool:
         """Start repository mirror process
 
@@ -312,7 +315,7 @@ class RepositoryMirror:
         self._log.info(
             f"Downloading {self._downloader.queue_files_count} metadata files for"
             f" repository {self._repository}. Total size is"
-            f" {self._downloader.queue_files_size}"
+            f" {self._downloader.queue_files_formatted_size}"
         )
 
         await self._downloader.download()
@@ -340,7 +343,7 @@ class RepositoryMirror:
         self._log.info(
             f"Downloading {self._downloader.queue_files_count} pool files for"
             f" repository {self._repository}. Total size is"
-            f" {self._downloader.queue_files_size}"
+            f" {self._downloader.queue_files_formatted_size}"
         )
 
         await self._downloader.download()
@@ -516,6 +519,7 @@ class APTMirror:
 
     def on_stop(self):
         self.stopped = True
+        DownloaderCollector.shutdown_server()
         asyncio.get_running_loop().stop()
 
     async def run(self) -> int:
@@ -527,6 +531,14 @@ class APTMirror:
             return 2
 
         self.lock()
+
+        if self._config.prometheus_enable:
+            if not DownloaderCollector.prometheus_available():
+                self._log.warning("Prometheus python client is not available")
+            else:
+                DownloaderCollector.init_server(
+                    self._config.prometheus_host, self._config.prometheus_port
+                )
 
         tasks: list[Awaitable[bool]] = []
         mirrors: list[RepositoryMirror] = []
@@ -628,6 +640,8 @@ class APTMirror:
                     "Post Mirror script has completed. See above output for any"
                     " possible errors."
                 )
+
+        DownloaderCollector.shutdown_server()
 
         self.unlock()
 

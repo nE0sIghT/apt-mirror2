@@ -260,6 +260,9 @@ class Config:
             "certificate": "",
             "private_key": "",
             "ca_certificate": "",
+            "prometheus_enable": "off",
+            "prometheus_host": "localhost",
+            "prometheus_port": "8000",
         }
 
         self._parse_config_file()
@@ -529,3 +532,15 @@ class Config:
     @property
     def user_agent(self) -> str:
         return self["http_user_agent"]
+
+    @property
+    def prometheus_enable(self) -> bool:
+        return self.get_bool("prometheus_enable")
+
+    @property
+    def prometheus_host(self) -> str:
+        return self["prometheus_host"]
+
+    @property
+    def prometheus_port(self) -> int:
+        return int(self["prometheus_port"])

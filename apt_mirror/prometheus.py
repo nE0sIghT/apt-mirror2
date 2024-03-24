@@ -73,46 +73,54 @@ try:
             )
 
         def collect(self) -> Generator[Metric, Any, None]:
-            metric_id = self.get_metric_id()
+            metric_id = f"mirror_{self.get_metric_id()}"
 
             mf = GaugeMetricFamily(
                 f"{metric_id}",
                 f"{self._repository.url} metrics",
-                labels=[
-                    "item",
-                ],
+                labels=["item", "url"],
             )
 
             mf.add_metric(
-                ["queue_files_count"], value=self._downloader.queue_files_count
+                ["queue_files_count", str(self._repository.url)],
+                value=self._downloader.queue_files_count,
             )
             mf.add_metric(["queue_files_size"], value=self._downloader.queue_files_size)
 
             mf.add_metric(
-                ["downloaded_files_count"],
+                ["downloaded_files_count", str(self._repository.url)],
                 value=self._downloader.downloaded_files_count,
             )
             mf.add_metric(
-                ["downloaded_files_size"], value=self._downloader.downloaded_files_size
+                ["downloaded_files_size", str(self._repository.url)],
+                value=self._downloader.downloaded_files_size,
             )
 
             mf.add_metric(
-                ["error_files_count"], value=self._downloader.error_files_count
-            )
-            mf.add_metric(["error_files_size"], value=self._downloader.error_files_size)
-
-            mf.add_metric(
-                ["missing_files_count"], value=self._downloader.missing_files_count
+                ["error_files_count", str(self._repository.url)],
+                value=self._downloader.error_files_count,
             )
             mf.add_metric(
-                ["missing_files_size"], value=self._downloader.missing_files_size
+                ["error_files_size", str(self._repository.url)],
+                value=self._downloader.error_files_size,
             )
 
             mf.add_metric(
-                ["unmodified_count"], value=self._downloader.unmodified_files_count
+                ["missing_files_count", str(self._repository.url)],
+                value=self._downloader.missing_files_count,
             )
             mf.add_metric(
-                ["unmodified_size"], value=self._downloader.unmodified_files_size
+                ["missing_files_size", str(self._repository.url)],
+                value=self._downloader.missing_files_size,
+            )
+
+            mf.add_metric(
+                ["unmodified_count", str(self._repository.url)],
+                value=self._downloader.unmodified_files_count,
+            )
+            mf.add_metric(
+                ["unmodified_size", str(self._repository.url)],
+                value=self._downloader.unmodified_files_size,
             )
 
             yield mf

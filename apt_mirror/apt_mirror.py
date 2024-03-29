@@ -208,6 +208,7 @@ class RepositoryMirror:
         semaphore: asyncio.Semaphore,
         download_semaphore: asyncio.Semaphore,
         rate_limiter: AsyncLimiter | None,
+        metrics_collector: DownloaderCollector,
     ) -> None:
         self._log = LoggerFactory.get_logger(self, logger_id=repository.url)
 
@@ -234,7 +235,7 @@ class RepositoryMirror:
             client_private_key=self._config.client_private_key,
         )
 
-        DownloaderCollector.register(self._downloader, self._repository)
+        metrics_collector.add_downloader(self._repository, self._downloader)
 
     async def mirror(self) -> bool:
         """Start repository mirror process
@@ -517,9 +518,18 @@ class APTMirror:
         if self._config.limit_rate:
             self._rate_limiter = AsyncLimiter(self._config.limit_rate * 60, 60)
 
+        self._metrics_collector = DownloaderCollector(
+            self._config.prometheus_host, self._config.prometheus_port
+        )
+        if (
+            self._config.prometheus_enable
+            and not self._metrics_collector.prometheus_available()
+        ):
+            self._log.warning("Prometheus python client is not available")
+
     def on_stop(self):
         self.stopped = True
-        DownloaderCollector.shutdown_server()
+        self._metrics_collector.shutdown()
         asyncio.get_running_loop().stop()
 
     async def run(self) -> int:
@@ -532,14 +542,6 @@ class APTMirror:
 
         self.lock()
 
-        if self._config.prometheus_enable:
-            if not DownloaderCollector.prometheus_available():
-                self._log.warning("Prometheus python client is not available")
-            else:
-                DownloaderCollector.init_server(
-                    self._config.prometheus_host, self._config.prometheus_port
-                )
-
         tasks: list[Awaitable[bool]] = []
         mirrors: list[RepositoryMirror] = []
         for repository in self._config.repositories.values():
@@ -549,6 +551,7 @@ class APTMirror:
                 self._semaphore,
                 self._download_semaphore,
                 self._rate_limiter,
+                self._metrics_collector,
             )
             tasks.append(asyncio.create_task(mirror.mirror()))
             mirrors.append(mirror)
@@ -641,7 +644,7 @@ class APTMirror:
                     " possible errors."
                 )
 
-        DownloaderCollector.shutdown_server()
+        self._metrics_collector.shutdown()
 
         self.unlock()
 

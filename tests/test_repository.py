@@ -2,6 +2,9 @@ from pathlib import Path
 from typing import Iterable
 
 from apt_mirror.download import DownloadFile
+from apt_mirror.download.download_file import FileCompression
+from apt_mirror.download.url import URL
+from apt_mirror.repository import ByHash, Codename, Repository
 from tests.base import BaseTest
 
 
@@ -45,3 +48,43 @@ class TestRepository(BaseTest):
             config.repositories["http://ftp.debian.org/debian-security"]
         )
         self.assertFalse(repository.ignore_errors)
+
+    def test_release_files(self):
+        components = ["main", "contrib", "non-free"]
+
+        repository = Repository(
+            url=URL.from_string("http://localhost.local/repo"),
+            clean=False,
+            skip_clean=set(),
+            mirror_path=Path("repo"),
+            ignore_errors=set(),
+            codenames=Repository.Codenames(
+                [
+                    (
+                        "test",
+                        Codename(
+                            ByHash.default(),
+                            "test",
+                            {
+                                component: Codename.Component("main", True, ["amd64"])
+                                for component in components
+                            },
+                        ),
+                    )
+                ]
+            ),
+        )
+
+        metadata_files = {
+            str(f.path): f
+            for f in repository.get_metadata_files(
+                self.TEST_DATA / "UnsyncedReleaseFiles", False, set()
+            )
+        }
+
+        self.assertEqual(
+            metadata_files["dists/test/main/binary-amd64/Packages"]
+            .compression_variants[FileCompression.XZ]
+            .size,
+            662376,
+        )

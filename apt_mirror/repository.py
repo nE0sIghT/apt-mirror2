@@ -23,6 +23,12 @@ def should_ignore_errors(ignored_paths: set[str], path: Path):
     return any(path.is_relative_to(ignored_path) for ignored_path in ignored_paths)
 
 
+class InvalidReleaseFilesException(RuntimeError):
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+        self.message = message
+
+
 @dataclass
 class PackageFile:
     path: Path
@@ -486,6 +492,75 @@ class BaseRepository(ABC):
             )
 
         return pool_files
+
+    def validate_release_files(self, repository_root: Path, encode_tilde: bool):
+        release_files_exists = False
+
+        for _, metadata_release_files in self.release_files_per_metadata.items():
+            metadata_sizes: dict[str, list[tuple[int, Path]]] = {}
+            metadata_hashes: dict[str, dict[HashType, list[tuple[str, Path]]]] = {}
+
+            for release_file_relative_path in metadata_release_files:
+                if release_file_relative_path.suffix == ".gpg":
+                    continue
+
+                release_file = (
+                    repository_root
+                    / self.get_mirror_path(encode_tilde)
+                    / release_file_relative_path
+                )
+
+                if not release_file.exists():
+                    continue
+
+                with open(release_file, "rt", encoding="utf-8") as fp:
+                    release = Release(fp)
+
+                release_files_exists = True
+                for hash_type in HashType:
+                    for file in release.get(hash_type.value, []):
+                        try:
+                            size = int(file["size"])
+                        except ValueError:
+                            size = 0
+
+                        if size <= 0:
+                            continue
+
+                        # Ignore release files in release files
+                        if file["name"] in self.RELEASE_FILES:
+                            continue
+
+                        path = file["name"]
+                        hash_sum = file[hash_type.value]
+
+                        if any(size != s[0] for s in metadata_sizes.get(path, [])):
+                            raise InvalidReleaseFilesException(
+                                f"Size of file {path} in release file"
+                                f" {release_file_relative_path} differs from size in"
+                                f" release file {metadata_sizes[path][0][1]}"
+                            )
+
+                        if any(
+                            hash_sum != s[0]
+                            for s in metadata_hashes.get(path, {}).get(hash_type, [])
+                        ):
+                            raise InvalidReleaseFilesException(
+                                f"Hashsum of type {hash_type} of file {path} in release"
+                                f" file {release_file_relative_path} differs from"
+                                " hashsum in release file"
+                                f" {metadata_hashes[path][hash_type][0][1]}"
+                            )
+
+                        metadata_sizes.setdefault(path, []).append(
+                            (size, release_file_relative_path)
+                        )
+                        metadata_hashes.setdefault(path, {}).setdefault(
+                            hash_type, []
+                        ).append((hash_sum, release_file_relative_path))
+
+        if not release_files_exists:
+            raise InvalidReleaseFilesException("No release files were found")
 
     @property
     def release_files(self) -> Sequence[Path]:

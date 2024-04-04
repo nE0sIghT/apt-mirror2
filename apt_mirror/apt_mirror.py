@@ -24,7 +24,7 @@ from .download import (
 )
 from .logs import LoggerFactory
 from .prometheus import DownloaderCollector
-from .repository import BaseRepository
+from .repository import BaseRepository, InvalidReleaseFilesException
 from .version import __version__
 
 LOG = LoggerFactory.get_logger(__package__)
@@ -246,7 +246,12 @@ class RepositoryMirror:
         async with self._semaphore:
             self._log.info(f"Mirroring repository {self._repository}")
 
-            await self.download_release_files()
+            release_files = await self.download_release_files()
+            if not release_files:
+                self._log.error(
+                    f"Unable to obtain release files for repository {self._repository}"
+                )
+                return False
 
             # Download other metadata files
             metadata_files = await self.download_metadata_files()
@@ -275,12 +280,7 @@ class RepositoryMirror:
 
             if self._repository.clean:
                 await self.clean_repository(
-                    needed_files=set(
-                        itertools.chain.from_iterable(
-                            v.get_all_paths() for v in self._downloader.get_all_files()
-                        )
-                    )
-                    - self._downloader.get_missing_sources(),
+                    needed_files=self._downloader.get_downloaded_files_paths(),
                     unlink=self._config.autoclean,
                 )
 
@@ -295,8 +295,41 @@ class RepositoryMirror:
             DownloadFile.from_path(path, ignore_missing=True)
             for path in self._repository.release_files
         ]
-        self._downloader.add(*release_files)
-        await self._downloader.download()
+
+        tries = 15
+        while True:
+            self._downloader.reset_paths()
+            self._downloader.add(*release_files)
+            await self._downloader.download()
+
+            # Drop release files in skel which we were unable to download
+            downloaded_paths = self._downloader.get_downloaded_files_paths()
+            for relative_path in self._repository.release_files:
+                path = (
+                    self._config.skel_path
+                    / self._repository.get_mirror_path(self._config.encode_tilde)
+                    / relative_path
+                )
+
+                if path.exists() and relative_path not in downloaded_paths:
+                    path.unlink()
+
+            # Check release files
+            try:
+                self._repository.validate_release_files(
+                    self._config.skel_path, self._config.encode_tilde
+                )
+                break
+            except InvalidReleaseFilesException as ex:
+                self._log.warning(
+                    f"Release files are invalid: {ex.message}. Retrying..."
+                )
+                tries -= 1
+
+                if tries < 1:
+                    return []
+
+                await asyncio.sleep(5)
 
         return release_files
 

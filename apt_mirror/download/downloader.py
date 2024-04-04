@@ -79,6 +79,11 @@ class Downloader(ABC):
         self._error_count = 0
         self._error_size = 0
 
+    def reset_paths(self):
+        self._downloaded: list[DownloadFileCompressionVariant] = []
+        self._unmodified: list[DownloadFileCompressionVariant] = []
+        self._missing_sources: set[Path] = set()
+
     def set_target_path(self, path: Path):
         self._target_root_path = path
 
@@ -317,6 +322,9 @@ class Downloader(ABC):
                                 self.link_or_copy(target_path, *mirror_paths)
 
                             self._downloaded.append(variant)
+                            self._missing_sources.difference_update(
+                                variant.get_all_paths()
+                            )
 
                             return
 
@@ -362,6 +370,7 @@ class Downloader(ABC):
                         self._downloaded_size += size
 
                         self._downloaded.append(variant)
+                        self._missing_sources.difference_update(variant.get_all_paths())
                         return
 
         if source_file.ignore_errors or (source_file.ignore_missing and not error):
@@ -396,6 +405,16 @@ class Downloader(ABC):
 
     def get_all_files(self) -> list[DownloadFileCompressionVariant]:
         return self.get_downloaded_files() + self.get_unmodified_files()
+
+    def get_downloaded_files_paths(self) -> set[Path]:
+        return (
+            set(
+                itertools.chain.from_iterable(
+                    v.get_all_paths() for v in self.get_all_files()
+                )
+            )
+            - self.get_missing_sources()
+        )
 
     def get_missing_sources(self):
         return self._missing_sources.copy()

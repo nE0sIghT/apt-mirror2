@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from enum import Enum
 from mmap import MADV_SEQUENTIAL, MAP_POPULATE, MAP_PRIVATE, mmap
 from pathlib import Path
-from typing import IO, Iterable, Sequence
+from typing import IO, Any, Iterable, Sequence
 
 from debian.deb822 import Release
 
@@ -53,11 +53,15 @@ class PackageFile:
 
 class IndexFileParser(ABC):
     def __init__(
-        self, repository_path: Path, index_files: set[Path], ignore_errors: set[str]
+        self,
+        repository_path: Path,
+        index_files: set[Path],
+        ignore_errors: set[str],
+        logger_id: Any | None = None,
     ) -> None:
         super().__init__()
 
-        self._log = LoggerFactory.get_logger(self)
+        self._log = LoggerFactory.get_logger(self, logger_id=logger_id)
         self._repository_path = repository_path
         self._index_files = index_files
         self._ignore_errors = ignore_errors
@@ -123,9 +127,15 @@ class IndexFileParser(ABC):
 
 class SourcesParser(IndexFileParser):
     def __init__(
-        self, repository_path: Path, index_files: set[Path], ignore_errors: set[str]
+        self,
+        repository_path: Path,
+        index_files: set[Path],
+        ignore_errors: set[str],
+        logger_id: Any | None = None,
     ) -> None:
-        super().__init__(repository_path, index_files, ignore_errors)
+        super().__init__(
+            repository_path, index_files, ignore_errors, logger_id=logger_id
+        )
         self._reset_block_parser()
 
     # https://github.com/pylint-dev/pylint/issues/5214
@@ -202,9 +212,15 @@ class SourcesParser(IndexFileParser):
 
 class PackagesParser(IndexFileParser):
     def __init__(
-        self, repository_path: Path, index_files: set[Path], ignore_errors: set[str]
+        self,
+        repository_path: Path,
+        index_files: set[Path],
+        ignore_errors: set[str],
+        logger_id: Any | None = None,
     ) -> None:
-        super().__init__(repository_path, index_files, ignore_errors)
+        super().__init__(
+            repository_path, index_files, ignore_errors, logger_id=logger_id
+        )
         self._reset_block_parser()
 
     def _reset_block_parser(self):
@@ -479,6 +495,7 @@ class BaseRepository(ABC):
                     repository_root / self.get_mirror_path(encode_tilde),
                     set(self.sources_files) - missing_sources,
                     ignore_errors=self.ignore_errors,
+                    logger_id=self.url,
                 ).parse()
             )
 
@@ -488,6 +505,7 @@ class BaseRepository(ABC):
                     repository_root / self.get_mirror_path(encode_tilde),
                     set(self.packages_files) - missing_sources,
                     ignore_errors=self.ignore_errors,
+                    logger_id=self.url,
                 ).parse()
             )
 

@@ -518,6 +518,7 @@ class RepositoryMirror:
             self._config.skel_path
             / self._repository.get_mirror_path(self._config.encode_tilde),
             needed_files,
+            logger_id=self._repository.url,
         )
 
         cleaner.clean()

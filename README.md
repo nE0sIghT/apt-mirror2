@@ -2,7 +2,10 @@
 
 [`apt-mirror2`](https://gitlab.com/apt-mirror2/apt-mirror2) is the Python/asyncio reimplementation of the
 [apt-mirror](https://github.com/apt-mirror/apt-mirror) developed as drop-in replacement for the latest.  
-This project should be suitable as general [apt-mirror](https://github.com/apt-mirror/apt-mirror) replacement.
+This project should be suitable as general [apt-mirror](https://github.com/apt-mirror/apt-mirror) replacement.  
+
+One of the main advantages of the `apt-mirror2` over the `apt-mirror` - you should never got broken mirror in case `apt-mirror2` returns 0 exit code.
+This is ensured by data integrity checks at all stages of mirroring.
 
 # Requirements
 
@@ -68,7 +71,7 @@ options:
   --version   Show version
 ```
 
-# apt-mirror configuration compatibility
+# apt-mirror compatibility
 
 Most of `apt-mirror` configuration directives are supported.  
 As of now proxy for FTP repositories is not supported.  

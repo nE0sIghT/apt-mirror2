@@ -654,8 +654,9 @@ class Repository(BaseRepository):
             return False
 
         # Skip redundand components
-        if file_path_str.count("/") >= 2:
-            file_component, _, _ = file_path_str.rsplit("/", maxsplit=2)
+        components_split = min(file_path_str.count("/"), 2)
+        if components_split >= 1:
+            file_component = file_path_str.rsplit("/", maxsplit=components_split)[0]
 
             if not any(
                 file_component == component.name
@@ -666,9 +667,14 @@ class Repository(BaseRepository):
             if (
                 "/binary-" in file_path_str
                 and "source" not in file_path_str
-                and not any(
-                    arch in file_path_str
-                    for arch in codename.components[file_component].arches
+                and (
+                    not codename.should_mirror_binaries()
+                    or not any(
+                        arch in file_path_str
+                        for arch in itertools.chain(
+                            codename.components[file_component].arches, ["-all"]
+                        )
+                    )
                 )
             ):
                 return False
@@ -685,6 +691,13 @@ class Repository(BaseRepository):
                 for suffix in ("Commands-", "Components-", "Contents-")
             )
             and "source" not in file_path.name
+            and not any(arch in file_path.name for arch in all_arches)
+        ):
+            return False
+
+        if (
+            "Contents-" in file_path_str
+            and ".diff" in file_path_str
             and not any(arch in file_path.name for arch in all_arches)
         ):
             return False

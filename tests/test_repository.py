@@ -21,8 +21,17 @@ class TestRepository(BaseTest):
 
         raise RuntimeError(f"No element {element} found in set {collection}")
 
-    def get_repository(self):
-        components = ["main", "contrib", "non-free"]
+    def get_repository(
+        self,
+        components: list[str] | None = None,
+        arches: list[str] | None = None,
+        mirror_source: bool = True,
+    ):
+        if not components:
+            components = ["main", "contrib", "non-free", "non-free/debian-installer"]
+
+        if not arches:
+            arches = ["amd64", "s390x"]
 
         return Repository(
             url=URL.from_string("http://localhost.local/repo"),
@@ -38,7 +47,9 @@ class TestRepository(BaseTest):
                             ByHash.default(),
                             "test",
                             {
-                                component: Codename.Component("main", True, ["amd64"])
+                                component: Codename.Component(
+                                    component, mirror_source, arches
+                                )
                                 for component in components
                             },
                         ),
@@ -93,3 +104,51 @@ class TestRepository(BaseTest):
             repository.validate_release_files(
                 self.TEST_DATA / "NonExistingFolder", False
             )
+
+    def test_components_filter(self):
+        repository = self.get_repository(
+            components=["main", "contrib", "non-free", "non-free/debian-installer"],
+            arches=["amd64", "s390x"],
+            mirror_source=True,
+        )
+
+        metadata_files = set(
+            d.path.relative_to(Path("dists/test"))
+            for d in repository.get_metadata_files(
+                self.TEST_DATA / "DebianArchiveBusterProposedUpdates", False, set()
+            )
+        )
+
+        self.assertIn(Path("main/source/Sources"), metadata_files)
+        self.assertIn(Path("main/binary-amd64/Packages"), metadata_files)
+        self.assertIn(Path("contrib/binary-amd64/Packages"), metadata_files)
+        self.assertIn(Path("contrib/i18n/Translation-en"), metadata_files)
+        self.assertIn(Path("non-free/binary-all/Packages"), metadata_files)
+        self.assertIn(
+            Path("non-free/debian-installer/binary-all/Release"), metadata_files
+        )
+
+        self.assertNotIn(Path("main/Contents-ppc64el"), metadata_files)
+        self.assertNotIn(Path("contrib/binary-arm64/Packages"), metadata_files)
+        self.assertNotIn(Path("non-free-firmware/Contents-amd64"), metadata_files)
+
+        repository = self.get_repository(
+            components=["contrib"],
+            arches=["i386"],
+            mirror_source=False,
+        )
+
+        metadata_files = set(
+            d.path.relative_to(Path("dists/test"))
+            for d in repository.get_metadata_files(
+                self.TEST_DATA / "DebianArchiveBusterProposedUpdates", False, set()
+            )
+        )
+
+        self.assertNotIn(Path("main/source/Sources"), metadata_files)
+        self.assertNotIn(Path("contrib/source/Sources"), metadata_files)
+
+        self.assertIn(Path("contrib/binary-all/Packages"), metadata_files)
+
+        self.assertNotIn(Path("main/binary-amd64/Packages"), metadata_files)
+        self.assertIn(Path("contrib/binary-i386/Packages"), metadata_files)

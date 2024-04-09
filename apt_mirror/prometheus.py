@@ -31,6 +31,13 @@ try:
     from prometheus_client import Metric, start_http_server
     from prometheus_client.core import REGISTRY, GaugeMetricFamily
     from prometheus_client.registry import Collector
+except ImportError:
+
+    class DownloaderCollector(BaseDownloaderCollector):
+        def collect(self):
+            yield
+
+else:
 
     class DownloaderCollector(BaseDownloaderCollector, Collector):  # type: ignore
         def __init__(self, address: str, port: int) -> None:
@@ -77,9 +84,3 @@ try:
             yield self._metric("missing_files_size")
             yield self._metric("unmodified_files_count")
             yield self._metric("unmodified_files_size")
-
-except ImportError:
-
-    class DownloaderCollector(BaseDownloaderCollector):
-        def collect(self):
-            yield

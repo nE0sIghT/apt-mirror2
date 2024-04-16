@@ -276,13 +276,23 @@ class RepositoryMirror:
             await self.download_pool_files()
 
             # Move skel to mirror
-            await self.move_metadata(downloaded_metadata_files)
+            if not self._error:
+                await self.move_metadata(downloaded_metadata_files)
+            else:
+                self._log.warning(
+                    "Metadata movement skipped because of download errors"
+                )
 
             if self._repository.clean:
-                await self.clean_repository(
-                    needed_files=self._downloader.get_downloaded_files_paths(),
-                    unlink=self._config.autoclean,
-                )
+                if not self._error:
+                    await self.clean_repository(
+                        needed_files=self._downloader.get_downloaded_files_paths(),
+                        unlink=self._config.autoclean,
+                    )
+                else:
+                    self._log.warning(
+                        "Repository cleanup skipped because of download errors"
+                    )
 
             self._log.info(f"Repository {self._repository} mirroring complete")
 

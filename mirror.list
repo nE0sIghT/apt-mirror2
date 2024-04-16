@@ -47,6 +47,10 @@ set _tilde            0
 # set prometheus_host     localhost
 # set prometheus_port     8000
 
+## Retries
+## How much times retry to download broken release files
+# set release_files_retries 15
+
 ## Run script after mirror complete
 # set run_postmirror    0
 ## Path to Post Mirror script

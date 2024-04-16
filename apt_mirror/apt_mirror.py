@@ -296,7 +296,7 @@ class RepositoryMirror:
             for path in self._repository.release_files
         ]
 
-        tries = 15
+        tries = self._config.release_files_retries
         while True:
             self._downloader.reset_paths()
             self._downloader.add(*release_files)

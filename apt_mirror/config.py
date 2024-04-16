@@ -263,6 +263,7 @@ class Config:
             "prometheus_enable": "off",
             "prometheus_host": "localhost",
             "prometheus_port": "8000",
+            "release_files_retries": "15",
         }
 
         self._parse_config_file()
@@ -544,3 +545,7 @@ class Config:
     @property
     def prometheus_port(self) -> int:
         return int(self["prometheus_port"])
+
+    @property
+    def release_files_retries(self) -> int:
+        return max(1, int(self["release_files_retries"]))

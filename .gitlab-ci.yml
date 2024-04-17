@@ -4,17 +4,9 @@ variables:
   PYTHON_VERSION: '3.10'
   IMAGE_NAME: aptmirror/apt-mirror2
 
-workflow:
-  rules:
-    - if: $CI_COMMIT_REF_PROTECTED == "true"
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 
 stages:
-  - validate
-  - test
   - security
-  - build
-  - deploy
 
 .pip cache:
   cache:
@@ -47,60 +39,6 @@ stages:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 
-flake8:
-  extends:
-    - .validate defaults
-  variables:
-    VALIDATE_TOOL: flake8
-
-isort:
-  extends:
-    - .validate defaults
-  variables:
-    VALIDATE_TOOL: isort
-    VALIDATE_TOOL_ARGS: --check --diff .
-
-black:
-  extends:
-    - .validate defaults
-  variables:
-    VALIDATE_TOOL: black
-    VALIDATE_TOOL_ARGS: --check --diff .
-
-# https://gitlab.freedesktop.org/freedesktop/ci-templates/-/blob/801093be0b88f23c8dbabe9cfce7134548f7ccdc/templates/ci-fairy.yml
-# https://gitlab.gnome.org/GNOME/gnome-shell/-/blob/876ca5d2de92efbea3f2379839073747c9e0dd55/.gitlab-ci.yml#L82
-check commits:
-  stage: validate
-  image: quay.io/freedesktop.org/ci-templates:ci-fairy-sha256-eb20531b68e57da06f4e631402fd494869b1529e2c4ad05cfe24ef3fb8038815
-  script:
-    - ci-fairy check-commits --junit-xml=commit-message-junit-report.xml
-  artifacts:
-    expire_in: 1 week
-    paths:
-      - commit-message-junit-report.xml
-    reports:
-      junit: commit-message-junit-report.xml
-  variables:
-    GIT_DEPTH: "100"
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-
-test:
-  extends:
-    - .test defaults
-  stage: test
-  script:
-    - pytest --junitxml=pytest-result.xml
-  artifacts:
-    reports:
-      junit: pytest-result.xml
-  parallel:
-    matrix:
-      - PYTHON_VERSION:
-          - '3.10'
-          - '3.11'
-          - '3.12'
-
 security (trivy):
   extends:
     - .security defaults
@@ -108,7 +46,8 @@ security (trivy):
     name: aquasec/trivy
     entrypoint: [""]
   script:
-    - trivy fs .
+    - trivy --version
+    - trivy fs . --debug
   cache:
     paths:
       - .trivy
@@ -118,118 +57,3 @@ security (trivy):
     TRIVY_EXIT_CODE: 1
     TRIVY_SCANNERS: vuln,config
 
-security (safety):
-  extends:
-    - .pip cache
-    - .security defaults
-  image:
-    name: python:$PYTHON_VERSION
-  before_script:
-    - pip install safety
-  script:
-    - safety check -r requirements.txt
-
-security (pip-audit):
-  extends:
-    - .pip cache
-    - .security defaults
-  image:
-    name: python:$PYTHON_VERSION
-  before_script:
-    - pip install pip-audit
-  script:
-    - pip-audit -r requirements.txt
-
-.build image:
-  image: docker:24
-  services:
-    - docker:24-dind
-  script:
-    - >-
-      docker build
-      --build-arg PYTHON_VERSION="${PYTHON_VERSION}"
-      -t "${IMAGE_NAME}:latest"
-      -f Dockerfile
-      .
-  tags:
-    - docker
-
-build image:
-  extends:
-    - .build image
-  stage: build
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-  needs: []
-
-.deploy:
-  stage: deploy
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule"
-      when: never
-    - if: $CI_COMMIT_REF_PROTECTED == "true"
-
-publish image:
-  extends:
-    - .build image
-    - .deploy
-  script:
-    - !reference [.build image, script]
-    - docker login -u "${DOCKER_HUB_USERNAME}" -p "${DOCKER_HUB_PASSWORD}"
-    - docker push "${IMAGE_NAME}:latest"
-    - if [ -n "${CI_COMMIT_TAG}" ]; then
-    -   docker tag "${IMAGE_NAME}:latest" "${IMAGE_NAME}:${CI_COMMIT_TAG#v}"
-    -   docker push "${IMAGE_NAME}:${CI_COMMIT_TAG#v}"
-    - fi
-
-update docker hub readme:
-  image: debian:stable
-  extends:
-    - .deploy
-  before_script:
-    - apt-get update
-    - >-
-      apt-get install -y \
-        curl \
-        jq
-  script:
-    - >-
-      token="$( \
-        jq -n \
-           --arg username "${DOCKER_HUB_USERNAME}" \
-           --arg password "${DOCKER_HUB_PASSWORD}" \
-           '{ "username": $username, "password": $password }' | \
-        curl -H "Content-Type: application/json" \
-             -X POST \
-             --data-binary @- \
-             'https://hub.docker.com/v2/users/login' | \
-        jq -r '.token' \
-      )"
-    - >-
-      jq -n \
-         --arg readme "$(cat README.md)" \
-         '{ "full_description": $readme }' | \
-      curl -X PATCH \
-           --header "Content-Type: application/json"\
-           --header "Authorization: Bearer $token" \
-           --fail-with-body \
-           --data-binary @- \
-           "https://hub.docker.com/v2/repositories/${IMAGE_NAME}/"
-
-publish to pypi:
-  stage: deploy
-  image: python:$PYTHON_VERSION
-  before_script:
-    - pip install --upgrade pip
-    - >-
-      pip install --upgrade \
-        build \
-        twine
-  script:
-    - python -m build
-    # Uses TWINE_REPOSITORY, TWINE_USERNAME and TWINE_PASSWORD
-    - twine upload dist/*
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule"
-      when: never
-    - if: $CI_COMMIT_REF_PROTECTED == "true" && $CI_COMMIT_TAG

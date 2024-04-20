@@ -34,7 +34,7 @@ stages:
     - .pip cache
   image: python:$PYTHON_VERSION
   before_script:
-    - pip install -r requirements.txt
+    - pip install -r requirements.txt -r requirements/dev.txt
   needs: []
 
 .validate defaults:

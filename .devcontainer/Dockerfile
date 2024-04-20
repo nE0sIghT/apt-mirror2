@@ -4,6 +4,7 @@ FROM docker.io/python:$PYTHON_VERSION
 SHELL ["/bin/bash", "-exo", "pipefail", "-c"]
 
 COPY requirements.txt /tmp/pip-tmp/
+COPY requirements/ /tmp/pip-tmp/requirements/
 
 RUN \
     sed -i -e 's#Types: deb#Types: deb deb-src#' /etc/apt/sources.list.d/debian.sources ;\
@@ -17,7 +18,8 @@ RUN \
         sudo \
     ;\
     pip --disable-pip-version-check --no-cache-dir install \
-        -r /tmp/pip-tmp/requirements.txt ;\
+        -r /tmp/pip-tmp/requirements.txt \
+        -r /tmp/pip-tmp/requirements/dev.txt ;\
     rm -rf /tmp/pip-tmp ;\
     adduser --disabled-password --gecos '' vscode ;\
     echo "vscode ALL=(root) NOPASSWD: ALL" > /etc/sudoers.d/vscode

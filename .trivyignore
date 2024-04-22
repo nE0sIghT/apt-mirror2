@@ -1,5 +1,6 @@
 # We don't want to migrate to non-root images
 DS002
+DS017
 DS026
 DS029
 KSV116

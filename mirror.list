@@ -19,15 +19,15 @@ set _tilde            0
 
 ## Proxy configuration.
 ## Only supported for http repositories.
-# use_proxy             off
+# set use_proxy             off
 ## If proxy scheme is ommited, `http://` assumed
-# http_proxy            127.0.0.1:3128
-# https_proxy           127.0.0.1:3128
-# proxy_user            user
-# proxy_password        password
+# set http_proxy            127.0.0.1:3128
+# set https_proxy           127.0.0.1:3128
+# set proxy_user            user
+# set proxy_password        password
 
 ## User agent for http repositories. Default `apt-mirror2/VERSION`
-# http_user_agent       apt-mirror2
+# set http_user_agent       apt-mirror2
 
 ## Certificates configuration
 ## Whether to verify https certificate

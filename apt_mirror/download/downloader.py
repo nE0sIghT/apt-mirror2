@@ -10,9 +10,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, AsyncGenerator
 
-from aiofile import async_open
 from aiolimiter import AsyncLimiter
 
+from ..aiofile import AsyncIOFile
 from ..logs import LoggerFactory
 from .download_file import DownloadFile, DownloadFileCompressionVariant
 from .proxy import Proxy
@@ -330,7 +330,7 @@ class Downloader(ABC):
 
                         size = 0
                         target_path.unlink(missing_ok=True)
-                        async with async_open(target_path, "wb") as fp:
+                        async with AsyncIOFile(target_path) as fp:
                             try:
                                 async for chunk in response.stream():
                                     if self._rate_limiter:

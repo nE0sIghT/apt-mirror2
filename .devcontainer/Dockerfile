@@ -12,6 +12,7 @@ RUN \
     apt-get -y install \
         bash-completion \
         coreutils \
+        devscripts \
         git \
         git-gui \
         gitk \
@@ -19,6 +20,7 @@ RUN \
     ;\
     pip --disable-pip-version-check --no-cache-dir install \
         -r /tmp/pip-tmp/requirements.txt \
+        -r /tmp/pip-tmp/requirements/aiofiles.txt \
         -r /tmp/pip-tmp/requirements/dev.txt ;\
     rm -rf /tmp/pip-tmp ;\
     adduser --disabled-password --gecos '' vscode ;\

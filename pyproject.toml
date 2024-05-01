@@ -36,6 +36,9 @@ dev = [
     "pylint==3.0.3",
     "pytest==7.4.4",
 ]
+aiofiles = [
+    "aiofiles==23.2.1"
+]
 prometheus = [
     "prometheus-client==0.20.0"
 ]

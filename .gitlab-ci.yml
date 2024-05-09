@@ -151,8 +151,6 @@ security (pip-audit):
       -t "${IMAGE_NAME}:latest"
       -f Dockerfile
       .
-  tags:
-    - docker
 
 build image:
   extends:

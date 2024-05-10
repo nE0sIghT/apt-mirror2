@@ -167,10 +167,18 @@ build image:
       when: never
     - if: $CI_COMMIT_REF_PROTECTED == "true"
 
+.docker deploy:
+  extends:
+    - .deploy
+  rules:
+    - if: $CI_COMMIT_TAG && $CI_COMMIT_TAG =~ /[a-z]/
+      when: never
+    - !reference [.deploy, rules]
+
 publish image:
   extends:
     - .build image
-    - .deploy
+    - .docker deploy
   script:
     - !reference [.build image, script]
     - docker login -u "${DOCKER_HUB_USERNAME}" -p "${DOCKER_HUB_PASSWORD}"
@@ -183,7 +191,7 @@ publish image:
 update docker hub readme:
   image: debian:stable
   extends:
-    - .deploy
+    - .docker deploy
   before_script:
     - apt-get update
     - >-

@@ -27,10 +27,10 @@ class TestRepository(BaseTest):
         arches: list[str] | None = None,
         mirror_source: bool = True,
     ):
-        if not components:
+        if components is None:
             components = ["main", "contrib", "non-free", "non-free/debian-installer"]
 
-        if not arches:
+        if arches is None:
             arches = ["amd64", "s390x"]
 
         return Repository(
@@ -105,7 +105,7 @@ class TestRepository(BaseTest):
                 self.TEST_DATA / "NonExistingFolder", False
             )
 
-    def test_components_filter(self):
+    def test_components_filter_buster(self):
         repository = self.get_repository(
             components=["main", "contrib", "non-free", "non-free/debian-installer"],
             arches=["amd64", "s390x"],
@@ -152,3 +152,56 @@ class TestRepository(BaseTest):
 
         self.assertNotIn(Path("main/binary-amd64/Packages"), metadata_files)
         self.assertIn(Path("contrib/binary-i386/Packages"), metadata_files)
+
+    def test_components_filter_bookworm(self):
+        repository = self.get_repository(
+            components=["main", "contrib", "non-free", "non-free/debian-installer"],
+            arches=["amd64", "s390x"],
+            mirror_source=True,
+        )
+
+        metadata_files = set(
+            d.path.relative_to(Path("dists/test"))
+            for d in repository.get_metadata_files(
+                self.TEST_DATA / "DebianBookworm", False, set()
+            )
+        )
+
+        self.assertIn(Path("main/Contents-all"), metadata_files)
+        self.assertIn(Path("main/Contents-udeb-all"), metadata_files)
+        self.assertIn(Path("main/Contents-amd64"), metadata_files)
+        self.assertIn(Path("main/Contents-udeb-amd64"), metadata_files)
+        self.assertIn(Path("main/Contents-s390x"), metadata_files)
+        self.assertIn(Path("main/Contents-udeb-s390x"), metadata_files)
+
+        self.assertNotIn(Path("main/Contents-mips64el"), metadata_files)
+        self.assertNotIn(Path("main/Contents-udeb-mips64el"), metadata_files)
+        self.assertNotIn(Path("main/Contents-udeb-ppc64el"), metadata_files)
+        self.assertNotIn(Path("main/Contents-ppc64el"), metadata_files)
+
+    def test_components_filter_all(self):
+        repository = self.get_repository(
+            components=["main", "contrib", "non-free", "non-free/debian-installer"],
+            arches=[],
+            mirror_source=True,
+        )
+
+        metadata_files = set(
+            d.path.relative_to(Path("dists/test"))
+            for d in repository.get_metadata_files(
+                self.TEST_DATA / "DebianBookworm", False, set()
+            )
+        )
+
+        self.assertNotIn(Path("main/Contents-all"), metadata_files)
+        self.assertNotIn(Path("main/Contents-udeb-all"), metadata_files)
+        self.assertNotIn(Path("main/Contents-amd64"), metadata_files)
+        self.assertNotIn(Path("main/Contents-udeb-amd64"), metadata_files)
+        self.assertNotIn(Path("main/Contents-s390x"), metadata_files)
+        self.assertNotIn(Path("main/Contents-udeb-s390x"), metadata_files)
+        self.assertNotIn(Path("main/Contents-mips64el"), metadata_files)
+        self.assertNotIn(Path("main/Contents-udeb-mips64el"), metadata_files)
+        self.assertNotIn(Path("main/Contents-udeb-ppc64el"), metadata_files)
+        self.assertNotIn(Path("main/Contents-ppc64el"), metadata_files)
+
+        self.assertNotIn(Path("main/binary-all/Packages"), metadata_files)

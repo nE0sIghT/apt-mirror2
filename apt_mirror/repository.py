@@ -684,6 +684,8 @@ class Repository(BaseRepository):
             for component in codename.components.values()
             for arch in component.arches
         )
+        if all_arches:
+            all_arches.add("all")
 
         if (
             any(

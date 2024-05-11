@@ -239,8 +239,9 @@ publish to pypi:
   script:
     - python -m build
 
-    - TWINE_PASSWORD="$(curl -X POST "https://pypi.org/_/oidc/mint-token" -d "{\"token\":\"${PYPI_ID_TOKEN}\"}" | jq --raw-output '.token')"
+    - export TWINE_PASSWORD="$(curl -X POST "https://pypi.org/_/oidc/mint-token" -d "{\"token\":\"${PYPI_ID_TOKEN}\"}" | jq --raw-output '.token')"
     - twine upload dist/*
+    - unset TWINE_PASSWORD
   id_tokens:
     PYPI_ID_TOKEN:
       aud: pypi

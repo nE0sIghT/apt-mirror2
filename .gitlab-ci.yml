@@ -226,6 +226,11 @@ publish to pypi:
   stage: deploy
   image: python:$PYTHON_VERSION
   before_script:
+    - apt-get update
+    - >-
+      apt-get install -y \
+        curl \
+        jq
     - pip install --upgrade pip
     - >-
       pip install --upgrade \
@@ -233,8 +238,14 @@ publish to pypi:
         twine
   script:
     - python -m build
-    # Uses TWINE_REPOSITORY, TWINE_USERNAME and TWINE_PASSWORD
+
+    - TWINE_PASSWORD="$(curl -X POST "https://pypi.org/_/oidc/mint-token" -d "{\"token\":\"${PYPI_ID_TOKEN}\"}" | jq --raw-output '.token')"
     - twine upload dist/*
+  id_tokens:
+    PYPI_ID_TOKEN:
+      aud: pypi
+  variables:
+    TWINE_USERNAME: __token__
   rules:
     - if: $CI_PIPELINE_SOURCE == "schedule"
       when: never

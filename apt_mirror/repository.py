@@ -402,6 +402,9 @@ class BaseRepository(ABC):
             codename_metadata_files: dict[Path, DownloadFile] = {}
 
             for release_file_relative_path in metadata_release_files:
+                if release_file_relative_path.suffix == ".gpg":
+                    continue
+
                 if release_file_relative_path in missing_sources:
                     continue
 

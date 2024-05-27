@@ -205,3 +205,20 @@ class TestRepository(BaseTest):
         self.assertNotIn(Path("main/Contents-ppc64el"), metadata_files)
 
         self.assertNotIn(Path("main/binary-all/Packages"), metadata_files)
+
+    def test_release_gpg(self):
+        repository = self.get_repository(
+            components=["main", "contrib", "non-free", "non-free/debian-installer"],
+            arches=[],
+            mirror_source=True,
+        )
+
+        try:
+            repository.get_metadata_files(
+                self.TEST_DATA / "BinaryGPGReleaseFile", False, set()
+            )
+        except UnicodeDecodeError:
+            self.fail(
+                "get_metadata_files() must not raise UnicodeDecodeError in case"
+                " Release.gpg is binary"
+            )

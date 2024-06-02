@@ -757,7 +757,7 @@ def get_config_file() -> Path:
 
     config_file = Path(args.configfile)
     if not config_file.is_file():
-        LOG.error("invalid config file specified")
+        LOG.error(f"invalid config file specified: {config_file}")
         exit(1)
 
     return config_file

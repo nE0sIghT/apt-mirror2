@@ -1,0 +1,4 @@
+deb [ arch=amd64,src ] http://ftp.debian.org/debian bookworm main
+
+include_source_name http://ftp.debian.org/debian wget
+exclude_source_name http://ftp.debian.org/debian curl

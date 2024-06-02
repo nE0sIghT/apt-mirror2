@@ -110,6 +110,16 @@ deb [ arch=amd64,arm64 ] http://archive.ubuntu.com/ubuntu mantic main restricted
 ## Can be exact file or folder.
 # ignore_errors https://packages.gitlab.com/runner/gitlab-runner/debian pool/bullseye/main/g/gitlab-runner/gitlab-runner_14.8.1_amd64.deb
 
+## Mirror source packages with specified names and binary packages which were built from
+## source packages with specified names.
+## When not specified - mirror all packages.
+# include_source_name http://archive.ubuntu.com/ubuntu source_name1 source_name2 source_name3
+
+## Do not mirror source packages with specified names and binary packages which were built from
+## source packages with specified names.
+## When not specified - do not exclude packages.
+# exclude_source_name http://archive.ubuntu.com/ubuntu source_name1 source_name2 source_name3
+
 ## If specified - clean redundant files in repository (look to _autoclean option)
 clean http://archive.ubuntu.com/ubuntu
 ## If specified and repository clean enabled - skip specified paths from clean

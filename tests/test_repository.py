@@ -222,3 +222,92 @@ class TestRepository(BaseTest):
                 "get_metadata_files() must not raise UnicodeDecodeError in case"
                 " Release.gpg is binary"
             )
+
+    def test_include_source_name(self):
+        config = self.get_config("DebianBookworm", config_name="mirror1.list")
+
+        repository = self.ensure_repository(
+            config.repositories["http://ftp.debian.org/debian"]
+        )
+        repository.mirror_path = Path("repo")
+
+        files = {
+            d.path
+            for d in repository.get_pool_files(
+                self.TEST_DATA / "DebianBookworm", False, set()
+            )
+        }
+
+        self.assertEqual(
+            {
+                Path(p)
+                for p in [
+                    "pool/main/c/curl/curl_7.88.1-10+deb12u5.debian.tar.xz",
+                    "pool/main/c/curl/curl_7.88.1-10+deb12u5.dsc",
+                    "pool/main/c/curl/curl_7.88.1-10+deb12u5_amd64.deb",
+                    "pool/main/c/curl/curl_7.88.1.orig.tar.gz",
+                    "pool/main/c/curl/curl_7.88.1.orig.tar.gz.asc",
+                    "pool/main/c/curl/libcurl3-gnutls_7.88.1-10+deb12u5_amd64.deb",
+                    "pool/main/c/curl/libcurl3-nss_7.88.1-10+deb12u5_amd64.deb",
+                    "pool/main/c/curl/libcurl4-doc_7.88.1-10+deb12u5_all.deb",
+                    "pool/main/c/curl/libcurl4-gnutls-dev_7.88.1-10+deb12u5_amd64.deb",
+                    "pool/main/c/curl/libcurl4-nss-dev_7.88.1-10+deb12u5_amd64.deb",
+                    "pool/main/c/curl/libcurl4-openssl-dev_7.88.1-10+deb12u5_amd64.deb",
+                    "pool/main/c/curl/libcurl4_7.88.1-10+deb12u5_amd64.deb",
+                ]
+            },
+            files,
+        )
+
+    def test_exclude_source_name(self):
+        config = self.get_config("DebianBookworm", config_name="mirror2.list")
+
+        repository = self.ensure_repository(
+            config.repositories["http://ftp.debian.org/debian"]
+        )
+        repository.mirror_path = Path("repo")
+
+        files = {
+            d.path
+            for d in repository.get_pool_files(
+                self.TEST_DATA / "DebianBookworm", False, set()
+            )
+        }
+
+        for file in [
+            "pool/main/w/wget/wget_1.21.3-1+b2_amd64.deb",
+            "pool/main/w/wget/wget_1.21.3-1.debian.tar.xz",
+            "pool/main/w/wget/wget_1.21.3-1.dsc",
+            "pool/main/w/wget/wget_1.21.3.orig.tar.gz",
+            "pool/main/w/wget/wget_1.21.3.orig.tar.gz.asc",
+        ]:
+            self.assertNotIn(Path(file), files)
+
+    def test_include_source_name_mixed(self):
+        config = self.get_config("DebianBookworm", config_name="mirror3.list")
+
+        repository = self.ensure_repository(
+            config.repositories["http://ftp.debian.org/debian"]
+        )
+        repository.mirror_path = Path("repo")
+
+        files = {
+            d.path
+            for d in repository.get_pool_files(
+                self.TEST_DATA / "DebianBookworm", False, set()
+            )
+        }
+
+        self.assertEqual(
+            {
+                Path(p)
+                for p in [
+                    "pool/main/w/wget/wget_1.21.3-1+b2_amd64.deb",
+                    "pool/main/w/wget/wget_1.21.3-1.debian.tar.xz",
+                    "pool/main/w/wget/wget_1.21.3-1.dsc",
+                    "pool/main/w/wget/wget_1.21.3.orig.tar.gz",
+                    "pool/main/w/wget/wget_1.21.3.orig.tar.gz.asc",
+                ]
+            },
+            files,
+        )

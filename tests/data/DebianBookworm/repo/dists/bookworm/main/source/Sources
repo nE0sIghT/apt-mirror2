@@ -1,0 +1,405 @@
+Package: 0ad
+Binary: 0ad
+Version: 0.0.26-3
+Maintainer: Debian Games Team <pkg-games-devel@lists.alioth.debian.org>
+Uploaders: Vincent Cheng <vcheng@debian.org>, Ludovic Rousseau <rousseau@debian.org>
+Build-Depends: autoconf, automake, cargo, cmake, debhelper-compat (= 13), dh-exec (>= 0.1), dpkg-dev (>= 1.15.5), git, libboost-dev (>= 1.57.0.1), libboost-filesystem-dev (>= 1.57.0.1), libcurl4-gnutls-dev (>= 7.32.0) | libcurl4-dev (>= 7.32.0), libenet-dev (>= 1.3), libfmt-dev (>= 4.0.0), libfreetype-dev, libgloox-dev (>= 1.0.10), libicu-dev (>= 67.1-4~), libminiupnpc-dev (>= 1.6), libogg-dev, libopenal-dev, libpng-dev, libsdl2-dev (>= 2.0.5), libsodium-dev (>= 1.0.14), libvorbis-dev, libwxgtk3.2-dev, libxcursor-dev, libxml2-dev, llvm, pkg-config, python3, rustc (>= 1.41), tzdata, zlib1g-dev (>= 1:1.2.3)
+Architecture: amd64 arm64 armhf i386 kfreebsd-amd64 kfreebsd-i386
+Standards-Version: 4.6.2
+Format: 3.0 (quilt)
+Files:
+ 4d5f452a06bcdba6907f3350219a63db 2565 0ad_0.0.26-3.dsc
+ 11b79970197c19241708e2a6cadb416d 78065537 0ad_0.0.26.orig.tar.gz
+ ef7590961dc6e47d913d9bcec038f52e 5078552 0ad_0.0.26-3.debian.tar.xz
+Vcs-Browser: https://salsa.debian.org/games-team/0ad
+Vcs-Git: https://salsa.debian.org/games-team/0ad.git
+Checksums-Sha256:
+ c2d4b91d9d20a27b4989495d3b370635e79e2f7a4ed1f9031abc89e9c1d50952 2565 0ad_0.0.26-3.dsc
+ 4a9905004e220d774ff07fd31fe5caab3ada3807eeb7bf664b2904583711421c 78065537 0ad_0.0.26.orig.tar.gz
+ 2efd0a143ce83496c8984ed3b3e20f2ab84dbc391fcf3d02229d1f1053a1b75c 5078552 0ad_0.0.26-3.debian.tar.xz
+Homepage: https://play0ad.com/
+Package-List: 
+ 0ad deb games optional arch=amd64,arm64,armhf,i386,kfreebsd-amd64,kfreebsd-i386
+Directory: pool/main/0/0ad
+Priority: source
+Section: games
+
+Package: 0ad-data
+Binary: 0ad-data, 0ad-data-common
+Version: 0.0.26-1
+Maintainer: Debian Games Team <pkg-games-devel@lists.alioth.debian.org>
+Uploaders: Vincent Cheng <vcheng@debian.org>, Ludovic Rousseau <rousseau@debian.org>
+Build-Depends: debhelper-compat (= 13), dpkg-dev (>= 1.15.5)
+Architecture: all
+Standards-Version: 4.6.1
+Format: 3.0 (quilt)
+Files:
+ 51d0e8536f5c332ad2a4cf797866632d 2062 0ad-data_0.0.26-1.dsc
+ b023f0f7045dc020f97be6c0df9f9a7e 1351511480 0ad-data_0.0.26.orig.tar.xz
+ 6a860101630e3867a139a6caa304b2ae 13188 0ad-data_0.0.26-1.debian.tar.xz
+Vcs-Browser: https://salsa.debian.org/games-team/0ad-data
+Vcs-Git: https://salsa.debian.org/games-team/0ad-data.git
+Checksums-Sha256:
+ 210fea0d46df8b03d0d2206f7d69b0df39fb125870d7c48e0db31e8a69bf7447 2062 0ad-data_0.0.26-1.dsc
+ b200e48558f882807910e3c686567b6a396248d9d418044ecfde090b05772d7d 1351511480 0ad-data_0.0.26.orig.tar.xz
+ 82f899fea8140160af1af8fd3cbc0c5c43eb71e4932fd9bf64e37c21a26c28ae 13188 0ad-data_0.0.26-1.debian.tar.xz
+Homepage: https://play0ad.com/
+Package-List: 
+ 0ad-data deb games optional arch=all
+ 0ad-data-common deb games optional arch=all
+Directory: pool/main/0/0ad-data
+Priority: source
+Section: games
+
+Package: curl
+Binary: curl, libcurl4, libcurl3-gnutls, libcurl3-nss, libcurl4-openssl-dev, libcurl4-gnutls-dev, libcurl4-nss-dev, libcurl4-doc
+Version: 7.88.1-10+deb12u5
+Maintainer: Alessandro Ghedini <ghedo@debian.org>
+Uploaders: Samuel Henrique <samueloph@debian.org>, Sergio Durigan Junior <sergiodj@debian.org>
+Build-Depends: debhelper-compat (= 13), autoconf, automake, ca-certificates, dh-exec, groff-base, libbrotli-dev, libgnutls28-dev, libidn2-dev, libkrb5-dev, libldap2-dev, libnghttp2-dev, libnss3-dev, libpsl-dev, librtmp-dev, libssh-dev, libssh2-1-dev, libssl-dev, libtool, libzstd-dev, locales-all <!nocheck>, openssh-server <!nocheck>, python3:native <!nocheck>, python3-impacket <!nocheck>, gnutls-bin [amd64 arm64 armel armhf i386 mips64el mipsel s390x powerpc ppc64 riscv64] <!nocheck>, quilt, stunnel4 <!nocheck>, zlib1g-dev, nss-plugin-pem <!nocheck>
+Build-Conflicts: autoconf2.13, automake1.4
+Architecture: any all
+Standards-Version: 4.6.2
+Format: 3.0 (quilt)
+Files:
+ c658fc37a6546edff6d26c5d8796b876 3252 curl_7.88.1-10+deb12u5.dsc
+ 1211d641ae670cebce361ab6a7c6acff 4343562 curl_7.88.1.orig.tar.gz
+ 08b846caa2ce56ccb4b4caa268b30dc2 488 curl_7.88.1.orig.tar.gz.asc
+ ccdfd4dc83843a4fc00eb62ff90faef6 66024 curl_7.88.1-10+deb12u5.debian.tar.xz
+Vcs-Browser: https://salsa.debian.org/debian/curl
+Vcs-Git: https://salsa.debian.org/debian/curl.git
+Checksums-Sha256:
+ b9128cbe8251c58ad5d1374af55c716b5946d3a47b3e575810fb0cf38f24cfc0 3252 curl_7.88.1-10+deb12u5.dsc
+ cdb38b72e36bc5d33d5b8810f8018ece1baa29a8f215b4495e495ded82bbf3c7 4343562 curl_7.88.1.orig.tar.gz
+ 7a5a55d7123149a1b357f298cf895bd0a601e3a2807005ef6c95f3752803485f 488 curl_7.88.1.orig.tar.gz.asc
+ 688fbc081e03115d360e93267a7e5231b11a01b82c3c7254ea1e9509f2989c93 66024 curl_7.88.1-10+deb12u5.debian.tar.xz
+Homepage: https://curl.se/
+Package-List: 
+ curl deb web optional arch=any
+ libcurl3-gnutls deb libs optional arch=any
+ libcurl3-nss deb libs optional arch=any
+ libcurl4 deb libs optional arch=any
+ libcurl4-doc deb doc optional arch=all
+ libcurl4-gnutls-dev deb libdevel optional arch=any
+ libcurl4-nss-dev deb libdevel optional arch=any
+ libcurl4-openssl-dev deb libdevel optional arch=any
+Testsuite: autopkgtest
+Testsuite-Triggers: @builddeps@, gcc, libc-dev, libcurl-dev, libldap-dev, pkgconf, slapd
+Directory: pool/main/c/curl
+Priority: source
+Section: libs
+
+Package: curlpp
+Binary: libcurlpp0, libcurlpp-dev
+Version: 0.8.1-5.1
+Maintainer: Aloïs Micard <creekorful@debian.org>
+Uploaders: Ximin Luo <infinity0@debian.org>
+Build-Depends: debhelper-compat (= 13), cmake, g++ (>= 4:7), libboost-dev (>= 1.33), libcurl4-openssl-dev | libcurl4-dev
+Build-Conflicts: libcurl4-nss-dev
+Architecture: any
+Standards-Version: 4.6.0
+Format: 3.0 (quilt)
+Files:
+ 4fbca56504a522629a82f5945026d2bb 2061 curlpp_0.8.1-5.1.dsc
+ 2fdd2fc2e577b7e76193018cac457e9c 143017 curlpp_0.8.1.orig.tar.gz
+ 89e199fbe428487e4546ca8727e6750c 4416 curlpp_0.8.1-5.1.debian.tar.xz
+Vcs-Browser: https://salsa.debian.org/creekorful/curlpp
+Vcs-Git: https://salsa.debian.org/creekorful/curlpp.git
+Checksums-Sha256:
+ 64936000b248f3ef71da7dba105e88b4b1e1d50a1ba14821cd337b8031f8c27e 2061 curlpp_0.8.1-5.1.dsc
+ 97e3819bdcffc3e4047b6ac57ca14e04af85380bd93afe314bee9dd5c7f46a0a 143017 curlpp_0.8.1.orig.tar.gz
+ a768e7d4d83dc899a685d7d6cf019ddc2ea625e6f7f314a08d523f9677c79687 4416 curlpp_0.8.1-5.1.debian.tar.xz
+Homepage: http://www.curlpp.org/
+Package-List: 
+ libcurlpp-dev deb libdevel optional arch=any
+ libcurlpp0 deb libs optional arch=any
+Directory: pool/main/c/curlpp
+Priority: optional
+Section: misc
+
+Package: docker.io
+Binary: docker.io, golang-github-docker-docker-dev, docker-doc
+Version: 20.10.24+dfsg1-1
+Maintainer: Debian Go Packaging Team <team+pkg-go@tracker.debian.org>
+Uploaders: Arnaud Rebillout <arnaudr@kali.org> ,Dmitry Smirnov <onlyjob@debian.org> ,Tim Potter <tpot@hpe.com> ,Tianon Gravi <tianon@debian.org> ,Paul Tagliamonte <paultag@debian.org>
+Build-Depends: debhelper-compat (= 13), dh-apparmor, dh-golang (>= 1.14~), bash-completion, ca-certificates, golang-any (>= 2:1.10~), go-md2man (>= 1.0.3~), gogoprotobuf, libprotobuf-dev, golang-dbus-dev (>= 5.0.2~), golang-github-armon-circbuf-dev, golang-github-armon-go-metrics-dev, golang-github-aws-aws-sdk-go-dev, golang-github-bsphere-le-go-dev, golang-github-burntsushi-toml-dev, golang-github-cespare-xxhash-dev, golang-github-cilium-ebpf-dev, golang-github-cloudflare-cfssl-dev, golang-github-containerd-cgroups-dev, golang-github-containerd-console-dev, golang-github-containerd-containerd-dev (>= 1.4.2~ds1-2~), golang-github-containerd-continuity-dev (>= 0.0~git20190426~), golang-github-containerd-fifo-dev (>= 1.1.0~), golang-github-containerd-go-runc-dev, golang-github-containerd-typeurl-dev, golang-github-coreos-bbolt-dev, golang-github-coreos-go-systemd-dev (>= 20~), golang-github-creack-pty-dev, golang-github-cyphar-filepath-securejoin-dev, golang-github-deckarep-golang-set-dev, golang-github-docker-distribution-dev (>= 2.7.1~), golang-github-docker-docker-credential-helpers-dev (>= 0.6.1~), golang-github-docker-go-connections-dev (>= 0.4.0~), golang-github-docker-go-events-dev, golang-github-docker-go-metrics-dev, golang-github-docker-go-units-dev (>= 0.4.0~), golang-github-docker-libkv-dev, golang-github-docker-libtrust-dev, golang-github-docker-notary-dev, golang-github-fernet-fernet-go-dev, golang-github-fluent-fluent-logger-golang-dev (>= 1.3.0~), golang-github-fsnotify-fsnotify-dev, golang-github-fvbommel-sortorder-dev, golang-github-gofrs-flock-dev, golang-github-gogo-googleapis-dev, golang-github-golang-groupcache-dev, golang-github-googleapis-gax-go-dev, golang-github-google-go-cmp-dev (>= 0.2.0~), golang-github-google-shlex-dev, golang-github-google-uuid-dev, golang-github-gorilla-mux-dev (>= 1.7.1~), golang-github-gotestyourself-gotest.tools-dev, golang-github-graylog2-go-gelf-dev (>= 0.0+git20191017~), golang-github-grpc-ecosystem-go-grpc-prometheus-dev, golang-github-grpc-ecosystem-go-grpc-middleware-dev, golang-github-grpc-ecosystem-grpc-opentracing-dev, golang-github-hashicorp-go-memdb-dev, golang-github-hashicorp-memberlist-dev (>= 0.1.0~), golang-github-hashicorp-serf-dev, golang-github-ishidawataru-sctp-dev, golang-github-imdario-mergo-dev (>= 0.3.3~), golang-github-json-iterator-go-dev (>= 1.1.4~), golang-github-miekg-dns-dev (>= 1.1.26~), golang-github-mitchellh-hashstructure-dev, golang-github-moby-locker-dev, golang-github-moby-sys-dev, golang-github-moby-term-dev, golang-github-modern-go-reflect2-dev, golang-github-morikuni-aec-dev, golang-github-opencontainers-go-digest-dev, golang-github-opencontainers-image-spec-dev (>= 1.0.1~), golang-github-opencontainers-runc-dev (>= 1.0.0~rc8~), golang-github-opencontainers-selinux-dev (>= 1.8.0~), golang-github-opencontainers-specs-dev (>= 1.0.1~), golang-github-opentracing-contrib-go-stdlib-dev, golang-github-opentracing-opentracing-go-dev, golang-github-philhofer-fwd-dev, golang-github-prometheus-client-golang-dev (>= 0.9.0~), golang-github-racksec-srslog-dev, golang-github-samuel-go-zookeeper-dev, golang-github-sirupsen-logrus-dev (>= 1.0.2~), golang-github-spf13-cobra-dev (>= 1.1.1~), golang-github-spf13-pflag-dev (>= 1.0.5-2~), golang-github-tchap-go-patricia-dev, golang-github-tonistiigi-units-dev, golang-github-urfave-cli-dev (>= 1.20.0~), golang-github-vbatts-tar-split-dev (>= 0.11.1~), golang-github-vishvananda-netlink-dev (>= 1.0.0~), golang-github-vishvananda-netns-dev (>= 0.0~git20170707~), golang-github-xeipuuv-gojsonschema-dev (>= 1.2.0~), golang-gocapability-dev, golang-golang-x-net-dev, golang-golang-x-oauth2-google-dev | golang-golang-x-oauth2-dev, golang-golang-x-term-dev, golang-golang-x-time-dev, golang-google-api-dev, golang-google-cloud-dev, golang-google-grpc-dev, golang-goprotobuf-dev (>= 0.0~git20151207~), golang-go-zfs-dev, golang-protobuf-extensions-dev, gotestsum, libapparmor-dev, libbtrfs-dev | btrfs-progs (<< 4.16.1~), libdevmapper-dev, libseccomp-dev, pkg-config, procps, tzdata, git, golang-github-davecgh-go-spew-dev, golang-github-evanphx-json-patch-dev (>= 4.1.0~), golang-github-googleapis-gnostic-dev, golang-github-google-gofuzz-dev, golang-gopkg-inf.v0-dev, golang-k8s-sigs-yaml-dev
+Build-Conflicts: golang-github-docker-docker-dev
+Architecture: linux-any all
+Standards-Version: 4.6.0
+Format: 3.0 (quilt)
+Files:
+ c22a5a9e5e0e83252e063aff0fe3381a 6964 docker.io_20.10.24+dfsg1-1.dsc
+ 3b3c5239cd5dec525e635394446f705c 1842812 docker.io_20.10.24+dfsg1.orig-cli.tar.xz
+ 3ce2f151dffdc5e349f83942a219465f 656256 docker.io_20.10.24+dfsg1.orig-libnetwork.tar.xz
+ 513d42f8c21a37a17c37dee5e98622ba 775612 docker.io_20.10.24+dfsg1.orig-swarmkit.tar.xz
+ a4efdb54ec568d779bd38e61d1cd8cc6 2347008 docker.io_20.10.24+dfsg1.orig.tar.xz
+ 08dabfcb8d877178973e0eda277e1e90 47028 docker.io_20.10.24+dfsg1-1.debian.tar.xz
+Vcs-Browser: https://salsa.debian.org/go-team/packages/docker
+Vcs-Git: https://salsa.debian.org/go-team/packages/docker.git
+Checksums-Sha256:
+ f557aafad989894def65ae5ae419a401dde033a0aaa1fc150135634ae168cb75 6964 docker.io_20.10.24+dfsg1-1.dsc
+ 670549697a76b1c0ade0c41c79381a62c608d6ef829f8f45842a830d5ce189b7 1842812 docker.io_20.10.24+dfsg1.orig-cli.tar.xz
+ c895d579840fda49c6e42e52b0bd3c010b496a2c4fc02081fd5ea3e44dff1c21 656256 docker.io_20.10.24+dfsg1.orig-libnetwork.tar.xz
+ 60d0a75217e4c74fe7ce819df4c5b4e34952eb4fac87ecef07f1d85b50cc511b 775612 docker.io_20.10.24+dfsg1.orig-swarmkit.tar.xz
+ 952f68f219a5aac7c293d2dfb26fb4c641b60f6d8c5eebf8cbf32a3f1429d2ce 2347008 docker.io_20.10.24+dfsg1.orig.tar.xz
+ 5d375da2b40b0ed0d6572dfaadc074fae507c582fdb1654f07fb2034b612b9cd 47028 docker.io_20.10.24+dfsg1-1.debian.tar.xz
+Homepage: https://mobyproject.org
+Go-Import-Path: github.com/docker/docker
+Package-List: 
+ docker-doc deb doc optional arch=all
+ docker.io deb admin optional arch=linux-any
+ golang-github-docker-docker-dev deb golang optional arch=all
+Testsuite: autopkgtest
+Testsuite-Triggers: debian-archive-keyring, debootstrap
+Directory: pool/main/d/docker.io
+Priority: optional
+Section: misc
+
+Package: sssd
+Binary: sssd, sssd-common, sssd-ad, sssd-ad-common, sssd-dbus, sssd-idp, sssd-ipa, sssd-kcm, sssd-krb5, sssd-krb5-common, sssd-ldap, sssd-proxy, sssd-tools, libnss-sss, libpam-sss, libipa-hbac0, libipa-hbac-dev, libsss-certmap0, libsss-certmap-dev, libsss-idmap0, libsss-idmap-dev, libsss-nss-idmap0, libsss-nss-idmap-dev, libsss-sudo, libsss-simpleifp0, libsss-simpleifp-dev, python3-libipa-hbac, python3-libsss-nss-idmap, python3-sss
+Version: 2.8.2-4
+Maintainer: Debian SSSD Team <pkg-sssd-devel@alioth-lists.debian.net>
+Uploaders: Timo Aaltonen <tjaalton@debian.org>, Dominik George <natureshadow@debian.org>
+Build-Depends: autopoint, check <!nocheck>, cifs-utils, debhelper-compat (= 12), dh-apparmor, dh-python, dh-sequence-installnss, bind9-dnsutils, docbook-xml, docbook-xsl, dpkg-dev (>= 1.16.1~), faketime <!nocheck>, gnutls-bin <!nocheck>, krb5-config, ldap-utils, libaugeas-dev, libc-ares-dev, libcmocka-dev <!nocheck>, libcollection-dev, libcurl4-openssl-dev, libdbus-1-dev, libdhash-dev, libgdm-dev [!s390x !kfreebsd-any !hurd-any], libglib2.0-dev, libini-config-dev, libjansson-dev, libjose-dev, libkeyutils-dev [linux-any], libkrad-dev, libkrb5-dev (>= 1.12), libldap2-dev, libldb-dev, libltdl-dev, libnfsidmap-dev, libnl-3-dev [linux-any], libnl-route-3-dev [linux-any], libnss-wrapper <!nocheck>, libp11-kit-dev, libpam-wrapper <!nocheck>, libpam0g-dev | libpam-dev, libpcre2-dev, libpopt-dev, libsasl2-dev, libselinux1-dev [linux-any], libsemanage-dev [linux-any], libsmbclient-dev, libssl-dev, libsubid-dev, libsystemd-dev [linux-any], libtalloc-dev, libtdb-dev, libtevent-dev, libuid-wrapper <!nocheck>, libunistring-dev, libxml2-utils, lsb-release, openssh-client <!nocheck>, openssl <!nocheck>, python3-dev, python3-setuptools, samba-dev (>= 2:4.1.13), softhsm2 <!nocheck>, systemd, systemtap-sdt-dev, uuid-dev, xml-core, xsltproc
+Architecture: any
+Standards-Version: 4.4.0
+Format: 3.0 (quilt)
+Files:
+ b391aee853e92cea1edf3cc76eae6f50 5114 sssd_2.8.2-4.dsc
+ e7647d20b1376df6ec61b8346e3060d4 7842210 sssd_2.8.2.orig.tar.gz
+ 199fce175d79a67b33323502d7ce12fd 833 sssd_2.8.2.orig.tar.gz.asc
+ d84552d90446a0c737a126f0ffa92f99 40784 sssd_2.8.2-4.debian.tar.xz
+Vcs-Browser: https://salsa.debian.org/sssd-team/sssd
+Vcs-Git: https://salsa.debian.org/sssd-team/sssd.git
+Checksums-Sha256:
+ 65546b7e941929f475f83885831a29c0121f579669d2b5615e577188fc07175d 5114 sssd_2.8.2-4.dsc
+ ae16447d06bb725bfa9ccb47a9287135015f789ba7414f50cebcb62d52402fef 7842210 sssd_2.8.2.orig.tar.gz
+ d3738b0aca69c63a11a6471e8f77d81af6e72963a9016d28c88c52dc218b3c1b 833 sssd_2.8.2.orig.tar.gz.asc
+ 091278f4864942c4a762b92e45cec214de580103a177b2ddcadbc91b1fb3a5af 40784 sssd_2.8.2-4.debian.tar.xz
+Homepage: https://github.com/SSSD/sssd
+Package-List: 
+ libipa-hbac-dev deb libdevel optional arch=any
+ libipa-hbac0 deb libs optional arch=any
+ libnss-sss deb utils optional arch=any
+ libpam-sss deb utils optional arch=any
+ libsss-certmap-dev deb libdevel optional arch=any
+ libsss-certmap0 deb libs optional arch=any
+ libsss-idmap-dev deb libdevel optional arch=any
+ libsss-idmap0 deb libs optional arch=any
+ libsss-nss-idmap-dev deb libdevel optional arch=any
+ libsss-nss-idmap0 deb libs optional arch=any
+ libsss-simpleifp-dev deb libdevel optional arch=any
+ libsss-simpleifp0 deb libs optional arch=any
+ libsss-sudo deb libs optional arch=any
+ python3-libipa-hbac deb python optional arch=any
+ python3-libsss-nss-idmap deb python optional arch=any
+ python3-sss deb python optional arch=any
+ sssd deb metapackages optional arch=any
+ sssd-ad deb utils optional arch=any
+ sssd-ad-common deb utils optional arch=any
+ sssd-common deb utils optional arch=any
+ sssd-dbus deb utils optional arch=any
+ sssd-idp deb utils optional arch=any
+ sssd-ipa deb utils optional arch=any
+ sssd-kcm deb utils optional arch=any
+ sssd-krb5 deb utils optional arch=any
+ sssd-krb5-common deb utils optional arch=any
+ sssd-ldap deb utils optional arch=any
+ sssd-proxy deb utils optional arch=any
+ sssd-tools deb utils optional arch=any
+Testsuite: autopkgtest
+Testsuite-Triggers: expect, krb5-admin-server, krb5-kdc, krb5-user, ldap-utils, lsb-release, openssl, slapd
+Directory: pool/main/s/sssd
+Priority: source
+Section: utils
+
+Package: systemd
+Binary: systemd, systemd-sysv, systemd-container, systemd-journal-remote, systemd-coredump, systemd-timesyncd, systemd-tests, libpam-systemd, libnss-myhostname, libnss-mymachines, libnss-resolve, libnss-systemd, libsystemd0, libsystemd-dev, libsystemd-shared, udev, libudev1, libudev-dev, udev-udeb, libudev1-udeb, systemd-standalone-sysusers, systemd-standalone-tmpfiles, systemd-oomd, systemd-userdbd, systemd-homed, systemd-boot, systemd-boot-efi, systemd-resolved
+Version: 252.22-1~deb12u1
+Maintainer: Debian systemd Maintainers <pkg-systemd-maintainers@lists.alioth.debian.org>
+Uploaders: Michael Biebl <biebl@debian.org>, Marco d'Itri <md@linux.it>, Sjoerd Simons <sjoerd@debian.org>, Martin Pitt <mpitt@debian.org>, Felipe Sateler <fsateler@debian.org>, Luca Boccassi <bluca@debian.org>,
+Build-Depends: debhelper-compat (= 13), dh-exec, dh-package-notes, dh-sequence-installnss, dh-sequence-installsysusers, pkg-config, xsltproc <!nodoc>, docbook-xsl <!nodoc>, docbook-xml <!nodoc>, meson (>= 0.53.2), gettext, gperf, gnu-efi [amd64 i386 arm64 armhf riscv64], libcap-dev, libcrypt-dev, libpam0g-dev, libapparmor-dev (>= 2.13) <!stage1>, libidn2-dev <!stage1>, libiptc-dev <!stage1>, libaudit-dev <!stage1>, libdbus-1-dev (>= 1.3.2) <!nocheck> <!noinsttest>, libcryptsetup-dev (>= 2:2.4) <!stage1>, libselinux1-dev (>= 2.1.9), libacl1-dev, liblzma-dev, liblz4-dev (>= 1.3.0), liblz4-tool <!nocheck>, libbz2-dev <!stage1>, zlib1g-dev <!stage1> | libz-dev <!stage1>, libcurl4-openssl-dev <!stage1>, libmicrohttpd-dev <!stage1>, libpcre2-dev <!stage1>, libgcrypt20-dev, libkmod-dev (>= 15), libblkid-dev (>= 2.24), libmount-dev (>= 2.30), libfdisk-dev (>= 2.33), libseccomp-dev (>= 2.3.1) [amd64 arm64 armel armhf i386 mips mipsel mips64 mips64el x32 powerpc ppc64 ppc64el riscv64 s390x], libdw-dev (>= 0.158) <!stage1>, libpolkit-gobject-1-dev <!stage1>, libzstd-dev (>= 1.4.0), libtss2-dev <!stage1>, libfido2-dev <!stage1>, libp11-kit-dev <!stage1>, libssl-dev <!stage1>, libqrencode-dev <!stage1>, linux-base <!nocheck>, acl <!nocheck>, python3:native, python3-jinja2:native, python3-lxml:native, python3-pyparsing <!nocheck>, python3-evdev:native <!nocheck>, tzdata <!nocheck>, libcap2-bin <!nocheck>, iproute2 <!nocheck>, zstd <!nocheck>, gawk <!nocheck>, fdisk <!nocheck>
+Architecture: linux-any
+Standards-Version: 4.6.2
+Format: 3.0 (quilt)
+Files:
+ ba90c4c0ad6b99c0c4e7164cdf8229d1 6618 systemd_252.22-1~deb12u1.dsc
+ ee44fff128016a8c165207f359009cc3 12026544 systemd_252.22.orig.tar.gz
+ e8fcbc31ef5e41b52ea710184c9ee302 171000 systemd_252.22-1~deb12u1.debian.tar.xz
+Vcs-Browser: https://salsa.debian.org/systemd-team/systemd
+Vcs-Git: https://salsa.debian.org/systemd-team/systemd.git
+Checksums-Sha256:
+ c4a7bd4f74c0604fbebf4aa6bee6c6c7bc735c310bfb0e12d9e09b27981d3c62 6618 systemd_252.22-1~deb12u1.dsc
+ a01a6a483858701cb7b6c727132efa1173f63d4306602653baa0c7080bc861a8 12026544 systemd_252.22.orig.tar.gz
+ 29306c58e466e86c6ba3c8e53e5c417fdcf6ecdd18f9fa73bacdd4a662beafbc 171000 systemd_252.22-1~deb12u1.debian.tar.xz
+Homepage: https://www.freedesktop.org/wiki/Software/systemd
+Package-List: 
+ libnss-myhostname deb admin optional arch=linux-any
+ libnss-mymachines deb admin optional arch=linux-any
+ libnss-resolve deb admin optional arch=linux-any
+ libnss-systemd deb admin standard arch=linux-any
+ libpam-systemd deb admin standard arch=linux-any
+ libsystemd-dev deb libdevel optional arch=linux-any
+ libsystemd-shared deb libs optional arch=linux-any
+ libsystemd0 deb libs optional arch=linux-any
+ libudev-dev deb libdevel optional arch=linux-any
+ libudev1 deb libs optional arch=linux-any
+ libudev1-udeb udeb debian-installer optional arch=linux-any profile=!noudeb
+ systemd deb admin important arch=linux-any
+ systemd-boot deb admin optional arch=amd64,i386,arm64,armhf,riscv64
+ systemd-boot-efi deb admin optional arch=amd64,i386,arm64,armhf,riscv64
+ systemd-container deb admin optional arch=linux-any profile=!stage1
+ systemd-coredump deb admin optional arch=linux-any profile=!stage1
+ systemd-homed deb admin optional arch=linux-any profile=!stage1
+ systemd-journal-remote deb admin optional arch=linux-any profile=!stage1
+ systemd-oomd deb admin optional arch=linux-any
+ systemd-resolved deb admin optional arch=linux-any
+ systemd-standalone-sysusers deb admin optional arch=linux-any
+ systemd-standalone-tmpfiles deb admin optional arch=linux-any
+ systemd-sysv deb admin important arch=linux-any
+ systemd-tests deb admin optional arch=linux-any profile=!noinsttest
+ systemd-timesyncd deb admin standard arch=linux-any
+ systemd-userdbd deb admin optional arch=linux-any profile=!stage1
+ udev deb admin important arch=linux-any
+ udev-udeb udeb debian-installer optional arch=linux-any profile=!noudeb
+Testsuite: autopkgtest
+Testsuite-Triggers: acl, apparmor, attr, bind9-dnsutils, bind9-host, bsdutils, build-essential, busybox-static, cron, cryptsetup-bin, cryptsetup-initramfs, dbus-user-session, dmeventd, dnsmasq-base, dosfstools, e2fsprogs, erofs-utils, evemu-tools, fdisk, gcc, gdm3, iproute2, iputils-ping, isc-dhcp-client, jq, kbd, knot, knot-dnssecutils, knot-dnsutils, less, libc-dev, libc6-dev, libcap2-bin, libdw-dev, libelf-dev, libfido2-dev, liblz4-tool, libp11-kit-dev, libqrencode-dev, libtss2-dev, locales, locales-all, make, mtools, net-tools, netcat-openbsd, netlabel-tools, network-manager, openssl, perl, pkg-config, plymouth, policykit-1, polkitd, psmisc, python3, python3-colorama, python3-pexpect, qemu-system-arm, qemu-system-ppc, qemu-system-s390x, qemu-system-x86, quota, rsyslog, screen, seabios, socat, squashfs-tools, strace, stress, swtpm, tpm2-tools, tree, vim-tiny, xkb-data, xserver-xorg, xserver-xorg-video-dummy, xz-utils, zstd
+Directory: pool/main/s/systemd
+Priority: source
+Section: admin
+
+Package: systemd-bootchart
+Binary: systemd-bootchart
+Version: 234-2
+Maintainer: Debian systemd Maintainers <pkg-systemd-maintainers@lists.alioth.debian.org>
+Uploaders: Michael Biebl <biebl@debian.org>, Marco d'Itri <md@linux.it>, Sjoerd Simons <sjoerd@debian.org>, Martin Pitt <mpitt@debian.org>
+Build-Depends: debhelper-compat (= 13), intltool, pkg-config, libsystemd-dev (>= 221), xsltproc, docbook-xsl, docbook-xml
+Architecture: linux-any
+Standards-Version: 4.6.1
+Format: 3.0 (quilt)
+Files:
+ a5cbadc9790e13bca4f74d08ac111e01 2230 systemd-bootchart_234-2.dsc
+ 1141a465d0989f57e90f6a1f040ff9b2 111289 systemd-bootchart_234.orig.tar.gz
+ 176087b4ee235b840e5288b801715aec 5000 systemd-bootchart_234-2.debian.tar.xz
+Vcs-Browser: https://salsa.debian.org/systemd-team/systemd-bootchart
+Vcs-Git: https://salsa.debian.org/systemd-team/systemd-bootchart.git
+Checksums-Sha256:
+ d39e85a17cb72465282c52cecb9d6c5ba9d3029c8ce14e293a017ff91c48a2da 2230 systemd-bootchart_234-2.dsc
+ 65bfcaea43a17f220a499dac7ab93ec643f8abe7c4e87c61f29f5b707e11f816 111289 systemd-bootchart_234.orig.tar.gz
+ a0c9d3920afc12ac20544cbef9bcbee774891596e13ad5377bd60b03ff86b7b7 5000 systemd-bootchart_234-2.debian.tar.xz
+Homepage: https://github.com/systemd/systemd-bootchart/
+Package-List: 
+ systemd-bootchart deb admin optional arch=linux-any
+Testsuite: autopkgtest
+Directory: pool/main/s/systemd-bootchart
+Priority: optional
+Section: misc
+
+Package: systemd-cron
+Binary: systemd-cron
+Version: 1.15.19-5
+Maintainer: Debian Systemd Maintainers <pkg-systemd-maintainers@lists.alioth.debian.org>
+Uploaders: Alexandre Detiste <alexandre.detiste@gmail.com>
+Build-Depends: debhelper-compat (= 13), dh-sequence-cruft, dh-sequence-python3, python3
+Architecture: linux-any
+Standards-Version: 4.6.1
+Format: 3.0 (quilt)
+Files:
+ d1a7c52bde44cc9abc03d1b37ec06e4f 2064 systemd-cron_1.15.19-5.dsc
+ f6fe0d0e29da410378871e81d9a2b050 33234 systemd-cron_1.15.19.orig.tar.gz
+ 85ed3aee3ffc7788fb12d04e37a9036b 7392 systemd-cron_1.15.19-5.debian.tar.xz
+Vcs-Browser: https://salsa.debian.org/detiste-guest/systemd-cron
+Vcs-Git: https://salsa.debian.org/detiste-guest/systemd-cron.git
+Checksums-Sha256:
+ 785a8686454ace6f173c056e00a216a610ce814485dc8077d17ab6d21e7eac66 2064 systemd-cron_1.15.19-5.dsc
+ b0774d4ec41901b3358c939fb86080e2ea9f03250d552aedb4cdc6141f9487cf 33234 systemd-cron_1.15.19.orig.tar.gz
+ 27743aff5cf4d48797e88133ea09a9c2787b989d0a4cc805413c8eb51608e8d0 7392 systemd-cron_1.15.19-5.debian.tar.xz
+Homepage: https://github.com/systemd-cron/systemd-cron
+Package-List: 
+ systemd-cron deb admin optional arch=linux-any
+Directory: pool/main/s/systemd-cron
+Priority: optional
+Section: admin
+
+Package: systemd-el
+Binary: elpa-systemd
+Version: 1.6-2.1
+Maintainer: Debian Emacsen team <debian-emacsen@lists.debian.org>
+Uploaders: Lev Lamberov <dogsleg@debian.org>
+Build-Depends: debhelper-compat (= 12), dh-elpa
+Architecture: all
+Standards-Version: 4.3.0
+Format: 3.0 (quilt)
+Files:
+ a6d8b32074abf4ee43d912209ef6e4bc 1963 systemd-el_1.6-2.1.dsc
+ 958a20a25183002a6b8bbf07c05e0689 22248 systemd-el_1.6.orig.tar.gz
+ a2e37a8dd08bb77c44060e295578eac2 2168 systemd-el_1.6-2.1.debian.tar.xz
+Vcs-Browser: https://salsa.debian.org/emacsen-team/systemd-el
+Vcs-Git: https://salsa.debian.org/emacsen-team/systemd-el.git
+Checksums-Sha256:
+ 4c5faad0a3148dd22ab980d400d4b9f0260cd7730f7c578dd2a24ce3dfadcb53 1963 systemd-el_1.6-2.1.dsc
+ 98a7df4e20d6dbee307f996772747720b8f6cc8602f83a1c5cd27196124c6f9c 22248 systemd-el_1.6.orig.tar.gz
+ f6403dee6ca33f991945104a6bd9bf5db11642468d9f3f93d0f6b63d0c6b5229 2168 systemd-el_1.6-2.1.debian.tar.xz
+Homepage: https://github.com/holomorph/systemd-mode
+Package-List: 
+ elpa-systemd deb lisp optional arch=all
+Testsuite: autopkgtest-pkg-elpa
+Directory: pool/main/s/systemd-el
+Priority: extra
+Section: misc
+
+Package: wget
+Binary: wget, wget-udeb
+Version: 1.21.3-1
+Maintainer: Noël Köthe <noel@debian.org>
+Build-Depends: debhelper-compat (= 13), pkg-config, gettext, texinfo, libidn2-dev, uuid-dev, libpsl-dev, libpcre2-dev, libgnutls28-dev (>= 3.3.15-5), automake, libssl-dev (>= 0.9.8k), zlib1g-dev, dh-strip-nondeterminism
+Architecture: any
+Standards-Version: 4.6.0
+Format: 3.0 (quilt)
+Files:
+ 99649e89e07b889b82d7f80b91876289 2167 wget_1.21.3-1.dsc
+ e89496b15f8bf039d723926fae4d91f5 5079864 wget_1.21.3.orig.tar.gz
+ 69e6608519c442faf6e2598e33aa93d6 854 wget_1.21.3.orig.tar.gz.asc
+ 7bf0a3f7e24e2a799ebd0d90a1c8a264 60660 wget_1.21.3-1.debian.tar.xz
+Checksums-Sha256:
+ e294772dac85a4d59fa64269515aa4a93664789f1f4612cfe309785384fd1f55 2167 wget_1.21.3-1.dsc
+ 5726bb8bc5ca0f6dc7110f6416e4bb7019e2d2ff5bf93d1ca2ffcc6656f220e5 5079864 wget_1.21.3.orig.tar.gz
+ a4d96f04bc5a034310eae177df9adc79ef7a6f0fad7bf7669bf0ac318fa22ccd 854 wget_1.21.3.orig.tar.gz.asc
+ 30901c12ded6e455d55fe73c40245b51d2fd53e20e30713a10e066fdfadb9d20 60660 wget_1.21.3-1.debian.tar.xz
+Homepage: https://www.gnu.org/software/wget/
+Package-List: 
+ wget deb web standard arch=any
+ wget-udeb udeb debian-installer optional arch=any
+Directory: pool/main/w/wget
+Priority: source
+Section: web
+
+Package: wget2
+Binary: wget2, libwget0, wget2-dev
+Version: 1.99.1-2.2
+Maintainer: Noël Köthe <noel@debian.org>
+Build-Depends: debhelper (>= 10), pkg-config, doxygen, pandoc, gettext, zlib1g-dev, liblzma-dev, libbz2-dev, libbrotli-dev, libpcre2-dev, libgnutls28-dev, libidn11-dev, libidn2-dev, flex, libpsl-dev, automake, dh-strip-nondeterminism, gnulib, libnghttp2-dev, graphviz, libgpgme-dev, texinfo
+Architecture: any
+Standards-Version: 4.1.4
+Format: 3.0 (quilt)
+Files:
+ 6969d4250cea123147babd2fabf723e0 2383 wget2_1.99.1-2.2.dsc
+ 1a5ce44995f0cc55222ae75d7c92dd1e 2660538 wget2_1.99.1.orig.tar.gz
+ 2390feacaa33f7bac57199875757718e 833 wget2_1.99.1.orig.tar.gz.asc
+ 35bd138640882b3fe047b0468b54a4cb 3736 wget2_1.99.1-2.2.debian.tar.xz
+Vcs-Browser: https://gitlab.com/gnuwget/wget2
+Vcs-Git: https://gitlab.com/gnuwget/wget2.git
+Checksums-Sha256:
+ 99c4545c64317fb43ea75c580cfd0eb37a54da1aa804f1b3082cf0e94cd74597 2383 wget2_1.99.1-2.2.dsc
+ 8d9b0b0897ff9623169db47c656d09007677f8d51de5f5cd3652258aab8b4dde 2660538 wget2_1.99.1.orig.tar.gz
+ b97b0d352a56d2f2b5984ef49eb25aaca7ed01abb5152cb45e04d99399153006 833 wget2_1.99.1.orig.tar.gz.asc
+ 24a1574b34f710b4d9b657eea6e1d023dbec71f6eea473d29fe5f059bce1aa06 3736 wget2_1.99.1-2.2.debian.tar.xz
+Homepage: https://gitlab.com/gnuwget/wget2
+Package-List: 
+ libwget0 deb libs optional arch=any
+ wget2 deb web optional arch=any
+ wget2-dev deb libdevel optional arch=any
+Directory: pool/main/w/wget2
+Priority: extra
+Section: misc
+

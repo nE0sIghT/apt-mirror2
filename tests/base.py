@@ -8,8 +8,8 @@ from apt_mirror.repository import BaseRepository, FlatRepository, Repository
 class BaseTest(TestCase):
     TEST_DATA = Path(__file__).parent / "data"
 
-    def get_config(self, name: str):
-        return Config(self.TEST_DATA / name / "mirror.list")
+    def get_config(self, name: str, config_name: str = "mirror.list"):
+        return Config(self.TEST_DATA / name / config_name)
 
     def ensure_repository(self, repository: BaseRepository) -> Repository:
         if not isinstance(repository, Repository):

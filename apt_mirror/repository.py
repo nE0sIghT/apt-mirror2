@@ -131,15 +131,22 @@ class SourcesParser(IndexFileParser):
         repository_path: Path,
         index_files: set[Path],
         ignore_errors: set[str],
+        include_source_name: set[str] | None = None,
+        exclude_source_name: set[str] | None = None,
         logger_id: Any | None = None,
     ) -> None:
         super().__init__(
             repository_path, index_files, ignore_errors, logger_id=logger_id
         )
+
+        self._include_source_name = include_source_name
+        self._exclude_source_name = exclude_source_name
+
         self._reset_block_parser()
 
     # https://github.com/pylint-dev/pylint/issues/5214
     def _reset_block_parser(self):
+        self._package: str | None = None
         self._directory: str | None = None
         self._hash_type = None
         self._package_files: dict[Path, PackageFile] = {}
@@ -169,6 +176,10 @@ class SourcesParser(IndexFileParser):
                 ).hashes[self._hash_type] = HashSum(type=self._hash_type, hash=hashsum)
             elif bytes_line[0] != ord("\n"):
                 match bytes_line:
+                    case line if line.startswith(b"Package:"):
+                        _, self._package = (  # pylint: disable=W0201
+                            line.decode().strip().split()
+                        )
                     case line if line.startswith(b"Directory:"):
                         # https://github.com/pylint-dev/pylint/issues/5214
                         _, self._directory = (  # pylint: disable=W0201
@@ -197,7 +208,22 @@ class SourcesParser(IndexFileParser):
                         self._hash_type = None  # pylint: disable=W0201
                         continue
             else:
-                if not self._directory:
+                if not self._package or not self._directory:
+                    self._reset_block_parser()
+                    continue
+
+                if (
+                    self._include_source_name
+                    and self._package not in self._include_source_name
+                ):
+                    self._reset_block_parser()
+                    continue
+
+                if (
+                    self._exclude_source_name
+                    and self._package in self._exclude_source_name
+                ):
+                    self._reset_block_parser()
                     continue
 
                 for package_file in self._package_files.values():
@@ -216,14 +242,22 @@ class PackagesParser(IndexFileParser):
         repository_path: Path,
         index_files: set[Path],
         ignore_errors: set[str],
+        include_source_name: set[str] | None = None,
+        exclude_source_name: set[str] | None = None,
         logger_id: Any | None = None,
     ) -> None:
         super().__init__(
             repository_path, index_files, ignore_errors, logger_id=logger_id
         )
+
+        self._include_source_name = include_source_name
+        self._exclude_source_name = exclude_source_name
+
         self._reset_block_parser()
 
     def _reset_block_parser(self):
+        self._package = None
+        self._source = None
         self._file_path = None
         self._size = 0
         self._hashes: dict[HashType, HashSum] = {}
@@ -232,6 +266,14 @@ class PackagesParser(IndexFileParser):
         for bytes_line in iter(fp.readline, b""):
             if bytes_line[0] != ord("\n"):
                 match bytes_line:
+                    case line if line.startswith(b"Package:"):
+                        self._package = self._get_line_value(  # pylint: disable=W0201
+                            line
+                        )
+                    case line if line.startswith(b"Source:"):
+                        self._source = self._get_line_value(  # pylint: disable=W0201
+                            line
+                        ).split()[0]
                     case line if line.startswith(b"Filename:"):
                         self._file_path = Path(  # pylint: disable=W0201
                             self._get_line_value(line)
@@ -264,7 +306,24 @@ class PackagesParser(IndexFileParser):
                         self._hash_type = None  # pylint: disable=W0201
                         continue
             else:
-                if not self._file_path or not self._size:
+                if not self._package or not self._file_path or not self._size:
+                    self._reset_block_parser()
+                    continue
+
+                source_name = self._source if self._source else self._package
+
+                if (
+                    self._include_source_name
+                    and source_name not in self._include_source_name
+                ):
+                    self._reset_block_parser()
+                    continue
+
+                if (
+                    self._exclude_source_name
+                    and source_name in self._exclude_source_name
+                ):
+                    self._reset_block_parser()
                     continue
 
                 download_file = DownloadFile.from_path(self._file_path, check_size=True)
@@ -374,6 +433,9 @@ class BaseRepository(ABC):
 
     def __post_init__(self):
         self._log = LoggerFactory.get_logger(self)
+
+        self.include_source_name: set[str] = set()
+        self.exclude_source_name: set[str] = set()
 
     def get_mirror_path(self, encode_tilde: bool):
         if self.mirror_path:
@@ -498,6 +560,8 @@ class BaseRepository(ABC):
                     repository_root / self.get_mirror_path(encode_tilde),
                     set(self.sources_files) - missing_sources,
                     ignore_errors=self.ignore_errors,
+                    include_source_name=self.include_source_name,
+                    exclude_source_name=self.exclude_source_name,
                     logger_id=self.url,
                 ).parse()
             )
@@ -508,6 +572,8 @@ class BaseRepository(ABC):
                     repository_root / self.get_mirror_path(encode_tilde),
                     set(self.packages_files) - missing_sources,
                     ignore_errors=self.ignore_errors,
+                    include_source_name=self.include_source_name,
+                    exclude_source_name=self.exclude_source_name,
                     logger_id=self.url,
                 ).parse()
             )

@@ -274,6 +274,8 @@ class Config:
         skip_clean: list[str] = []
         mirror_paths: dict[str, Path] = {}
         ignore_errors: dict[str, set[str]] = {}
+        include_source_name: dict[str, set[str]] = {}
+        exclude_source_name: dict[str, set[str]] = {}
 
         for file in self._files:
             with open(file, "rt", encoding="utf-8") as fp:
@@ -314,6 +316,16 @@ class Config:
                         case line if line.startswith("ignore_errors "):
                             _, url, path = line.split(maxsplit=2)
                             ignore_errors.setdefault(url, set()).add(path)
+                        case line if line.startswith("include_source_name "):
+                            sources = line.split()[1:]
+                            url = sources.pop(0)
+
+                            include_source_name.setdefault(url, set()).update(sources)
+                        case line if line.startswith("exclude_source_name "):
+                            sources = line.split()[1:]
+                            url = sources.pop(0)
+
+                            exclude_source_name.setdefault(url, set()).update(sources)
                         case line if not line or any(
                             line.startswith(prefix) for prefix in ("#", ";")
                         ):
@@ -325,6 +337,7 @@ class Config:
         self._update_skip_clean(skip_clean)
         self._update_mirror_paths(mirror_paths)
         self._update_ignore_errors(ignore_errors)
+        self._update_filters(include_source_name, exclude_source_name)
 
     def _update_clean(self, clean: list[str]):
         for url in clean:
@@ -367,6 +380,31 @@ class Config:
                 continue
 
             self._repositories[url].ignore_errors.update(paths)
+
+    def _update_filters(
+        self,
+        include_source_name: dict[str, set[str]],
+        exclude_source_name: dict[str, set[str]],
+    ):
+        for url, source_names in include_source_name.items():
+            if url not in self._repositories:
+                self._log.warning(
+                    "include_source_name was specified for missing repository URL:"
+                    f" {url}"
+                )
+                continue
+
+            self._repositories[url].include_source_name.update(source_names)
+
+        for url, source_names in exclude_source_name.items():
+            if url not in self._repositories:
+                self._log.warning(
+                    "exclude_source_name was specified for missing repository URL:"
+                    f" {url}"
+                )
+                continue
+
+            self._repositories[url].exclude_source_name.update(source_names)
 
     def _substitute_variables(self):
         max_tries = 16

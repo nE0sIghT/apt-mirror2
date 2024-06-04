@@ -263,7 +263,7 @@ class PackagesParser(IndexFileParser):
         self._hashes: dict[HashType, HashSum] = {}
 
     def _do_parse_index(self, fp: IO[bytes] | mmap):
-        for bytes_line in iter(fp.readline, b""):
+        for bytes_line in itertools.chain(iter(fp.readline, b""), (b"\n",)):
             if bytes_line[0] != ord("\n"):
                 match bytes_line:
                     case line if line.startswith(b"Package:"):

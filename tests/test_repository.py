@@ -312,7 +312,7 @@ class TestRepository(BaseTest):
             files,
         )
 
-    def test_gitlab_registry_packages(self):
+    def test_packages_last_stanza(self):
         repository = self.get_repository(["main"], ["amd64"], False)
 
         files = repository.get_pool_files(
@@ -322,6 +322,21 @@ class TestRepository(BaseTest):
         single_file = (
             "pool/bullseye/main/g/gitlab-runner/gitlab-runner_14.8.1_amd64.deb"
         )
+        self.assertEqual(
+            {
+                Path(single_file),
+            },
+            {d.path for d in files},
+        )
+
+    def test_sources_last_stanza(self):
+        repository = self.get_repository(["main"], [], True)
+
+        files = repository.get_pool_files(
+            self.TEST_DATA / "GitlabRegistryPackages", False, set()
+        )
+
+        single_file = "pool/main/g/gitlab-runner/gitlab-runner_14.8.1.dsc"
         self.assertEqual(
             {
                 Path(single_file),

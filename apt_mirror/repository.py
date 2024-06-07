@@ -154,7 +154,7 @@ class SourcesParser(IndexFileParser):
     def _do_parse_index(self, fp: IO[bytes] | mmap):
         self._reset_block_parser()
 
-        for bytes_line in iter(fp.readline, b""):
+        for bytes_line in itertools.chain(iter(fp.readline, b""), (b"\n",)):
             if bytes_line[0] == ord(" "):
                 if not self._hash_type:
                     continue

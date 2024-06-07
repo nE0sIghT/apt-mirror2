@@ -1,0 +1,19 @@
+Package: gitlab-runner
+Binary: gitlab-runner
+Version: 14.8.1
+Maintainer: GitLab Inc. <support@gitlab.com>
+Uploaders: GitLab Inc. <support@gitlab.com>
+Build-Depends: autoconf
+Architecture: amd64
+Standards-Version: 4.6.2
+Format: native
+Files:
+ 4d5f452a06bcdba6907f3350219a63db 2565 gitlab-runner_14.8.1.dsc
+Checksums-Sha256:
+ c2d4b91d9d20a27b4989495d3b370635e79e2f7a4ed1f9031abc89e9c1d50952 2565 gitlab-runner_14.8.1.dsc
+Homepage: https://gitlab.com/
+Package-List: 
+ gitlab-runner
+Directory: pool/main/g/gitlab-runner
+Priority: source
+Section: admin

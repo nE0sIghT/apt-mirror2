@@ -6,6 +6,7 @@ import itertools
 import os
 import shutil
 import signal
+import sys
 from contextlib import ExitStack
 from errno import EWOULDBLOCK
 from fcntl import LOCK_EX, LOCK_NB, flock
@@ -702,7 +703,7 @@ class APTMirror:
 
     def die(self, message: str, code: int = 1):
         self._log.error(message)
-        exit(code)
+        sys.exit(code)
 
     def get_lock_file(self):
         return self._config.var_path / self.LOCK_FILE
@@ -753,12 +754,12 @@ def get_config_file() -> Path:
 
     if args.version:
         print(__version__)
-        exit(0)
+        sys.exit(0)
 
     config_file = Path(args.configfile)
     if not config_file.is_file():
         LOG.error(f"invalid config file specified: {config_file}")
-        exit(1)
+        sys.exit(1)
 
     return config_file
 
@@ -792,4 +793,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    exit(main())
+    sys.exit(main())

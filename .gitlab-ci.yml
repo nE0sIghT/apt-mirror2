@@ -146,11 +146,12 @@ security (pip-audit):
     - docker:24-dind
   script:
     - >-
-      docker build
-      --build-arg PYTHON_VERSION="${PYTHON_VERSION}"
-      -t "${IMAGE_NAME}:latest"
-      -f Dockerfile
-      .
+      docker build \
+        --build-arg PYTHON_VERSION="${PYTHON_VERSION}" \
+        --build-arg BASE_IMAGE="debian:stable" \
+        -t "${IMAGE_NAME}:latest" \
+        -f Dockerfile \
+        .
 
 build image:
   extends:

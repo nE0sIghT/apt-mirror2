@@ -144,14 +144,25 @@ security (pip-audit):
   image: docker:24
   services:
     - docker:24-dind
+  before_script:
+    - LATEST_TAG="latest"
+    - if [ "${BASE_IMAGE}" = "debian:stable-slim" ]; then
+    -   LATEST_TAG="slim"
+    -   VERSION_SUFFIX="-slim"
+    - fi
   script:
     - >-
       docker build \
         --build-arg PYTHON_VERSION="${PYTHON_VERSION}" \
-        --build-arg BASE_IMAGE="debian:stable" \
-        -t "${IMAGE_NAME}:latest" \
+        --build-arg BASE_IMAGE="${BASE_IMAGE}" \
+        -t "${IMAGE_NAME}:${LATEST_TAG}" \
         -f Dockerfile \
         .
+  parallel:
+    matrix:
+      - BASE_IMAGE:
+        - debian:stable
+        - debian:stable-slim
 
 build image:
   extends:
@@ -183,10 +194,11 @@ publish image:
   script:
     - !reference [.build image, script]
     - docker login -u "${DOCKER_HUB_USERNAME}" -p "${DOCKER_HUB_PASSWORD}"
-    - docker push "${IMAGE_NAME}:latest"
+    - docker push "${IMAGE_NAME}:${LATEST_TAG}"
     - if [ -n "${CI_COMMIT_TAG}" ]; then
-    -   docker tag "${IMAGE_NAME}:latest" "${IMAGE_NAME}:${CI_COMMIT_TAG#v}"
-    -   docker push "${IMAGE_NAME}:${CI_COMMIT_TAG#v}"
+    -   IMAGE_TAG="${CI_COMMIT_TAG#v}${VERSION_SUFFIX}"
+    -   docker tag "${IMAGE_NAME}:${LATEST_TAG}" "${IMAGE_NAME}:${IMAGE_TAG}"
+    -   docker push "${IMAGE_NAME}:${IMAGE_TAG}"
     - fi
 
 update docker hub readme:

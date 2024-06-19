@@ -225,10 +225,16 @@ class Config:
                 self._files.append(file)
 
         try:
-            default_arch = subprocess.check_output(
-                ["dpkg", "--print-architecture"], encoding="utf-8"
-            ).strip()
-        except subprocess.CalledProcessError:
+            default_arch = subprocess.run(
+                ["dpkg", "--print-architecture"],
+                stdout=subprocess.PIPE,
+                check=False,
+                encoding="utf-8",
+            ).stdout.strip()
+
+            if not default_arch:
+                raise FileNotFoundError()
+        except FileNotFoundError:
             default_arch = "amd64"
 
         self._variables: dict[str, str] = {

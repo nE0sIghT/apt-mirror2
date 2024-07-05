@@ -1,0 +1,4 @@
+deb http://host1.example.com/path1 suite main
+deb https://host1.example.com/path11 suite main
+deb https://host2.example.com/path2 suite main
+deb ftp://host3.example.com/path3 suite main

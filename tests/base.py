@@ -1,3 +1,4 @@
+import tempfile
 from pathlib import Path
 from unittest import TestCase
 
@@ -10,6 +11,21 @@ class BaseTest(TestCase):
 
     def get_config(self, name: str, config_name: str = "mirror.list"):
         return Config(self.TEST_DATA / name / config_name)
+
+    def get_modified_config(
+        self, name: str, extra: str, config_name: str = "mirror.list"
+    ):
+        with tempfile.NamedTemporaryFile("wt", encoding="utf-8") as tmp:
+            with open(
+                self.TEST_DATA / name / config_name, "rt", encoding="utf-8"
+            ) as fp:
+                tmp.write(fp.read())
+                tmp.write("\n")
+                tmp.write(extra)
+
+            tmp.flush()
+
+            return Config(Path(tmp.name))
 
     def ensure_repository(self, repository: BaseRepository) -> Repository:
         if not isinstance(repository, Repository):

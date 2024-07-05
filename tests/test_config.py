@@ -1,7 +1,9 @@
 from pathlib import Path
 
 from apt_mirror.apt_mirror import PathCleaner
-from apt_mirror.config import RepositoryConfigException
+from apt_mirror.config import Config, RepositoryConfigException
+from apt_mirror.download.url import URL
+from apt_mirror.netrc import NetRC
 from apt_mirror.repository import ByHash
 from tests.base import BaseTest
 
@@ -253,3 +255,59 @@ class TestConfig(BaseTest):
     def test_broken_flat(self):
         with self.assertRaises(RepositoryConfigException):
             self.get_config("FlatBrokenConfig")
+
+    def test_netrc1(self):
+        netrc = NetRC(self.TEST_DATA / "NetRC" / "auth1.conf")
+        self.assertEqual(
+            netrc.match_machine(URL.from_string("https://host1.example.com")),
+            ("user", "password"),
+        )
+
+        netrc = NetRC(self.TEST_DATA / "NetRC" / "auth4.conf")
+        self.assertEqual(
+            netrc.match_machine(URL.from_string("http://host1.example.com/path123")),
+            ("login1", "password1"),
+        )
+
+    def test_netrc2(self):
+        def ensure_auth(
+            config: Config,
+            repository_url: str,
+            login: str | None = None,
+            password: str | None = None,
+        ):
+            repository = self.ensure_repository(config.repositories[repository_url])
+            self.assertEqual(repository.url.username, login)
+            self.assertEqual(repository.url.password, password)
+
+        etc_netrc = self.TEST_DATA / "NetRC" / "auth1.conf"
+        config = self.get_modified_config("NetRC", f"set etc_netrc {etc_netrc}")
+
+        ensure_auth(config, "http://host1.example.com/path1")
+        ensure_auth(config, "https://host1.example.com/path11", "user", "password")
+        ensure_auth(config, "https://host2.example.com/path2")
+        ensure_auth(config, "ftp://host3.example.com/path3")
+
+        etc_netrc = self.TEST_DATA / "NetRC" / "auth2.conf"
+        config = self.get_modified_config("NetRC", f"set etc_netrc {etc_netrc}")
+
+        ensure_auth(config, "http://host1.example.com/path1")
+        ensure_auth(config, "https://host1.example.com/path11")
+        ensure_auth(config, "https://host2.example.com/path2")
+        ensure_auth(config, "ftp://host3.example.com/path3", "ftp", "anon")
+
+        etc_netrc = self.TEST_DATA / "NetRC" / "auth3.conf"
+        config = self.get_modified_config("NetRC", f"set etc_netrc {etc_netrc}")
+
+        ensure_auth(config, "http://host1.example.com/path1")
+        ensure_auth(config, "https://host1.example.com/path11", "some", "thing")
+        ensure_auth(config, "https://host2.example.com/path2")
+        ensure_auth(config, "ftp://host3.example.com/path3")
+
+        etc_netrc = self.TEST_DATA / "NetRC" / "auth4.conf"
+        config = self.get_modified_config("NetRC", f"set etc_netrc {etc_netrc}")
+
+        ensure_auth(config, "http://host1.example.com/path1", "login1", "password1")
+        ensure_auth(config, "https://host1.example.com/path11", "login2", "password2")
+        ensure_auth(config, "https://host2.example.com/path2")
+        ensure_auth(config, "ftp://host3.example.com/path3")

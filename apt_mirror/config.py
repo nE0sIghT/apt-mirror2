@@ -16,6 +16,7 @@ from apt_mirror.repository import (
 )
 
 from .logs import LoggerFactory
+from .netrc import NetRC
 from .version import __version__
 
 
@@ -245,6 +246,7 @@ class Config:
             "mirror_path": "$base_path/mirror",
             "skel_path": "$base_path/skel",
             "var_path": "$base_path/var",
+            "etc_netrc": "/etc/apt/auth.conf",
             "cleanscript": "$var_path/clean.sh",
             "write_file_lists": "off",
             "run_postmirror": "0",
@@ -344,6 +346,7 @@ class Config:
         self._update_mirror_paths(mirror_paths)
         self._update_ignore_errors(ignore_errors)
         self._update_filters(include_source_name, exclude_source_name)
+        self._update_netrc()
 
     def _update_clean(self, clean: list[str]):
         for url in clean:
@@ -411,6 +414,16 @@ class Config:
                 continue
 
             self._repositories[url].exclude_source_name.update(source_names)
+
+    def _update_netrc(self):
+        netrc = NetRC(self.etc_netrc)
+
+        for repository in self._repositories.values():
+            url = repository.url
+            auth = netrc.match_machine(url)
+
+            if auth and not url.username and not url.password:
+                url.username, url.password = auth
 
     def _substitute_variables(self):
         max_tries = 16
@@ -563,6 +576,10 @@ class Config:
     @property
     def var_path(self) -> Path:
         return self.get_path("var_path")
+
+    @property
+    def etc_netrc(self) -> Path:
+        return self.get_path("etc_netrc")
 
     @property
     def proxy(self) -> Proxy:

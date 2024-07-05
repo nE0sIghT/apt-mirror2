@@ -7,6 +7,9 @@ set skel_path         $base_path/skel
 ## Path to variable data
 set var_path          $base_path/var
 
+## Path to apt_auth.conf. See `man apt_auth.conf`
+# set etc_netrc         /etc/apt/auth.conf
+
 ## Used when arch is not explicitly specified for repository
 set defaultarch       amd64
 set nthreads          8

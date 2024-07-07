@@ -146,9 +146,16 @@ security (pip-audit):
     - docker:24-dind
   before_script:
     - LATEST_TAG="latest"
+
     - if [ "${BASE_IMAGE}" = "debian:stable-slim" ]; then
     -   LATEST_TAG="slim"
     -   VERSION_SUFFIX="-slim"
+    - fi
+
+    - if [[ $BASE_IMAGE == *alpine* ]]; then
+    -   LATEST_TAG="alpine"
+    -   VERSION_SUFFIX="-alpine"
+    -   PYTHON_VERSION="${PYTHON_VERSION}-alpine"
     - fi
   script:
     - >-
@@ -163,6 +170,7 @@ security (pip-audit):
       - BASE_IMAGE:
         - debian:stable
         - debian:stable-slim
+        - alpine:3
 
 build image:
   extends:

@@ -22,6 +22,19 @@ You can try it using
 docker run -it --rm aptmirror/apt-mirror2 --help
 ```
 
+### Image variants
+#### `aptmirror/apt-mirror2:latest`, `aptmirror/apt-mirror2:<version>`
+
+Images based on `debian:stable` image.
+
+#### `aptmirror/apt-mirror2:slim`, `aptmirror/apt-mirror2:<version>-slim`
+
+Images based on `debian:stable-slim` image.
+
+#### `aptmirror/apt-mirror2:alpine`, `aptmirror/apt-mirror2:<version>-alpine`
+
+Images based on `alpine:3` image.
+
 ## PyPi
 
 PyPi package is available with the name [`apt-mirror`](https://pypi.org/project/apt-mirror/):

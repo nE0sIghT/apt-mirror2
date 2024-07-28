@@ -23,15 +23,18 @@ docker run -it --rm aptmirror/apt-mirror2 --help
 ```
 
 ### Image variants
-#### `aptmirror/apt-mirror2:latest`, `aptmirror/apt-mirror2:<version>`
+#### `aptmirror/apt-mirror2:latest`
+#### `aptmirror/apt-mirror2:<version>`
 
 Images based on `debian:stable` image.
 
-#### `aptmirror/apt-mirror2:slim`, `aptmirror/apt-mirror2:<version>-slim`
+#### `aptmirror/apt-mirror2:slim`
+#### `aptmirror/apt-mirror2:<version>-slim`
 
 Images based on `debian:stable-slim` image.
 
-#### `aptmirror/apt-mirror2:alpine`, `aptmirror/apt-mirror2:<version>-alpine`
+#### `aptmirror/apt-mirror2:alpine`
+#### `aptmirror/apt-mirror2:<version>-alpine`
 
 Images based on `alpine:3` image.
 
@@ -100,6 +103,7 @@ In addition there are some enhancements available:
 - `mirror_path URL PATH` option may be used to specify `PATH` to use for saving mirror files instead of path that is generated from `URL`.
 - Additional configuration is loaded from the `*.list` files in the directory named same as `configfile` with the `.d` suffix. Eg `/etc/apt/mirror.list.d/*.list`.
 - Rate limit is enforced for overall download rate.
+- Slow download rate protection is enabled by default and can be configured via `mirror.list`.
 - Non-zero exit code is returned if some of required files were not downloaded due to network or server errors or
   no repositories were configured.
 - HTTP user agent can be configured via `user_agent` configuration.

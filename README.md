@@ -9,7 +9,7 @@ This is ensured by data integrity checks at all stages of mirroring.
 
 # Requirements
 
-Python 3.10 is the minimum supported version.  
+Python 3.10 is the minimum supported version. PyPy 3.10 (7.3) is supported also.  
 For additional dependencies look to the `pyproject.yml` and/or `requirements.txt`.
 
 # Installation

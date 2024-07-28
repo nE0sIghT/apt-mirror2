@@ -2,6 +2,7 @@
 variables:
   FF_NETWORK_PER_BUILD: 'true'
   PYTHON_VERSION: '3.10'
+  PYTHON_IMAGE: python
   IMAGE_NAME: aptmirror/apt-mirror2
 
 workflow:
@@ -32,8 +33,9 @@ stages:
 .test defaults:
   extends:
     - .pip cache
-  image: python:$PYTHON_VERSION
+  image: docker.io/$PYTHON_IMAGE:$PYTHON_VERSION
   before_script:
+    - python --version
     - pip install -r requirements.txt -r requirements/dev.txt
   needs: []
 
@@ -98,6 +100,10 @@ test:
     matrix:
       - PYTHON_VERSION:
           - '3.10'
+        PYTHON_IMAGE:
+          - python
+          - pypy
+      - PYTHON_VERSION:
           - '3.11'
           - '3.12'
 

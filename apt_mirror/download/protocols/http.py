@@ -49,7 +49,10 @@ class HTTPDownloader(Downloader):
         self._httpx = httpx.AsyncClient(
             base_url=base_url,
             auth=auth,
-            timeout=None,
+            timeout=httpx.Timeout(
+                15,
+                read=60,
+            ),
             follow_redirects=True,
             mounts=proxy_mounts,
             transport=httpx.AsyncHTTPTransport(

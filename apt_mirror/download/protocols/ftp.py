@@ -43,6 +43,7 @@ class FTPDownloader(Downloader):
                 user=self._url.username or aioftp.DEFAULT_USER,
                 password=self._url.password or aioftp.DEFAULT_PASSWORD,
                 parse_list_line_custom_first=True,
+                socket_timeout=15,
             ) as ftp:
                 ftp.parse_list_line_custom = self.parse_list_line_unix_links(ftp)
 

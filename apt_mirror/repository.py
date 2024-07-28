@@ -9,7 +9,7 @@ import shutil
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
-from mmap import MADV_SEQUENTIAL, MAP_POPULATE, MAP_PRIVATE, mmap
+from mmap import MADV_SEQUENTIAL, MAP_PRIVATE, mmap
 from pathlib import Path
 from typing import IO, Any, Iterable, Sequence
 
@@ -17,6 +17,10 @@ from debian.deb822 import Release
 
 from .download import URL, DownloadFile, FileCompression, HashSum, HashType
 from .logs import LoggerFactory
+
+# https://github.com/pypy/pypy/issues/4991
+# TODO: replace again with `from mmap import MAP_POPULATE`
+MAP_POPULATE = 0x008000
 
 
 def should_ignore_errors(ignored_paths: set[str], path: Path):

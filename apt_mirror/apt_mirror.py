@@ -231,6 +231,7 @@ class RepositoryMirror:
             proxy=self._config.proxy,
             user_agent=self._config.user_agent,
             semaphore=self._download_semaphore,
+            slow_rate_protector_factory=self._config.slow_rate_protector_factory,
             rate_limiter=self._rate_limiter,
             verify_ca_certificate=self._config.verify_ca_certificate,
             client_certificate=self._config.client_certificate,

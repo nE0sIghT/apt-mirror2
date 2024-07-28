@@ -15,6 +15,7 @@ from apt_mirror.repository import (
     Repository,
 )
 
+from .download.slow_rate_protector import SlowRateProtectorFactory
 from .logs import LoggerFactory
 from .netrc import NetRC
 from .version import __version__
@@ -257,6 +258,9 @@ class Config:
             "wipe_count_ratio": "0.4",
             "_tilde": "0",
             "limit_rate": "100m",
+            "slow_rate_protection": "on",
+            "slow_rate_startup": "15",
+            "slow_rate": "100k",
             "unlink": "0",
             "use_proxy": "off",
             "http_proxy": "",
@@ -471,6 +475,24 @@ class Config:
     def get_path(self, key: str) -> Path:
         return Path(self[key])
 
+    def get_size(self, key: str) -> int:
+        suffix = self[key][-1:]
+
+        if not suffix.isnumeric():
+            value = int(self[key][:-1])
+            match suffix.lower():
+                case "k":
+                    return value * 1024
+                case "m":
+                    return value * 1024 * 1024
+                case _:
+                    raise ValueError(
+                        f"Wrong `{key}` configuration suffix: {self[key]}. Allowed"
+                        " suffixes: k, m"
+                    )
+
+        return int(self[key])
+
     def as_environment(self) -> dict[str, str]:
         return {f"APT_MIRROR_{k.upper()}": v for k, v in self._variables.items()}
 
@@ -521,25 +543,28 @@ class Config:
         return self.get_bool("_tilde")
 
     @property
-    def limit_rate(self) -> int | None:
-        if "limit_rate" not in self._variables:
-            return None
+    def limit_rate(self) -> int:
+        return self.get_size("limit_rate")
 
-        suffix = self["limit_rate"][-1:]
+    @property
+    def slow_rate_protector_factory(self) -> SlowRateProtectorFactory:
+        return SlowRateProtectorFactory(
+            self.slow_rate_protection,
+            self.slow_rate_startup,
+            self.slow_rate,
+        )
 
-        if not suffix.isnumeric():
-            limit_rate = int(self["limit_rate"][:-1])
-            match suffix.lower():
-                case "k":
-                    return limit_rate * 1024
-                case "m":
-                    return limit_rate * 1024 * 1024
-                case _:
-                    raise ValueError(
-                        f"Wrong limit_rate configuration suffix: {self['limit_rate']}"
-                    )
+    @property
+    def slow_rate_protection(self) -> bool:
+        return self.get_bool("slow_rate_protection")
 
-        return int(self["limit_rate"])
+    @property
+    def slow_rate_startup(self) -> int:
+        return int(self._variables["slow_rate_startup"])
+
+    @property
+    def slow_rate(self) -> int:
+        return self.get_size("slow_rate")
 
     @property
     def nthreads(self) -> int:

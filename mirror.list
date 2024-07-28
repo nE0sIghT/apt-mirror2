@@ -13,8 +13,19 @@ set var_path          $base_path/var
 ## Used when arch is not explicitly specified for repository
 set defaultarch       amd64
 set nthreads          8
-## Rate limit in bytes per second. Suffixes `k` and `m` are allowed
+
+## Rate limit in bytes per second. Suffixes `k` and `m` are allowed. Do not enabled by default.
+## You should never set it lower than `slow_rate`.
 # set limit_rate        1k
+
+## Enable slow download rate protection. Default `on`.
+# set slow_rate_protection on
+## The period in seconds during which slow download protection will not be applied
+## to each individual downloaded file.
+# set slow_rate_startup  15
+## Slow download protection threshold.
+# set slow_rate          100k
+
 set _tilde            0
 
 ## Use uvloop if available

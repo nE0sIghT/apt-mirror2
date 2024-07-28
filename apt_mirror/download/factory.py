@@ -9,6 +9,7 @@ from .downloader import Downloader
 from .protocols.ftp import FTPDownloader
 from .protocols.http import HTTPDownloader
 from .proxy import Proxy
+from .slow_rate_protector import SlowRateProtectorFactory
 from .url import URL
 
 
@@ -25,6 +26,7 @@ class DownloaderFactory:
         proxy: Proxy,
         user_agent: str,
         semaphore: asyncio.Semaphore,
+        slow_rate_protector_factory: SlowRateProtectorFactory,
         rate_limiter: AsyncLimiter | None = None,
         verify_ca_certificate: bool | str = True,
         client_certificate: str | None = None,
@@ -43,6 +45,7 @@ class DownloaderFactory:
             proxy=proxy,
             user_agent=user_agent,
             semaphore=semaphore,
+            slow_rate_protector_factory=slow_rate_protector_factory,
             rate_limiter=rate_limiter,
             verify_ca_certificate=verify_ca_certificate,
             client_certificate=client_certificate,

@@ -23,6 +23,7 @@ from .download import (
     DownloadFileCompressionVariant,
     HashType,
 )
+from .download.format import format_size
 from .logs import LoggerFactory
 from .prometheus import DownloaderCollector
 from .repository import BaseRepository, InvalidReleaseFilesException
@@ -152,7 +153,7 @@ class PathCleaner:
                 [
                     (
                         f"echo 'Removing {len(self._files_queue)}"
-                        f" [{Downloader.format_size(self._bytes_cleaned)}]"
+                        f" [{format_size(self._bytes_cleaned)}]"
                         f" unnecessary files and {len(self._folders_queue)} unnecessary"
                         f" folders in the repository {repository.url}...'"
                     ),
@@ -171,8 +172,8 @@ class PathCleaner:
     def _wipe_threashold_warning(self) -> str:
         return (
             "Wipe threshold reached. Clean will not be performed. Total size:"
-            f" {Downloader.format_size(self.bytes_total)}, about to clean:"
-            f" {Downloader.format_size(self.bytes_cleaned)}. Total files:"
+            f" {format_size(self.bytes_total)}, about to clean:"
+            f" {format_size(self.bytes_cleaned)}. Total files:"
             f" {self.total_files_count}, about to clean: {self.clean_files_count}."
         )
 
@@ -192,7 +193,7 @@ class PathCleaner:
 
         self._log.info(
             "Removed"
-            f" {len(self._files_queue)} [{Downloader.format_size(self._bytes_cleaned)}]"
+            f" {len(self._files_queue)} [{format_size(self._bytes_cleaned)}]"
             f" unnecessary files and {len(self._folders_queue)} unnecessary folders"
         )
 

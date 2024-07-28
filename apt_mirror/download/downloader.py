@@ -15,6 +15,7 @@ from aiolimiter import AsyncLimiter
 from ..aiofile import AsyncIOFile
 from ..logs import LoggerFactory
 from .download_file import DownloadFile, DownloadFileCompressionVariant
+from .format import format_size
 from .proxy import Proxy
 from .response import DownloadResponse
 from .url import URL
@@ -102,7 +103,7 @@ class Downloader(ABC):
 
     @property
     def queue_files_formatted_size(self) -> str:
-        return self.format_size(self.queue_files_size)
+        return format_size(self.queue_files_size)
 
     @property
     def downloaded_files_count(self) -> int:
@@ -135,18 +136,6 @@ class Downloader(ABC):
     @property
     def unmodified_files_size(self) -> int:
         return self._unmodified_size
-
-    # Fred Cirera
-    # https://stackoverflow.com/a/1094933
-    @staticmethod
-    def format_size(size: float, suffix: str = "B"):
-        for unit in ("", "Ki", "Mi", "Gi"):
-            if abs(size) < 1024.0:
-                return f"{size:3.1f} {unit}{suffix}"
-
-            size /= 1024.0
-
-        return f"{size:.1f} Ti{suffix}"
 
     async def download(self):
         async def remove_finished_tasks(tasks: set[asyncio.Task[Any]]):
@@ -221,19 +210,19 @@ class Downloader(ABC):
             self.log_status("Download progress")
 
     def log_status(self, message: str):
-        download_rate = self.format_size(
+        download_rate = format_size(
             self._downloaded_size
             / (datetime.now().timestamp() - self._download_start.timestamp()),
             suffix="B/sec",
         )
         self._log.info(
             message
-            + f": {self._downloaded_count} ({self.format_size(self._downloaded_size)},"
+            + f": {self._downloaded_count} ({format_size(self._downloaded_size)},"
             f" {download_rate});"
             " unmodified:"
-            f" {self._unmodified_count} ({self.format_size(self._unmodified_size)});"
-            f" missing: {self._missing_count} ({self.format_size(self._missing_size)});"
-            f" errors: {self._error_count} ({self.format_size(self._error_size)})"
+            f" {self._unmodified_count} ({format_size(self._unmodified_size)});"
+            f" missing: {self._missing_count} ({format_size(self._missing_size)});"
+            f" errors: {self._error_count} ({format_size(self._error_size)})"
         )
 
     async def download_file(self, source_file: DownloadFile):

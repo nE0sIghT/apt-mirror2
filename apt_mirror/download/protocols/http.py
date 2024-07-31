@@ -51,6 +51,7 @@ class HTTPDownloader(Downloader):
             auth=auth,
             timeout=httpx.Timeout(
                 15,
+                connect=30,
                 read=60,
             ),
             follow_redirects=True,

@@ -344,6 +344,10 @@ class RepositoryMirror:
 
                 await asyncio.sleep(5)
 
+        # Fail in case we have download errors, but don't complain for missing files
+        if self._downloader.has_errors():
+            self._error = True
+
         return release_files
 
     async def download_metadata_files(self) -> Iterable[DownloadFile]:

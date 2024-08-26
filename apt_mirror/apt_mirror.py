@@ -25,7 +25,11 @@ from .download import (
 )
 from .download.format import format_size
 from .logs import LoggerFactory
-from .prometheus import DownloaderCollector
+from .prometheus import (
+    BaseDownloaderCollector,
+    DownloaderCollector,
+    DummyDownloaderCollector,
+)
 from .repository import BaseRepository, InvalidReleaseFilesException
 from .version import __version__
 
@@ -210,7 +214,7 @@ class RepositoryMirror:
         semaphore: asyncio.Semaphore,
         download_semaphore: asyncio.Semaphore,
         rate_limiter: AsyncLimiter | None,
-        metrics_collector: DownloaderCollector,
+        metrics_collector: BaseDownloaderCollector,
     ) -> None:
         self._log = LoggerFactory.get_logger(self, logger_id=repository.url)
 
@@ -569,14 +573,16 @@ class APTMirror:
         if self._config.limit_rate:
             self._rate_limiter = AsyncLimiter(self._config.limit_rate * 60, 60)
 
-        self._metrics_collector = DownloaderCollector(
-            self._config.prometheus_host, self._config.prometheus_port
-        )
-        if (
-            self._config.prometheus_enable
-            and not self._metrics_collector.prometheus_available()
-        ):
-            self._log.warning("Prometheus python client is not available")
+        if self._config.prometheus_enable:
+            self._metrics_collector = DownloaderCollector(
+                self._config.prometheus_host, self._config.prometheus_port
+            )
+            if not self._metrics_collector.prometheus_available():
+                self._log.warning("Prometheus python client is not available")
+        else:
+            self._metrics_collector = DummyDownloaderCollector(
+                self._config.prometheus_host, self._config.prometheus_port
+            )
 
     def on_stop(self):
         self.stopped = True

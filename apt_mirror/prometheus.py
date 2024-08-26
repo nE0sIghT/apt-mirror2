@@ -27,15 +27,19 @@ class BaseDownloaderCollector(ABC):
         pass
 
 
+class DummyDownloaderCollector(BaseDownloaderCollector):
+    def collect(self):
+        yield
+
+
 try:
     from prometheus_client import Metric, start_http_server
     from prometheus_client.core import REGISTRY, GaugeMetricFamily
     from prometheus_client.registry import Collector
 except ImportError:
 
-    class DownloaderCollector(BaseDownloaderCollector):
-        def collect(self):
-            yield
+    class DownloaderCollector(DummyDownloaderCollector):
+        pass
 
 else:
 

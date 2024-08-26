@@ -1,0 +1,4 @@
+---
+include:
+  project: apt-mirror2/ci-recipes
+  file: debian-package.yml

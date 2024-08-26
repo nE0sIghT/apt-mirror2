@@ -1,0 +1,142 @@
+## Paths to working directories
+set base_path         /var/spool/apt-mirror
+## All mirrors will be saved to mirror_path
+set mirror_path       $base_path/mirror
+## Initial metadata synchronization path
+set skel_path         $base_path/skel
+## Path to variable data
+set var_path          $base_path/var
+
+## Path to apt_auth.conf. See `man apt_auth.conf`
+# set etc_netrc         /etc/apt/auth.conf
+
+## Used when arch is not explicitly specified for repository
+# set defaultarch       <running host architecture>
+set nthreads          8
+
+## Rate limit in bytes per second. Suffixes `k` and `m` are allowed. Do not enabled by default.
+## You should never set it lower than `slow_rate`.
+# set limit_rate        1k
+
+## Enable slow download rate protection. Default `on`.
+# set slow_rate_protection on
+## The period in seconds during which slow download protection will not be applied
+## to each individual downloaded file.
+# set slow_rate_startup  15
+## Slow download protection threshold.
+# set slow_rate          100k
+
+set _tilde            0
+
+## Use uvloop if available
+# set uvloop            1
+
+## Proxy configuration.
+## Only supported for http repositories.
+# set use_proxy             off
+## If proxy scheme is ommited, `http://` assumed
+# set http_proxy            127.0.0.1:3128
+# set https_proxy           127.0.0.1:3128
+# set proxy_user            user
+# set proxy_password        password
+
+## User agent for http repositories. Default `apt-mirror2/VERSION`
+# set http_user_agent       apt-mirror2
+
+## Certificates configuration
+## Whether to verify https certificate
+# set no_check_certificate  off
+## Path to custom CA certificates bundle
+# set ca_certificate        /etc/ssl/certs/ca-certificates.crt
+## Paths to client certificate and private key for HTTP client authentication
+# set certificate           /etc/ssl/certs/certificate.crt
+# set private_key           /etc/ssl/certs/key.pem
+
+## Whether to write file lists (ALL, NEW, MD5, SHA256, SHA512 files) as apt-mirror does.
+## Default - off, since apt-mirror2 doesn't use them.
+# set write_file_lists        off
+
+## Enable Prometheus client
+# set prometheus_enable   off
+# set prometheus_host     localhost
+# set prometheus_port     8000
+
+## Retries
+## How much times retry to download broken release files
+# set release_files_retries 15
+
+## Run script after mirror complete
+# set run_postmirror    0
+## Path to Post Mirror script
+# All configuration variables are available in `postmirror_script` uppercased
+# with prefix `APT_MIRROR_`, eg `${APT_MIRROR_BASE_PATH}`
+# set postmirror_script $var_path/postmirror.sh
+
+## By default redundant files are not removed after mirror update.
+## Shell script is created in the path specified by `cleanscript` option
+## that can be used to clean mirror.
+# set cleanscript     $var_path/clean.sh
+
+## If `_autoclean` option is specified and enabled, clean script will
+## not be created and mirror will be cleaned
+# set _autoclean 0
+## To protect repositories against erroneous wiping do not perform repository cleanup
+## when more than `repository_size * wipe_size_ratio` total size to be cleaned or
+## more than `repository_files_count * wipe_count_ratio` total files to be removed.
+## Use 0 to disable wipe protection.
+# set wipe_size_ratio 0.4
+# set wipe_count_ratio 0.4
+
+
+## Mirrors are configured using standard sources.list syntax
+## Binary mirrors
+# deb [ arch=amd64,arm64 ] http://archive.ubuntu.com/ubuntu mantic main restricted universe multiverse
+
+## Or via `deb-arch`
+# deb-amd64 http://archive.ubuntu.com/ubuntu mantic main restricted universe multiverse
+# deb-arm64 http://archive.ubuntu.com/ubuntu mantic main restricted universe multiverse
+
+## Although not supported by sources.list it's possible to specify codenames or directories
+## separated by commas without spaces here.
+# deb-amd64 http://archive.ubuntu.com/ubuntu mantic,jammy main restricted universe multiverse
+# deb https://packages.ntop.org/apt-stable/20.04/ x64/,all/
+
+## `by-hash` option can be used to control mirroring using hashsums paths.
+## A `yes` or `no` value activates/disables the use of this feature if this source indicates support for it,
+## while `force` will enable the feature regardless of what the source indicates.
+## Default - `yes`.
+# deb [ arch=amd64,arm64 by-hash=no ] http://archive.ubuntu.com/ubuntu mantic main restricted universe multiverse
+
+## Source mirrors
+# deb-src http://archive.ubuntu.com/ubuntu mantic main restricted universe multiverse
+# deb-src http://archive.ubuntu.com/ubuntu mantic-security main restricted universe multiverse
+# deb-src http://archive.ubuntu.com/ubuntu mantic-updates main restricted universe multiverse
+# deb-src http://archive.ubuntu.com/ubuntu mantic-backports main restricted universe multiverse
+
+## Special `src` value for `arch` option can be used to specify src repository too
+# deb [ arch=src ] http://archive.ubuntu.com/ubuntu mantic main restricted universe multiverse
+
+## By default the name of mirrored folder constructed from mirror URL.
+## Using mirror_path it's possible to override mirror folder name
+# mirror_path http://archive.ubuntu.com/ubuntu ubuntu
+
+## Ignore errors for specified repository path.
+## Can be exact file or folder.
+# ignore_errors https://packages.gitlab.com/runner/gitlab-runner/debian pool/bullseye/main/g/gitlab-runner/gitlab-runner_14.8.1_amd64.deb
+
+## Mirror source packages with specified names and binary packages which were built from
+## source packages with specified names.
+## When not specified - mirror all packages.
+# include_source_name http://archive.ubuntu.com/ubuntu source_name1 source_name2 source_name3
+
+## Do not mirror source packages with specified names and binary packages which were built from
+## source packages with specified names.
+## When not specified - do not exclude packages.
+# exclude_source_name http://archive.ubuntu.com/ubuntu source_name1 source_name2 source_name3
+
+## If specified - clean redundant files in repository (look to _autoclean option)
+# clean http://archive.ubuntu.com/ubuntu
+## If specified and repository clean enabled - skip specified paths from clean
+# skip-clean http://archive.ubuntu.com/ubuntu/pool/c/curl
+# skip-clean http://archive.ubuntu.com/ubuntu/dists/xenial
+

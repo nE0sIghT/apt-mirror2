@@ -1,0 +1,15 @@
+deb http://ftp.debian.org/debian @CODENAME@ main contrib non-free
+deb-src http://ftp.debian.org/debian @CODENAME@ main contrib non-free
+
+# mirror additional architectures
+#deb-amd64 http://ftp.debian.org/debian @CODENAME@ main contrib non-free
+#deb-arm64 http://ftp.debian.org/debian @CODENAME@ main contrib non-free
+#deb-armel http://ftp.debian.org/debian @CODENAME@ main contrib non-free
+#deb-armhf http://ftp.debian.org/debian @CODENAME@ main contrib non-free
+#deb-i386 http://ftp.debian.org/debian @CODENAME@ main contrib non-free
+#deb-mips64el http://ftp.debian.org/debian @CODENAME@ main contrib non-free
+#deb-ppc64el http://ftp.debian.org/debian @CODENAME@ main contrib non-free
+#deb-riscv64 http://ftp.debian.org/debian @CODENAME@ main contrib non-free
+#deb-s390x http://ftp.debian.org/debian @CODENAME@ main contrib non-free
+
+clean http://ftp.debian.org/debian

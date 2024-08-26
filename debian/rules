@@ -1,0 +1,14 @@
+#!/usr/bin/make -f
+
+DIST ?= $(shell . /etc/os-release; echo "$$ID")
+CODENAME ?= $(shell . /etc/os-release; echo "$$VERSION_CODENAME")
+
+export PYBUILD_NAME=apt-mirror2
+
+%:
+	dh $@ --with python3 --buildsystem=pybuild
+
+override_dh_auto_install:
+	dh_auto_install -- PREFIX=/usr
+	cp debian/base-mirror.list debian/apt-mirror/etc/apt/mirror.list
+	sed "s#@CODENAME@#$(CODENAME)#" debian/$(DIST)-mirror.list >> debian/apt-mirror/etc/apt/mirror.list

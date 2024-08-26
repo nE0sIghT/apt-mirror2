@@ -1,0 +1,13 @@
+deb http://archive.ubuntu.com/ubuntu @CODENAME@ main restricted universe multiverse
+deb http://archive.ubuntu.com/ubuntu @CODENAME@-security main restricted universe multiverse
+deb http://archive.ubuntu.com/ubuntu @CODENAME@-updates main restricted universe multiverse
+#deb http://archive.ubuntu.com/ubuntu @CODENAME@-proposed main restricted universe multiverse
+#deb http://archive.ubuntu.com/ubuntu @CODENAME@-backports main restricted universe multiverse
+
+deb-src http://archive.ubuntu.com/ubuntu @CODENAME@ main restricted universe multiverse
+deb-src http://archive.ubuntu.com/ubuntu @CODENAME@-security main restricted universe multiverse
+deb-src http://archive.ubuntu.com/ubuntu @CODENAME@-updates main restricted universe multiverse
+#deb-src http://archive.ubuntu.com/ubuntu @CODENAME@-proposed main restricted universe multiverse
+#deb-src http://archive.ubuntu.com/ubuntu @CODENAME@-backports main restricted universe multiverse
+
+clean http://archive.ubuntu.com/ubuntu

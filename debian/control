@@ -1,0 +1,35 @@
+Source: apt-mirror2
+Section: net
+Priority: optional
+Maintainer: Yuri Konotopov <ykonotopov@gnome.org>
+Rules-Requires-Root: no
+Build-Depends: debhelper,
+               pybuild-plugin-pyproject, python3-setuptools,
+               python3-aiofile | python3-aiofiles,
+               python3-aioftp,
+               python3-aiolimiter,
+               python3-all,
+               python3-debian,
+               python3-h2,
+               python3-httpx,
+Testsuite: autopkgtest-pkg-python
+Standards-Version: 4.6.2
+Homepage: https://gitlab.com/apt-mirror2/apt-mirror2
+#Vcs-Browser: https://salsa.debian.org/debian/apt-mirror2
+#Vcs-Git: https://salsa.debian.org/debian/apt-mirror2.git
+
+Package: python3-apt-mirror2
+Architecture: all
+Depends: ${misc:Depends}, ${python3:Depends},
+Recommends:
+ python3-prometheus-client,
+ python3-uvloop,
+Provides: apt-mirror
+Conflicts: apt-mirror
+Replaces: apt-mirror
+Description: Python/asyncio reimplementation of the apt-mirror developed as drop-in replacement for the latest
+
+Package: apt-mirror2
+Architecture: all
+Depends: python3-apt-mirror2
+Description: Dummy package

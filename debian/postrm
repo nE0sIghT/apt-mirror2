@@ -1,0 +1,8 @@
+#!/bin/sh
+set -e
+
+if test "$1" = "purge"; then
+	rm -f /var/spool/apt-mirror/var/apt-mirror.lock
+fi
+
+#DEBHELPER#

@@ -1,0 +1,22 @@
+#!/bin/sh
+set -e
+
+setup_aptmirror_user() {
+	if ! id apt-mirror > /dev/null 2>&1; then
+		adduser --quiet --system --group --no-create-home --home /var/spool/apt-mirror --shell /bin/sh apt-mirror
+	fi
+}
+
+set_aptmirror_owner() {
+	chown apt-mirror:apt-mirror /var/spool/apt-mirror
+	chown apt-mirror:apt-mirror /var/spool/apt-mirror/mirror
+	chown apt-mirror:apt-mirror /var/spool/apt-mirror/skel
+	chown apt-mirror:apt-mirror /var/spool/apt-mirror/var
+}
+
+if test "$1" = "configure"; then
+	setup_aptmirror_user
+	set_aptmirror_owner
+fi
+
+#DEBHELPER#

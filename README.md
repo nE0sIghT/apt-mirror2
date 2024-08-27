@@ -47,6 +47,24 @@ pip install apt-mirror
 apt-mirror --help
 ```
 
+## Debian and Ubuntu packages
+
+Debian (bookworm, trixie) and Ubuntu (22.04, 24.04) packages are available in the [Packagecloud repository](https://packagecloud.io/nE0sIghT/apt-mirror2).
+
+Quick automated repository setup:
+
+```sh
+curl -s https://packagecloud.io/install/repositories/nE0sIghT/apt-mirror2/script.deb.sh | sudo bash
+```
+
+Package installation:
+
+```sh
+sudo apt-get install apt-mirror2
+```
+
+For manual steps please look to the [Packagecloud repository](https://packagecloud.io/nE0sIghT/apt-mirror2).
+
 ## Build from source with virtualenv
 
 It's possible to use `apt-mirror2` from a virtualenv:

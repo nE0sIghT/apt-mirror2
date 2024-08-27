@@ -31,6 +31,8 @@ from .prometheus import (
     DummyDownloaderCollector,
 )
 from .repository import BaseRepository, InvalidReleaseFilesException
+from .uvloop import UVLOOP_AVAILABLE
+from .uvloop import run as uvloop_run
 from .version import __version__
 
 LOG = LoggerFactory.get_logger(__package__)
@@ -783,18 +785,15 @@ def main() -> int:
     config.create_working_directories()
     config.init_log_files()
 
-    asyncio_loop = asyncio
-    if config.use_uvloop:
-        try:
-            import uvloop  # pylint: disable=C0415
-
-            asyncio_loop = uvloop
-        except ModuleNotFoundError:
-            LOG.warning("uvloop is enabled but not available")
-
     apt_mirror = APTMirror(config)
     try:
-        return asyncio_loop.run(apt_mirror.run())
+        if config.use_uvloop:
+            if not UVLOOP_AVAILABLE:
+                LOG.warning("uvloop is enabled but not available")
+
+            return uvloop_run(apt_mirror.run())
+
+        return asyncio.run(apt_mirror.run())
     except RuntimeError as ex:
         if apt_mirror.stopped:
             LOG.info("Stopped")

@@ -47,9 +47,13 @@ else:
         def __init__(self, address: str, port: int) -> None:
             super().__init__(address, port)
 
-            self._wsgi_server, self._wsgi_thread = start_http_server(
-                port=port, addr=address
-            )
+            self._wsgi_server = None
+            self._wsgi_thread = None
+
+            wsgi_data = start_http_server(port=port, addr=address)
+            if wsgi_data:
+                self._wsgi_server, self._wsgi_thread = wsgi_data
+
             REGISTRY.register(self)
 
         def prometheus_available(self) -> bool:

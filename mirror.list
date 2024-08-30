@@ -10,8 +10,9 @@ set var_path          $base_path/var
 ## Path to apt_auth.conf. See `man apt_auth.conf`
 # set etc_netrc         /etc/apt/auth.conf
 
-## Used when arch is not explicitly specified for repository
-set defaultarch       amd64
+## Used when arch is not explicitly specified for repository.
+## Default to host arch for Debian systems and amd64 for non-Debian.
+# set defaultarch       amd64
 set nthreads          8
 
 ## Rate limit in bytes per second. Suffixes `k` and `m` are allowed. Do not enabled by default.

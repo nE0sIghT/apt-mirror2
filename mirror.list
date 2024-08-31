@@ -135,6 +135,14 @@ deb [ arch=amd64,arm64 ] http://archive.ubuntu.com/ubuntu mantic main restricted
 ## When not specified - do not exclude packages.
 # exclude_source_name http://archive.ubuntu.com/ubuntu source_name1 source_name2 source_name3
 
+## Mirror binary packages with specified names.
+## When not specified - mirror all packages.
+# include_binary_packages http://archive.ubuntu.com/ubuntu binary_package1 binary_package2
+
+## Do not mirror binary packages with specified names.
+## When not specified - do not exclude packages.
+# exclude_binary_packages http://archive.ubuntu.com/ubuntu binary_package1 binary_package2
+
 ## If specified - clean redundant files in repository (look to _autoclean option)
 clean http://archive.ubuntu.com/ubuntu
 ## If specified and repository clean enabled - skip specified paths from clean

@@ -16,6 +16,7 @@ from typing import IO, Any, Iterable, Sequence
 from debian.deb822 import Release
 
 from .download import URL, DownloadFile, FileCompression, HashSum, HashType
+from .filter import PackageFilter
 from .logs import LoggerFactory
 
 # https://github.com/pypy/pypy/issues/4991
@@ -135,16 +136,14 @@ class SourcesParser(IndexFileParser):
         repository_path: Path,
         index_files: set[Path],
         ignore_errors: set[str],
-        include_source_name: set[str] | None = None,
-        exclude_source_name: set[str] | None = None,
+        package_filter: PackageFilter,
         logger_id: Any | None = None,
     ) -> None:
         super().__init__(
             repository_path, index_files, ignore_errors, logger_id=logger_id
         )
 
-        self._include_source_name = include_source_name
-        self._exclude_source_name = exclude_source_name
+        self._package_filter = package_filter
 
         self._reset_block_parser()
 
@@ -216,17 +215,7 @@ class SourcesParser(IndexFileParser):
                     self._reset_block_parser()
                     continue
 
-                if (
-                    self._include_source_name
-                    and self._package not in self._include_source_name
-                ):
-                    self._reset_block_parser()
-                    continue
-
-                if (
-                    self._exclude_source_name
-                    and self._package in self._exclude_source_name
-                ):
+                if not self._package_filter.package_allowed(self._package):
                     self._reset_block_parser()
                     continue
 
@@ -246,16 +235,14 @@ class PackagesParser(IndexFileParser):
         repository_path: Path,
         index_files: set[Path],
         ignore_errors: set[str],
-        include_source_name: set[str] | None = None,
-        exclude_source_name: set[str] | None = None,
+        package_filter: PackageFilter,
         logger_id: Any | None = None,
     ) -> None:
         super().__init__(
             repository_path, index_files, ignore_errors, logger_id=logger_id
         )
 
-        self._include_source_name = include_source_name
-        self._exclude_source_name = exclude_source_name
+        self._package_filter = package_filter
 
         self._reset_block_parser()
 
@@ -316,17 +303,7 @@ class PackagesParser(IndexFileParser):
 
                 source_name = self._source if self._source else self._package
 
-                if (
-                    self._include_source_name
-                    and source_name not in self._include_source_name
-                ):
-                    self._reset_block_parser()
-                    continue
-
-                if (
-                    self._exclude_source_name
-                    and source_name in self._exclude_source_name
-                ):
+                if not self._package_filter.package_allowed(source_name, self._package):
                     self._reset_block_parser()
                     continue
 
@@ -438,8 +415,7 @@ class BaseRepository(ABC):
     def __post_init__(self):
         self._log = LoggerFactory.get_logger(self)
 
-        self.include_source_name: set[str] = set()
-        self.exclude_source_name: set[str] = set()
+        self.package_filter = PackageFilter()
 
     def get_mirror_path(self, encode_tilde: bool):
         if self.mirror_path:
@@ -564,8 +540,7 @@ class BaseRepository(ABC):
                     repository_root / self.get_mirror_path(encode_tilde),
                     set(self.sources_files) - missing_sources,
                     ignore_errors=self.ignore_errors,
-                    include_source_name=self.include_source_name,
-                    exclude_source_name=self.exclude_source_name,
+                    package_filter=self.package_filter,
                     logger_id=self.url,
                 ).parse()
             )
@@ -576,8 +551,7 @@ class BaseRepository(ABC):
                     repository_root / self.get_mirror_path(encode_tilde),
                     set(self.packages_files) - missing_sources,
                     ignore_errors=self.ignore_errors,
-                    include_source_name=self.include_source_name,
-                    exclude_source_name=self.exclude_source_name,
+                    package_filter=self.package_filter,
                     logger_id=self.url,
                 ).parse()
             )

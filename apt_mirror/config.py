@@ -1,7 +1,7 @@
 # SPDX-License-Identifer: GPL-3.0-or-later
 
 import subprocess
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from string import Template
 
@@ -211,6 +211,13 @@ class RepositoryConfig:
 
 
 class Config:
+    @dataclass
+    class PackageFilter:
+        include_source_name: dict[str, set[str]] = field(default_factory=dict)
+        exclude_source_name: dict[str, set[str]] = field(default_factory=dict)
+        include_binary_packages: dict[str, set[str]] = field(default_factory=dict)
+        exclude_binary_packages: dict[str, set[str]] = field(default_factory=dict)
+
     DEFAULT_CONFIGFILE = "/etc/apt/mirror.list"
 
     def __init__(self, config_file: Path) -> None:
@@ -286,8 +293,7 @@ class Config:
         skip_clean: list[str] = []
         mirror_paths: dict[str, Path] = {}
         ignore_errors: dict[str, set[str]] = {}
-        include_source_name: dict[str, set[str]] = {}
-        exclude_source_name: dict[str, set[str]] = {}
+        package_filter = Config.PackageFilter()
 
         for file in self._files:
             with open(file, "rt", encoding="utf-8") as fp:
@@ -332,12 +338,30 @@ class Config:
                             sources = line.split()[1:]
                             url = sources.pop(0)
 
-                            include_source_name.setdefault(url, set()).update(sources)
+                            package_filter.include_source_name.setdefault(
+                                url, set()
+                            ).update(sources)
                         case line if line.startswith("exclude_source_name "):
                             sources = line.split()[1:]
                             url = sources.pop(0)
 
-                            exclude_source_name.setdefault(url, set()).update(sources)
+                            package_filter.exclude_source_name.setdefault(
+                                url, set()
+                            ).update(sources)
+                        case line if line.startswith("include_binary_packages "):
+                            packages = line.split()[1:]
+                            url = packages.pop(0)
+
+                            package_filter.include_binary_packages.setdefault(
+                                url, set()
+                            ).update(packages)
+                        case line if line.startswith("exclude_binary_packages "):
+                            packages = line.split()[1:]
+                            url = packages.pop(0)
+
+                            package_filter.exclude_binary_packages.setdefault(
+                                url, set()
+                            ).update(packages)
                         case line if not line or any(
                             line.startswith(prefix) for prefix in ("#", ";")
                         ):
@@ -349,7 +373,7 @@ class Config:
         self._update_skip_clean(skip_clean)
         self._update_mirror_paths(mirror_paths)
         self._update_ignore_errors(ignore_errors)
-        self._update_filters(include_source_name, exclude_source_name)
+        self._update_filters(package_filter)
         self._update_netrc()
 
     def _update_clean(self, clean: list[str]):
@@ -396,28 +420,34 @@ class Config:
 
     def _update_filters(
         self,
-        include_source_name: dict[str, set[str]],
-        exclude_source_name: dict[str, set[str]],
+        package_filter: "Config.PackageFilter",
     ):
-        for url, source_names in include_source_name.items():
-            if url not in self._repositories:
-                self._log.warning(
-                    "include_source_name was specified for missing repository URL:"
-                    f" {url}"
-                )
-                continue
+        for url, repository in self._repositories.items():
+            repository.package_filter.include_source_name.update(
+                package_filter.include_source_name.get(url, set())
+            )
+            repository.package_filter.exclude_source_name.update(
+                package_filter.exclude_source_name.get(url, set())
+            )
+            repository.package_filter.include_binary_packages.update(
+                package_filter.include_binary_packages.get(url, set())
+            )
+            repository.package_filter.exclude_binary_packages.update(
+                package_filter.exclude_binary_packages.get(url, set())
+            )
 
-            self._repositories[url].include_source_name.update(source_names)
-
-        for url, source_names in exclude_source_name.items():
-            if url not in self._repositories:
-                self._log.warning(
-                    "exclude_source_name was specified for missing repository URL:"
-                    f" {url}"
-                )
-                continue
-
-            self._repositories[url].exclude_source_name.update(source_names)
+        for filter_name in (
+            "include_source_name",
+            "exclude_source_name",
+            "include_binary_packages",
+            "exclude_binary_packages",
+        ):
+            for url in getattr(package_filter, filter_name):
+                if url not in self._repositories:
+                    self._log.warning(
+                        f"{filter_name} was specified for missing repository URL: {url}"
+                    )
+                    continue
 
     def _update_netrc(self):
         netrc = NetRC(self.etc_netrc)

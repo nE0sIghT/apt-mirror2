@@ -312,6 +312,54 @@ class TestRepository(BaseTest):
             files,
         )
 
+    def test_exclude_binary_packages(self):
+        config = self.get_config("DebianBookworm", config_name="mirror4.list")
+
+        repository = self.ensure_repository(
+            config.repositories["http://ftp.debian.org/debian"]
+        )
+        repository.mirror_path = Path("repo")
+
+        files = {
+            d.path
+            for d in repository.get_pool_files(
+                self.TEST_DATA / "DebianBookworm", False, set()
+            )
+        }
+
+        for file in [
+            "pool/main/w/wget2/libwget0_1.99.1-2.2_amd64.deb",
+            "pool/main/w/wget2/wget2-dev_1.99.1-2.2_amd64.deb",
+        ]:
+            self.assertNotIn(Path(file), files)
+
+    def test_include_binary_packages(self):
+        config = self.get_config("DebianBookworm", config_name="mirror5.list")
+
+        repository = self.ensure_repository(
+            config.repositories["http://ftp.debian.org/debian"]
+        )
+        repository.mirror_path = Path("repo")
+
+        files = {
+            d.path
+            for d in repository.get_pool_files(
+                self.TEST_DATA / "DebianBookworm", False, set()
+            )
+        }
+
+        self.assertEqual(
+            {
+                Path(p)
+                for p in [
+                    "pool/main/s/systemd/udev_252.22-1~deb12u1_amd64.deb",
+                    "pool/main/w/wget2/libwget0_1.99.1-2.2_amd64.deb",
+                    "pool/main/w/wget2/wget2-dev_1.99.1-2.2_amd64.deb",
+                ]
+            },
+            files,
+        )
+
     def test_packages_last_stanza(self):
         repository = self.get_repository(["main"], ["amd64"], False)
 

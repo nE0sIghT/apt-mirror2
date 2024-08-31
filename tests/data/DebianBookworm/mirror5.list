@@ -1,0 +1,4 @@
+deb [ arch=amd64 ] http://ftp.debian.org/debian bookworm main
+
+include_binary_packages http://ftp.debian.org/debian libwget0 wget2-dev
+include_binary_packages http://ftp.debian.org/debian udev

@@ -12,7 +12,7 @@ from typing import Any, AsyncGenerator
 
 from aiolimiter import AsyncLimiter
 
-from ..aiofile import AsyncIOFile
+from ..aiofile import BaseAsyncIOFileWriterFactory
 from ..logs import LoggerFactory
 from .download_file import DownloadFile, DownloadFileCompressionVariant
 from .format import format_size
@@ -30,6 +30,7 @@ class Downloader(ABC):
         *,
         url: URL,
         target_root_path: Path,
+        aiofile_factory: BaseAsyncIOFileWriterFactory,
         proxy: Proxy,
         user_agent: str,
         semaphore: asyncio.Semaphore,
@@ -46,6 +47,7 @@ class Downloader(ABC):
 
         self._url = url
         self._target_root_path = target_root_path
+        self._aiofile_factory = aiofile_factory
         self._semaphore = semaphore
         self._slow_rate_protector_factory = slow_rate_protector_factory
         self._rate_limiter = rate_limiter
@@ -322,7 +324,7 @@ class Downloader(ABC):
 
                         size = 0
                         target_path.unlink(missing_ok=True)
-                        async with AsyncIOFile(target_path) as fp:
+                        async with self._aiofile_factory.open(target_path) as fp:
                             try:
                                 slow_rate_protector = (
                                     self._slow_rate_protector_factory.for_target(

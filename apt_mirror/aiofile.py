@@ -1,90 +1,99 @@
 # SPDX-License-Identifer: GPL-3.0-or-later
 
 from abc import ABC, abstractmethod
-from contextlib import AbstractAsyncContextManager
+from contextlib import asynccontextmanager
 from pathlib import Path
-from types import TracebackType
+from typing import AsyncIterator, Protocol
 
 from .logs import LoggerFactory
 
 
-class BaseAsyncIOFile(ABC):
-    MODE = "wb"
-
-    def __init__(self, path: Path) -> None:
-        self.path = path
-
-    @abstractmethod
+class AsyncSupportsWrite(Protocol):
     async def write(self, data: bytes) -> int: ...
 
 
+class BaseAsyncIOFileWriterFactory(ABC):
+    MODE = "wb"
+
+    def __init__(self) -> None:
+        self._log = LoggerFactory.get_logger(self)
+
+    @classmethod
+    async def create(cls, *test_paths: Path) -> "BaseAsyncIOFileWriterFactory":
+        clazz = cls()
+        await clazz.test_storage(*test_paths)
+
+        return clazz
+
+    async def test_storage(self, *test_paths: Path):
+        pass
+
+    @asynccontextmanager
+    @abstractmethod
+    async def open(self, path: Path) -> AsyncIterator[AsyncSupportsWrite]:
+        yield  # type: ignore
+
+
 try:
-    from aiofile import FileIOWrapperBase
     from aiofile import async_open as aiofile_open
+    from caio import linux_aio_asyncio, thread_aio_asyncio
+
+    class AsyncIOFileFactory(BaseAsyncIOFileWriterFactory):  # type: ignore
+        def __init__(self) -> None:
+            super().__init__()
+            self._context = linux_aio_asyncio.AsyncioContext()
+
+        @asynccontextmanager
+        async def _open(
+            self,
+            path: Path,
+        ):
+            yield await aiofile_open(path, mode=self.MODE, context=self._context)
+
+        async def test_storage(self, *test_paths: Path) -> None:
+            for path in test_paths:
+                try:
+                    async with self._open(path) as fp:
+                        await fp.write(b" ")
+
+                    path.unlink()
+                except SystemError as e:
+                    if "not supported" in str(e):
+                        self._context = thread_aio_asyncio.AsyncioContext()
+                        self._log.warning(
+                            f"Linux AIO check failed for path {path}. Falling back to"
+                            " non-AIO threaded IO implementation."
+                        )
+                        break
+                finally:
+                    try:
+                        path.unlink(missing_ok=True)
+                    except OSError:
+                        pass
+
+        @asynccontextmanager
+        async def open(self, path: Path) -> AsyncIterator[AsyncSupportsWrite]:
+            async with self._open(path) as fd:
+                yield fd
+
 except ImportError:
     from aiofiles import open as aiofiles_open
+    from aiofiles.threadpool.binary import AsyncBufferedIOBase
 
     LoggerFactory.get_logger(__package__).warning(
         "True AIO is disabled because `aiofile` is not available, falling back to"
         " threaded wrapper via `aiofiles`. Consider using aiofile instead."
     )
 
-    class AsyncIOFile(BaseAsyncIOFile, AbstractAsyncContextManager[BaseAsyncIOFile]):
-        def __init__(self, path: Path) -> None:
-            super().__init__(path)
-            self._fd = None
-            self._context = None
-
-        async def __aenter__(self):
-            self._context = aiofiles_open(self.path, mode=self.MODE)
-            self._fd = await self._context.__aenter__()
-            return self
-
-        async def __aexit__(
-            self,
-            exc_type: type[BaseException] | None,
-            exc_value: BaseException | None,
-            traceback: TracebackType | None,
-        ):
-            if not self._fd or not self._context:
-                raise RuntimeError("Async file was not opened")
-
-            await self._context.__aexit__(exc_type, exc_value, traceback)
+    class AIOFilesWriter:
+        def __init__(self, fd: AsyncBufferedIOBase) -> None:
+            self._fd = fd
 
         async def write(self, data: bytes) -> int:
-            if not self._fd:
-                raise RuntimeError("Async file was not opened")
-
             return await self._fd.write(data)
 
-else:
-
-    class AsyncIOFile(  # type: ignore
-        BaseAsyncIOFile, AbstractAsyncContextManager[BaseAsyncIOFile]
-    ):
-        def __init__(self, path: Path) -> None:
-            super().__init__(path)
-            self._fd: FileIOWrapperBase | None = None
-            self._context = None
-
-        async def __aenter__(self):
-            self._context = aiofile_open(self.path, self.MODE)
-            self._fd = await self._context.__aenter__()
-            return self
-
-        async def __aexit__(
-            self,
-            exc_type: type[BaseException] | None,
-            exc_value: BaseException | None,
-            traceback: TracebackType | None,
-        ):
-            if not self._fd or not self._context:
-                raise RuntimeError("Async file was not opened")
-
-            await self._context.__aexit__(exc_type, exc_value, traceback)
-
-        async def write(self, data: bytes) -> int:
-            if not self._fd:
-                raise RuntimeError("Async file was not opened")
-
-            return await self._fd.write(data)
+    class AsyncIOFileFactory(BaseAsyncIOFileWriterFactory):
+        @asynccontextmanager
+        async def open(self, path: Path) -> AsyncIterator[AsyncSupportsWrite]:
+            async with aiofiles_open(path, self.MODE) as fd:
+                yield AIOFilesWriter(fd)

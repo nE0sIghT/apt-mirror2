@@ -5,6 +5,7 @@ from pathlib import Path
 
 from aiolimiter import AsyncLimiter
 
+from ..aiofile import BaseAsyncIOFileWriterFactory
 from .downloader import Downloader
 from .protocols.ftp import FTPDownloader
 from .protocols.http import HTTPDownloader
@@ -23,6 +24,7 @@ class DownloaderFactory:
         url: URL,
         *,
         target_root_path: Path,
+        aiofile_factory: BaseAsyncIOFileWriterFactory,
         proxy: Proxy,
         user_agent: str,
         semaphore: asyncio.Semaphore,
@@ -42,6 +44,7 @@ class DownloaderFactory:
         return cls(
             url=url,
             target_root_path=target_root_path,
+            aiofile_factory=aiofile_factory,
             proxy=proxy,
             user_agent=user_agent,
             semaphore=semaphore,

@@ -16,6 +16,7 @@ from typing import IO, Any, Awaitable, Iterable, Sequence
 
 from aiolimiter import AsyncLimiter
 
+from .aiofile import AsyncIOFileFactory, BaseAsyncIOFileWriterFactory
 from .config import Config
 from .download import (
     Downloader,
@@ -210,10 +211,41 @@ class RepositoryMirror:
     MOVE_FOLDER_OLD_SUFFIX = f"{MOVE_FOLDER_PREFIX}old"
     MOVE_FOLDER_NEW_SUFFIX = f"{MOVE_FOLDER_PREFIX}new"
 
+    @classmethod
+    async def create(
+        cls,
+        repository: BaseRepository,
+        config: Config,
+        semaphore: asyncio.Semaphore,
+        download_semaphore: asyncio.Semaphore,
+        rate_limiter: AsyncLimiter | None,
+        metrics_collector: BaseDownloaderCollector,
+    ):
+        skel_path = config.skel_path / repository.get_mirror_path(config.encode_tilde)
+        mirror_path = config.mirror_path / repository.get_mirror_path(
+            config.encode_tilde
+        )
+        test_file = ".apt_mirror_aio"
+        asyncio_file_factory = await AsyncIOFileFactory.create(
+            skel_path / test_file,
+            mirror_path / test_file,
+        )
+
+        return cls(
+            repository,
+            config,
+            asyncio_file_factory,
+            semaphore,
+            download_semaphore,
+            rate_limiter,
+            metrics_collector,
+        )
+
     def __init__(
         self,
         repository: BaseRepository,
         config: Config,
+        asyncio_file_factory: BaseAsyncIOFileWriterFactory,
         semaphore: asyncio.Semaphore,
         download_semaphore: asyncio.Semaphore,
         rate_limiter: AsyncLimiter | None,
@@ -233,8 +265,9 @@ class RepositoryMirror:
 
         self._downloader = DownloaderFactory.for_url(
             url=self._repository.url,
-            target_root_path=self._config.skel_path
-            / self._repository.get_mirror_path(self._config.encode_tilde),
+            target_root_path=config.skel_path
+            / repository.get_mirror_path(config.encode_tilde),
+            aiofile_factory=asyncio_file_factory,
             proxy=self._config.proxy,
             user_agent=self._config.user_agent,
             semaphore=self._download_semaphore,
@@ -622,7 +655,7 @@ class APTMirror:
         tasks: list[Awaitable[bool]] = []
         mirrors: list[RepositoryMirror] = []
         for repository in self._config.repositories.values():
-            mirror = RepositoryMirror(
+            mirror = await RepositoryMirror.create(
                 repository,
                 self._config,
                 self._semaphore,

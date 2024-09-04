@@ -2,6 +2,7 @@
 
 import argparse
 import asyncio
+import errno
 import itertools
 import os
 import shutil
@@ -433,7 +434,7 @@ class RepositoryMirror:
             if not folder.is_dir():
                 continue
 
-            shutil.rmtree(folder)
+            self._rmtree(folder)
 
         for file in metadata_files:
             file_alternate_paths: list[Path] = []
@@ -487,7 +488,7 @@ class RepositoryMirror:
             # Move dists > dists.apt_mirror_old
             if mirror_parent_path.exists():
                 if mirror_parent_old_path.exists():
-                    shutil.rmtree(mirror_parent_old_path)
+                    self._rmtree(mirror_parent_old_path)
 
                 shutil.move(
                     mirror_parent_path,
@@ -502,7 +503,7 @@ class RepositoryMirror:
 
             # Drop dists.apt_mirror_old
             if mirror_parent_old_path.exists():
-                shutil.rmtree(mirror_parent_old_path)
+                self._rmtree(mirror_parent_old_path)
 
         self._log.info("Metadata moved")
 
@@ -554,6 +555,23 @@ class RepositoryMirror:
 
     def get_unmodified_files(self) -> list[DownloadFileCompressionVariant]:
         return self._downloader.get_unmodified_files()
+
+    def _rmtree(self, path: Path):
+        max_tries = 5
+
+        while path.exists():
+            try:
+                shutil.rmtree(path)
+            except OSError as e:
+                max_tries -= 1
+                if max_tries < 0:
+                    raise e
+
+                if e.errno == errno.ENOTEMPTY and e.filename:
+                    non_empty_path = Path(e.filename)
+
+                    if non_empty_path.is_relative_to(path):
+                        shutil.rmtree(non_empty_path, ignore_errors=True)
 
 
 class APTMirror:

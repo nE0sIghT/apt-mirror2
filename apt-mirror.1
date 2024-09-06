@@ -1,0 +1,121 @@
+.Dd September 2024
+.Dt apt-mirror2 1
+.Sh NAME
+.Nm apt-mirror2
+.Nd Python/asyncio reimplementation of the apt-mirror - a apt sources mirroring
+tool
+.Sh SYNOPSIS
+.Nm
+.Op Fl h
+.Op Fl --version
+.Op Ar Sy configfile
+.Sh DESCRIPTION
+.Nm
+is the Python/asyncio reimplementation of the apt-mirror developed as drop-in
+replacement for the latest.
+.sp 0
+This project should be suitable as general apt-mirror replacement.
+.sp 1
+One of the main advantages of the
+.Nm
+over the apt-mirror - you should
+never got broken mirror in case
+.Nm
+returns 0 exit code.
+This is ensured by data integrity checks at all stages of mirroring.
+.sp 1
+Most of apt-mirror configuration directives are supported.
+.sp 0
+As of now proxy for FTP repositories is not supported.
+.sp 1
+File lists (ALL, NEW, MD5, SHA256, SHA512) are not written by default, but you
+can enable them with the write_file_lists option.
+.sp 1
+.Bl -dash -offset 14
+In addition there are some enhancements available:
+.It
+Repositories without MD5 hashsums are correctly mirrored
+.It
+Old index files are properly cleaned and don't produces errors in mirror
+processing
+.It
+Standard source.list
+.Ql [ arch=arch1,arch2 ]
+can be used to specify multiple repository architectures for mirroring.
+multiple codenames (or flat folders) can be specified using comma as delimiter.
+.It
+.Ql mirror_path URL PATH
+option may be used to specify PATH to use for saving mirror files instead of
+path that is generated from URL.
+.It
+Additional configuration is loaded from the
+.Ql *.list
+files in the directory named same as configfile with the .d suffix. Eg
+.Ql /etc/apt/mirror.list.d/*.list
+\&.
+.It
+Rate limit is enforced for overall download rate.
+.It
+Slow download rate protection is enabled by default and can be configured via
+.Ql mirror.list
+\&.
+.It
+Non-zero exit code is returned if some of required files were not downloaded due
+to network or server errors or no repositories were configured.
+.It
+HTTP user agent can be configured via user_agent configuration.
+.It
+Configuration variables are exposed to postmirror_script.
+.It
+.Ql by-hash
+list option can be used to control whether Acquire-By-Hash Release
+option should be respected or enforced.
+.It
+mirror wipe protection is available and configurable via
+.Ql wipe_size_ratio
+and
+.Ql wipe_count_ratio
+settings.
+.It
+per-repository log files are available in the
+.Ql var_path
+folder
+.It
+.Ql dists
+folder is almost atomicaly replaced using move instead of copy/link
+.It
+native Prometheus metrics are supported
+.It
+\&... and others
+.El
+.sp 1
+.Bl -tag -width Ds
+Positional arguments:
+.It Ar Sy  configfile
+Path to config file. Default
+.Ql /etc/apt/mirror.list
+.El
+.sp 1
+.Bl -tag -width Ds
+Options:
+.It Fl h, --help
+show help message and exit
+.It Fl -version
+Show version
+.El
+.Sh ENVIRONMENT
+.Bl -tag -width Ds
+.It Ev APT_MIRROR_LOGLEVEL
+Log level as supported by Python logging module. Default
+.Ql info
+\&.
+.El
+.Sh FILES
+.Bl -tag -width "/etc/apt/mirror.list.d/*.list" -compact
+.It Pa /etc/apt/mirror.list
+Main configuration file
+.It Pa /etc/apt/mirror.list.d/*.list
+Additional configuration files
+.El
+.Sh AUTHORS 
+.An Yuri Konotopov Aq Mt ykonotopov@gnome.org

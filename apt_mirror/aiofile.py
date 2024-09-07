@@ -53,6 +53,7 @@ try:
         async def test_storage(self, *test_paths: Path) -> None:
             for path in test_paths:
                 try:
+                    path.parent.mkdir(parents=True, exist_ok=True)
                     async with self._open(path) as fp:
                         await fp.write(b" ")
 

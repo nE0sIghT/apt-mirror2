@@ -1,0 +1,939 @@
+Package: 0ad
+Version: 0.0.26-3
+Installed-Size: 28591
+Maintainer: Debian Games Team <pkg-games-devel@lists.alioth.debian.org>
+Architecture: amd64
+Depends: 0ad-data (>= 0.0.26), 0ad-data (<= 0.0.26-3), 0ad-data-common (>= 0.0.26), 0ad-data-common (<= 0.0.26-3), libboost-filesystem1.74.0 (>= 1.74.0), libc6 (>= 2.34), libcurl3-gnutls (>= 7.32.0), libenet7, libfmt9 (>= 9.1.0+ds1), libfreetype6 (>= 2.2.1), libgcc-s1 (>= 3.4), libgloox18 (>= 1.0.24), libicu72 (>= 72.1~rc-1~), libminiupnpc17 (>= 1.9.20140610), libopenal1 (>= 1.14), libpng16-16 (>= 1.6.2-1), libsdl2-2.0-0 (>= 2.0.12), libsodium23 (>= 1.0.14), libstdc++6 (>= 12), libvorbisfile3 (>= 1.1.2), libwxbase3.2-1 (>= 3.2.1+dfsg), libwxgtk-gl3.2-1 (>= 3.2.1+dfsg), libwxgtk3.2-1 (>= 3.2.1+dfsg-2), libx11-6, libxml2 (>= 2.9.0), zlib1g (>= 1:1.2.0)
+Pre-Depends: dpkg (>= 1.15.6~)
+Description: Real-time strategy game of ancient warfare
+Homepage: https://play0ad.com/
+Description-md5: d943033bedada21853d2ae54a2578a7b
+Tag: game::strategy, interface::graphical, interface::x11, role::program,
+ uitoolkit::sdl, uitoolkit::wxwidgets, use::gameplaying,
+ x11::application
+Section: games
+Priority: optional
+Filename: pool/main/0/0ad/0ad_0.0.26-3_amd64.deb
+Size: 7891488
+MD5sum: 4d471183a39a3a11d00cd35bf9f6803d
+SHA256: 3a2118df47bf3f04285649f0455c2fc6fe2dc7f0b237073038aa00af41f0d5f2
+
+Package: 0ad-data
+Version: 0.0.26-1
+Installed-Size: 3218736
+Maintainer: Debian Games Team <pkg-games-devel@lists.alioth.debian.org>
+Architecture: all
+Pre-Depends: dpkg (>= 1.15.6~)
+Suggests: 0ad
+Description: Real-time strategy game of ancient warfare (data files)
+Homepage: https://play0ad.com/
+Description-md5: 26581e685027d5ae84824362a4ba59ee
+Tag: role::app-data
+Section: games
+Priority: optional
+Filename: pool/main/0/0ad-data/0ad-data_0.0.26-1_all.deb
+Size: 1377557908
+MD5sum: fc5ed8a20ce1861950c7ed3a5a615be0
+SHA256: 53745ae74d05bccf6783400fa98f3932b21729ab9d2e86151aa2c331c3455178
+
+Package: 0ad-data-common
+Source: 0ad-data
+Version: 0.0.26-1
+Installed-Size: 2428
+Maintainer: Debian Games Team <pkg-games-devel@lists.alioth.debian.org>
+Architecture: all
+Replaces: 0ad-data (<< 0.0.12-1~)
+Depends: fonts-dejavu-core | ttf-dejavu-core, fonts-freefont-ttf | ttf-freefont, fonts-texgyre | tex-gyre
+Pre-Depends: dpkg (>= 1.15.6~)
+Suggests: 0ad
+Breaks: 0ad-data (<< 0.0.12-1~)
+Description: Real-time strategy game of ancient warfare (common data files)
+Homepage: https://play0ad.com/
+Description-md5: 8d014b839c4c4e9b6f82c7512d7e3496
+Tag: game::strategy, role::app-data, role::program, use::gameplaying
+Section: games
+Priority: optional
+Filename: pool/main/0/0ad-data/0ad-data-common_0.0.26-1_all.deb
+Size: 779908
+MD5sum: 7ce70dc6e6de01134d2e199499fd3925
+SHA256: 0a40074c844a304688e503dd0c3f8b04e10e40f6f81b8bad260e07c54aa37864
+
+Package: curl
+Version: 7.88.1-10+deb12u5
+Installed-Size: 488
+Maintainer: Alessandro Ghedini <ghedo@debian.org>
+Architecture: amd64
+Depends: libc6 (>= 2.34), libcurl4 (= 7.88.1-10+deb12u5), zlib1g (>= 1:1.1.4)
+Description: command line tool for transferring data with URL syntax
+Multi-Arch: foreign
+Homepage: https://curl.se/
+Description-md5: f83293d10df083ae6f7bb7d01642913c
+Tag: implemented-in::c, interface::commandline, network::client,
+ protocol::ftp, protocol::gopher, protocol::http, protocol::imap,
+ protocol::ipv6, protocol::kerberos, protocol::ldap, protocol::pop3,
+ protocol::sftp, protocol::smtp, protocol::ssh, protocol::ssl,
+ protocol::telnet, protocol::tftp, role::program, scope::utility,
+ use::downloading, use::synchronizing, use::transmission,
+ works-with::file, works-with::mail
+Section: web
+Priority: optional
+Filename: pool/main/c/curl/curl_7.88.1-10+deb12u5_amd64.deb
+Size: 314852
+MD5sum: 1b723bb247b12dbe2ee99f6d7a0e4459
+SHA256: e3f80e7399b9ea2e78eaf68a96db7062ca1c22717f63437198464d2eee66d650
+
+Package: libcurl3-gnutls
+Source: curl
+Version: 7.88.1-10+deb12u5
+Installed-Size: 827
+Maintainer: Alessandro Ghedini <ghedo@debian.org>
+Architecture: amd64
+Depends: libbrotli1 (>= 0.6.0), libc6 (>= 2.34), libgnutls30 (>= 3.7.5), libgssapi-krb5-2 (>= 1.17), libidn2-0 (>= 0.6), libldap-2.5-0 (>= 2.5.4), libnettle8, libnghttp2-14 (>= 1.50.0), libpsl5 (>= 0.16.0), librtmp1 (>= 2.3), libssh2-1 (>= 1.7.0), libzstd1 (>= 1.5.2), zlib1g (>= 1:1.1.4)
+Recommends: ca-certificates
+Description: easy-to-use client-side URL transfer library (GnuTLS flavour)
+Multi-Arch: same
+Homepage: https://curl.se/
+Description-md5: 785baf29d91f9f781677a7f569940052
+Tag: role::shared-lib
+Section: libs
+Priority: optional
+Filename: pool/main/c/curl/libcurl3-gnutls_7.88.1-10+deb12u5_amd64.deb
+Size: 384676
+MD5sum: eb875aaad97bfb68279c7ee0fc587c74
+SHA256: 9751239757dcc218a3cd5a5772070e33d86a8a15506fe5af8a47793d61fa2abc
+
+Package: libcurl3-nss
+Source: curl
+Version: 7.88.1-10+deb12u5
+Installed-Size: 851
+Maintainer: Alessandro Ghedini <ghedo@debian.org>
+Architecture: amd64
+Depends: libbrotli1 (>= 0.6.0), libc6 (>= 2.34), libgssapi-krb5-2 (>= 1.17), libidn2-0 (>= 0.6), libldap-2.5-0 (>= 2.5.4), libnghttp2-14 (>= 1.50.0), libnspr4 (>= 2:4.9-2~), libnss3 (>= 2:3.66), libpsl5 (>= 0.16.0), librtmp1 (>= 2.3), libssh2-1 (>= 1.7.0), libzstd1 (>= 1.5.2), zlib1g (>= 1:1.1.4), nss-plugin-pem
+Recommends: ca-certificates
+Description: easy-to-use client-side URL transfer library (NSS flavour)
+Multi-Arch: same
+Homepage: https://curl.se/
+Description-md5: 459d2b4fbb16cf9975276e1d24a7ffe8
+Tag: role::shared-lib
+Section: libs
+Priority: optional
+Filename: pool/main/c/curl/libcurl3-nss_7.88.1-10+deb12u5_amd64.deb
+Size: 394000
+MD5sum: b86f61a6f555538762277bc37f09e59d
+SHA256: 195229b37b908cc0466b6094f0bd476eb748632fb7d39a4b82211f04b2b77f41
+
+Package: libcurl4
+Source: curl
+Version: 7.88.1-10+deb12u5
+Installed-Size: 843
+Maintainer: Alessandro Ghedini <ghedo@debian.org>
+Architecture: amd64
+Replaces: libcurl3
+Depends: libbrotli1 (>= 0.6.0), libc6 (>= 2.34), libgssapi-krb5-2 (>= 1.17), libidn2-0 (>= 0.6), libldap-2.5-0 (>= 2.5.4), libnghttp2-14 (>= 1.50.0), libpsl5 (>= 0.16.0), librtmp1 (>= 2.3), libssh2-1 (>= 1.7.0), libssl3 (>= 3.0.0), libzstd1 (>= 1.5.2), zlib1g (>= 1:1.1.4)
+Recommends: ca-certificates
+Conflicts: libcurl3
+Description: easy-to-use client-side URL transfer library (OpenSSL flavour)
+Multi-Arch: same
+Homepage: https://curl.se/
+Description-md5: f1c7f18aba2d8ab7a7e32acea1dc61e7
+Tag: role::shared-lib
+Section: libs
+Priority: optional
+Filename: pool/main/c/curl/libcurl4_7.88.1-10+deb12u5_amd64.deb
+Size: 390208
+MD5sum: 5c47ddefc45dc7277de683c7c643e505
+SHA256: 619b592d51c0e75be0b153dbb671e732739d306bf22f42f8e1bc103235299f0d
+
+Package: libcurl4-doc
+Source: curl
+Version: 7.88.1-10+deb12u5
+Installed-Size: 1996
+Maintainer: Alessandro Ghedini <ghedo@debian.org>
+Architecture: all
+Description: documentation for libcurl
+Multi-Arch: foreign
+Homepage: https://curl.se/
+Description-md5: 6462959fec3647baef16ff31a5f39d94
+Section: doc
+Priority: optional
+Filename: pool/main/c/curl/libcurl4-doc_7.88.1-10+deb12u5_all.deb
+Size: 1082104
+MD5sum: dca298f3d7eb7bd2e4b7ea19a1f92d5c
+SHA256: 3c9b3e21cd15313701c96681ee11d23abd57d17ae3237af3e55a255c36afb99b
+
+Package: libcurl4-gnutls-dev
+Source: curl
+Version: 7.88.1-10+deb12u5
+Installed-Size: 1755
+Maintainer: Alessandro Ghedini <ghedo@debian.org>
+Architecture: amd64
+Provides: libcurl-dev, libcurl-ssl-dev, libcurl3-gnutls-dev, libcurl4-dev
+Depends: libcurl3-gnutls (= 7.88.1-10+deb12u5)
+Suggests: libcurl4-doc, libgnutls28-dev, libidn-dev, libkrb5-dev, libldap2-dev, librtmp-dev, libssh2-1-dev, pkg-config, zlib1g-dev
+Conflicts: libcurl4-nss-dev, libcurl4-openssl-dev
+Description: development files and documentation for libcurl (GnuTLS flavour)
+Multi-Arch: same
+Homepage: https://curl.se/
+Description-md5: a780e9fd64d55eccc7d421f6da7dc01d
+Tag: devel::doc, devel::library, protocol::ssl, role::devel-lib,
+ role::documentation, suite::gnu
+Section: libdevel
+Priority: optional
+Filename: pool/main/c/curl/libcurl4-gnutls-dev_7.88.1-10+deb12u5_amd64.deb
+Size: 485448
+MD5sum: e3ff34b38e2e66fb5577904777bc0e2c
+SHA256: c2536e461f29ecb710ef55e9b6654893a99f43219ce72c0d2759319243aca25c
+
+Package: libcurl4-nss-dev
+Source: curl
+Version: 7.88.1-10+deb12u5
+Installed-Size: 1782
+Maintainer: Alessandro Ghedini <ghedo@debian.org>
+Architecture: amd64
+Provides: libcurl-dev, libcurl-ssl-dev, libcurl3-nss-dev, libcurl4-dev
+Depends: libcurl3-nss (= 7.88.1-10+deb12u5)
+Suggests: libcurl4-doc, libidn-dev, libkrb5-dev, libldap2-dev, libnss3-dev, librtmp-dev, libssh2-1-dev, pkg-config, zlib1g-dev
+Conflicts: libcurl4-gnutls-dev, libcurl4-openssl-dev
+Description: development files and documentation for libcurl (NSS flavour)
+Multi-Arch: same
+Homepage: https://curl.se/
+Description-md5: b83e9196a054062dc76fc2a693802052
+Tag: devel::library, role::devel-lib
+Section: libdevel
+Priority: optional
+Filename: pool/main/c/curl/libcurl4-nss-dev_7.88.1-10+deb12u5_amd64.deb
+Size: 495000
+MD5sum: 36e564b2ce08c81226a40060345ce9a9
+SHA256: 63f27506c2bde4b713dd09abebf69b4cb72a3c3bbc1f29070d88626d4c3da7ba
+
+Package: libcurl4-openssl-dev
+Source: curl
+Version: 7.88.1-10+deb12u5
+Installed-Size: 1780
+Maintainer: Alessandro Ghedini <ghedo@debian.org>
+Architecture: amd64
+Provides: libcurl-dev, libcurl-ssl-dev, libcurl3-dev, libcurl3-openssl-dev, libcurl4-dev
+Depends: libcurl4 (= 7.88.1-10+deb12u5)
+Suggests: libcurl4-doc, libidn-dev, libkrb5-dev, libldap2-dev, librtmp-dev, libssh2-1-dev, libssl-dev, pkg-config, zlib1g-dev
+Conflicts: libcurl4-gnutls-dev, libcurl4-nss-dev, libssl1.0-dev
+Description: development files and documentation for libcurl (OpenSSL flavour)
+Multi-Arch: same
+Homepage: https://curl.se/
+Description-md5: 133120dd689c1a9785ccd7cd427dd344
+Tag: devel::lang:c, devel::library, implemented-in::c, protocol::ftp,
+ protocol::http, protocol::ssl, role::devel-lib, role::program
+Section: libdevel
+Priority: optional
+Filename: pool/main/c/curl/libcurl4-openssl-dev_7.88.1-10+deb12u5_amd64.deb
+Size: 491108
+MD5sum: 7571a7537738a93d2fda5e272a61b400
+SHA256: 2dd7eb8285c9b160d73e1348f821199dc121d92b638676ee1df8b9b08095d9df
+
+Package: libcurlpp-dev
+Source: curlpp
+Version: 0.8.1-5.1
+Installed-Size: 479
+Maintainer: Aloïs Micard <creekorful@debian.org>
+Architecture: amd64
+Depends: libcurlpp0 (= 0.8.1-5.1), libcurl4-openssl-dev | libcurl4-dev
+Conflicts: libcurl4-nss-dev
+Description: c++ wrapper for libcurl (development files)
+Multi-Arch: same
+Homepage: http://www.curlpp.org/
+Description-md5: 2358dbce6cf044c240711ad73f62939f
+Tag: devel::library, role::devel-lib
+Section: libdevel
+Priority: optional
+Filename: pool/main/c/curlpp/libcurlpp-dev_0.8.1-5.1_amd64.deb
+Size: 59184
+MD5sum: c3fd8ad8f8921dc87c6f1a7c02e60648
+SHA256: 9a80f09f193547b32e76e5837e71ca4ec6a62e51f1b635aa5a92c80b46c46847
+
+Package: libcurlpp0
+Source: curlpp
+Version: 0.8.1-5.1
+Installed-Size: 108
+Maintainer: Aloïs Micard <creekorful@debian.org>
+Architecture: amd64
+Depends: libc6 (>= 2.14), libcurl4 (>= 7.16.2), libgcc-s1 (>= 3.0), libstdc++6 (>= 5.2)
+Description: c++ wrapper for libcurl
+Multi-Arch: same
+Homepage: http://www.curlpp.org/
+Description-md5: a36146115898fff4249163e6469c6808
+Tag: role::shared-lib
+Section: libs
+Priority: optional
+Filename: pool/main/c/curlpp/libcurlpp0_0.8.1-5.1_amd64.deb
+Size: 27220
+MD5sum: 60261b53f857195d8b1a6a9f6caa857f
+SHA256: 18c2baa0a129dfaf3f3bd0fc9dbe8b7c2c14df3d19a9d1bf0979d2ec5e790dfa
+
+Package: docker-doc
+Source: docker.io
+Version: 20.10.24+dfsg1-1
+Installed-Size: 2159
+Maintainer: Debian Go Packaging Team <team+pkg-go@tracker.debian.org>
+Architecture: all
+Provides: docker.io-doc
+Description: Linux container runtime -- documentation
+Multi-Arch: foreign
+Homepage: https://mobyproject.org
+Description-md5: 4f86326741c09d05fe80222b21fce476
+Section: doc
+Priority: optional
+Filename: pool/main/d/docker.io/docker-doc_20.10.24+dfsg1-1_all.deb
+Size: 1906508
+MD5sum: 25fee62f9bc41fde6cc043a97e40ac0e
+SHA256: a55c9dd500b73416a8c031322767cdfbbad6473fbefe9113b62ae618d1cc1041
+
+Package: docker.io
+Source: docker.io (20.10.24+dfsg1-1)
+Version: 20.10.24+dfsg1-1+b3
+Installed-Size: 147568
+Maintainer: Debian Go Packaging Team <team+pkg-go@tracker.debian.org>
+Architecture: amd64
+Depends: libc6 (>= 2.34), libdevmapper1.02.1 (>= 2:1.02.97), libsystemd0, adduser, containerd (>= 1.4~), iptables, lsb-base, runc (>= 1.0.0~rc8~), tini
+Pre-Depends: init-system-helpers (>= 1.54~)
+Recommends: apparmor, ca-certificates, cgroupfs-mount, git, needrestart (>= 3.1~), xz-utils
+Suggests: docker-doc, aufs-tools, btrfs-progs, debootstrap, e2fsprogs, rinse, rootlesskit, xfsprogs, zfs-fuse | zfsutils-linux
+Conflicts: docker-ce, docker-ce-cli, docker-ce-rootless-extras
+Description: Linux container runtime
+Homepage: https://mobyproject.org
+Built-Using: containerd (= 1.6.20~ds1-1), continuity (= 0.3.0-1), docker-libkv (= 0.2.1-3), docker-registry (= 2.8.2+ds1-1), etcd (= 3.4.23-4), glibc (= 2.36-9), go-md2man-v2 (= 2.0.2+ds1-1), golang-1.19 (= 1.19.8-2), golang-blackfriday-v2 (= 2.1.0-1), golang-dbus (= 5.1.0-1), golang-fsnotify (= 1.6.0-2), golang-github-armon-circbuf (= 0.0~git20190214.5111143-1), golang-github-armon-go-metrics (= 0.3.4-1), golang-github-aws-aws-sdk-go (= 1.44.133-1), golang-github-beorn7-perks (= 1.0.1-1), golang-github-bsphere-le-go (= 0.0~git20170215.0.7a984a8-1.1), golang-github-cespare-xxhash (= 2.1.1-2), golang-github-cilium-ebpf (= 0.9.1-1), golang-github-cloudflare-cfssl (= 1.2.0+git20160825.89.7fb22c8-3.1), golang-github-containerd-cgroups (= 1.0.4-1), golang-github-containerd-console (= 1.0.3-1), golang-github-containerd-fifo (= 1.1.0-1), golang-github-containerd-go-runc (= 1.0.0-1), golang-github-containerd-typeurl (= 1.0.2-1), golang-github-coreos-bbolt (= 1.3.6-2), golang-github-coreos-go-systemd (= 22.3.2-1), golang-github-coreos-pkg (= 4-3), golang-github-coreos-semver (= 0.3.0-1), golang-github-cyphar-filepath-securejoin (= 0.2.3-1), golang-github-davecgh-go-spew (= 1.1.1-3), golang-github-deckarep-golang-set (= 1.5-2), golang-github-docker-docker-credential-helpers (= 0.6.4+ds1-1), golang-github-docker-go (= 0.0~git20160303.0.d30aec9-3.1), golang-github-docker-go-connections (= 0.4.0-4), golang-github-docker-go-events (= 0.0~git20190806.e31b211-4), golang-github-docker-go-metrics (= 0.0.1-2), golang-github-docker-go-units (= 0.4.0-4), golang-github-docker-libtrust (= 0.0~git20150526.0.9cbd2a1-3.1), golang-github-dustin-go-humanize (= 1.0.0-3), golang-github-fernet-fernet-go (= 0.0~git20180830.9eac43b-2), golang-github-fluent-fluent-logger-golang (= 1.9.0-1), golang-github-fvbommel-sortorder (= 1.0.2-3), golang-github-gofrs-flock (= 0.8.1-1), golang-github-gogo-googleapis (= 1.4.0-2), golang-github-golang-groupcache (= 0.0~git20200121.8c9f03a-2), golang-github-golang-protobuf-1-3 (= 1.3.5-4), golang-github-google-btree (= 1.0.0-1), golang-github-google-certificate-transparency (= 0.0~git20160709.0.0f6e3d1~ds1-3), golang-github-google-go-cmp (= 0.5.9-1), golang-github-google-gofuzz (= 1.2.0-1), golang-github-google-shlex (= 0.0~git20191202.e7afc7f-1), golang-github-google-uuid (= 1.3.0-1), golang-github-googleapis-gax-go (= 2.0.5-4), golang-github-googleapis-gnostic (= 0.2.0-4), golang-github-gorilla-mux (= 1.8.0-1), golang-github-graylog2-go-gelf (= 0.0+git20191017.1550ee6-1), golang-github-grpc-ecosystem-go-grpc-middleware (= 1.3.0-1), golang-github-grpc-ecosystem-go-grpc-prometheus (= 1.2.0+git20191002.6af20e3-3), golang-github-grpc-ecosystem-grpc-opentracing (= 0.0~git20180507.8e809c8-2), golang-github-hashicorp-errwrap (= 1.1.0-1), golang-github-hashicorp-go-immutable-radix (= 1.3.1-3), golang-github-hashicorp-go-memdb (= 1.2.1-1), golang-github-hashicorp-go-msgpack (= 0.5.5-1), golang-github-hashicorp-go-multierror (= 1.1.1-2), golang-github-hashicorp-go-sockaddr (= 1.0.2-2), golang-github-hashicorp-golang-lru (= 0.5.4-2), golang-github-hashicorp-memberlist (= 0.2.2-2), golang-github-hashicorp-serf (= 0.9.4~ds1-1), golang-github-imdario-mergo (= 0.3.12-1), golang-github-ishidawataru-sctp (= 0.0+git20210707.9a39160-1), golang-github-jmespath-go-jmespath (= 0.4.0-2), golang-github-json-iterator-go (= 1.1.12-1), golang-github-klauspost-compress (= 1.15.12+ds1-3), golang-github-miekg-dns (= 1.1.50-2), golang-github-mitchellh-hashstructure (= 1.1.0-1), golang-github-mitchellh-mapstructure (= 1.5.0-2), golang-github-moby-locker (= 1.0.1-3), golang-github-moby-sys (= 0.0~git20220606.416188a-1), golang-github-moby-term (= 0.0~git20221120.abb1982-1), golang-github-modern-go-concurrent (= 1.0.3-1.1), golang-github-modern-go-reflect2 (= 1.0.2-2), golang-github-morikuni-aec (= 1.0.0-3), golang-github-opencontainers-go-digest (= 1.0.0-2), golang-github-opencontainers-image-spec (= 1.1.0~rc2-3), golang-github-opencontainers-selinux (= 1.10.0+ds1-1), golang-github-opencontainers-specs (= 1.0.2.118.g5cfc4c3-1), golang-github-opentracing-contrib-go-stdlib (= 1.0.0-2), golang-github-opentracing-opentracing-go (= 1.2.0-2), golang-github-pelletier-go-toml (= 1.9.4-1), golang-github-philhofer-fwd (= 1.1.1-1), golang-github-pkg-errors (= 0.9.1-2), golang-github-pmezard-go-difflib (= 1.0.0-3), golang-github-prometheus-client-golang (= 1.14.0-3), golang-github-prometheus-client-model (= 0.3.0-3), golang-github-prometheus-common (= 0.39.0-2), golang-github-prometheus-procfs (= 0.8.0-3), golang-github-racksec-srslog (= 0.0~git20180709.a4725f0-2), golang-github-rcrowley-go-metrics (= 0.0~git20180125.8732c61-3), golang-github-samuel-go-zookeeper (= 0.0~git20180130.c4fab1a-1), golang-github-spf13-cobra (= 1.6.1-1), golang-github-spf13-pflag (= 1.0.6~git20210604-d5e0c0615ace-1), golang-github-tinylib-msgp (= 1.1.6-1), golang-github-tonistiigi-units (= 0.0~git20180711.6950e57-2), golang-github-urfave-cli (= 1.22.9-2), golang-github-vbatts-tar-split (= 0.11.2+ds1-1), golang-github-vishvananda-netlink (= 1.1.0.125.gf243826-4), golang-github-vishvananda-netns (= 0.0~git20211101.5004558-1), golang-github-xeipuuv-gojsonpointer (= 0.0~git20190905.02993c4-3), golang-github-xeipuuv-gojsonreference (= 0.0~git20180127.bd5ef7b-3), golang-github-xeipuuv-gojsonschema (= 1.2.0-3), golang-go-patricia (= 2.3.1-1), golang-go-zfs (= 3.0.0-1), golang-go.crypto (= 1:0.4.0-1), golang-go.opencensus (= 0.24.0-1), golang-gocapability-dev (= 0.0+git20200815.42c35b4-2), golang-gogoprotobuf (= 1.3.2-3), golang-gogottrpc (= 1.1.1-1), golang-golang-x-net (= 1:0.7.0+dfsg-1), golang-golang-x-oauth2 (= 0.3.0-1), golang-golang-x-sync (= 0.1.0-1), golang-golang-x-sys (= 0.3.0-1), golang-golang-x-term (= 0.3.0-1), golang-golang-x-text (= 0.7.0-1), golang-golang-x-time (= 0.3.0-1), golang-google-api (= 0.61.0-1), golang-google-cloud (= 0.56.0-3), golang-google-genproto (= 0.0~git20200413.b5235f6-3), golang-google-grpc (= 1.33.3-2), golang-google-protobuf (= 1.28.1-3), golang-gopkg-inf.v0 (= 0.9.1-2), golang-gopkg-yaml.v3 (= 3.0.1-3), golang-k8s-sigs-yaml (= 1.3.0-1), golang-logrus (= 1.9.0-1), golang-protobuf-extensions (= 1.0.1-3), golang-testify (= 1.8.1-1), golang-toml (= 1.2.0-2), golang-yaml.v2 (= 2.4.0-4), gotest.tools (= 3.0.3-1), notary (= 0.7.0+ds1-2), runc (= 1.1.5+ds1-1)
+Description-md5: 05dc9eba68f3bf418e6a0cf29d555878
+Section: admin
+Priority: optional
+Filename: pool/main/d/docker.io/docker.io_20.10.24+dfsg1-1+b3_amd64.deb
+Size: 36246076
+MD5sum: 6c1cbfbe80bf1b325a0bfeb57bafb485
+SHA256: 2dc08965d03aa299555d1005bc1df8e33dd76809570602386e960e3f7ef7a62f
+
+Package: golang-github-docker-docker-dev
+Source: docker.io
+Version: 20.10.24+dfsg1-1
+Installed-Size: 7794
+Maintainer: Debian Go Packaging Team <team+pkg-go@tracker.debian.org>
+Architecture: all
+Depends: golang-github-armon-circbuf-dev, golang-github-containerd-containerd-dev (>= 1.4.2~ds1-2~), golang-github-containerd-continuity-dev (>= 0.0~git20190426~), golang-github-docker-distribution-dev (>= 2.7.1~), golang-github-docker-docker-credential-helpers-dev (>= 0.6.1~), golang-github-docker-go-connections-dev (>= 0.4.0~), golang-github-docker-go-metrics-dev, golang-github-docker-go-units-dev (>= 0.4.0~), golang-github-docker-libkv-dev, golang-github-fsnotify-fsnotify-dev, golang-github-gorilla-mux-dev (>= 1.7.1~), golang-github-moby-term-dev, golang-github-morikuni-aec-dev, golang-github-opencontainers-go-digest-dev, golang-github-opencontainers-image-spec-dev (>= 1.0.1~), golang-github-opencontainers-runc-dev (>= 1.0.0~rc8~), golang-github-opencontainers-selinux-dev (>= 1.8.0~), golang-github-sirupsen-logrus-dev (>= 1.0.2~), golang-github-tchap-go-patricia-dev, golang-golang-x-net-dev, golang-golang-x-sys-dev (>= 0.0~git20190726~), golang-google-grpc-dev, golang-dbus-dev (>= 5.0.2~), golang-github-burntsushi-toml-dev, golang-github-deckarep-golang-set-dev, golang-github-docker-go-events-dev, golang-github-hashicorp-memberlist-dev (>= 0.1.0~), golang-github-hashicorp-serf-dev, golang-github-ishidawataru-sctp-dev, golang-github-vishvananda-netlink-dev (>= 1.0.0~), golang-github-vishvananda-netns-dev, golang-github-opentracing-opentracing-go-dev
+Description: reusable Go packages included with Docker
+Homepage: https://mobyproject.org
+Description-md5: 692d023146a024298d2b2f3817f50ca0
+Section: admin
+Priority: optional
+Filename: pool/main/d/docker.io/golang-github-docker-docker-dev_20.10.24+dfsg1-1_all.deb
+Size: 1111096
+MD5sum: 0c27b8c07c201fdaf3ed9ee19467d8ba
+SHA256: 877b5fcc9a3d5d42dfa7bd28d5f2c917cacc20de40be063d87eb5b46bc486013
+
+Package: libnss-myhostname
+Source: systemd
+Version: 252.22-1~deb12u1
+Installed-Size: 204
+Maintainer: Debian systemd Maintainers <pkg-systemd-maintainers@lists.alioth.debian.org>
+Architecture: amd64
+Depends: libc6 (>= 2.34)
+Description: nss module providing fallback resolution for the current hostname
+Multi-Arch: same
+Homepage: https://www.freedesktop.org/wiki/Software/systemd
+Description-md5: 0bec93cc0b56ef90c11c1a7842dd8f8a
+Tag: implemented-in::c, role::plugin
+Section: admin
+Priority: optional
+Filename: pool/main/s/systemd/libnss-myhostname_252.22-1~deb12u1_amd64.deb
+Size: 84020
+MD5sum: f20aa1cbdd0abc5d33a405ff79c2bca4
+SHA256: df334e32d2b45dd24778e58677dae135a5163082e73d190990a1508e34d27ea5
+
+Package: libnss-mymachines
+Source: systemd
+Version: 252.22-1~deb12u1
+Installed-Size: 379
+Maintainer: Debian systemd Maintainers <pkg-systemd-maintainers@lists.alioth.debian.org>
+Architecture: amd64
+Depends: libc6 (>= 2.34), libcap2 (>= 1:2.10), systemd-container (= 252.22-1~deb12u1)
+Description: nss module to resolve hostnames for local container instances
+Multi-Arch: same
+Homepage: https://www.freedesktop.org/wiki/Software/systemd
+Description-md5: 588342105e1fdd6ff74c093651cb80cc
+Tag: implemented-in::c, role::plugin
+Section: admin
+Priority: optional
+Filename: pool/main/s/systemd/libnss-mymachines_252.22-1~deb12u1_amd64.deb
+Size: 165508
+MD5sum: dbf41b7e16b9954c3e9070b5c974f127
+SHA256: 214f3dc51ddc9998b0ce5be1f3124c2a8c8a1cbeb9b017dc98c0e998ff2a693a
+
+Package: libnss-resolve
+Source: systemd
+Version: 252.22-1~deb12u1
+Installed-Size: 204
+Maintainer: Debian systemd Maintainers <pkg-systemd-maintainers@lists.alioth.debian.org>
+Architecture: amd64
+Depends: libc6 (>= 2.34), systemd-resolved (= 252.22-1~deb12u1)
+Description: nss module to resolve names via systemd-resolved
+Multi-Arch: same
+Homepage: https://www.freedesktop.org/wiki/Software/systemd
+Description-md5: 2dce7349d41cde95481f217d1250a7a1
+Tag: implemented-in::c, role::plugin
+Section: admin
+Priority: optional
+Filename: pool/main/s/systemd/libnss-resolve_252.22-1~deb12u1_amd64.deb
+Size: 97224
+MD5sum: 71d667c9f9ac5aeca7374bc4f9f8194d
+SHA256: 4fd109f29a5a2e013fe3643ad7945e4575b05e0e2f61301346b063f916f47e31
+
+Package: libnss-systemd
+Source: systemd
+Version: 252.22-1~deb12u1
+Installed-Size: 388
+Maintainer: Debian systemd Maintainers <pkg-systemd-maintainers@lists.alioth.debian.org>
+Architecture: amd64
+Depends: libc6 (>= 2.34), libcap2 (>= 1:2.10), systemd (= 252.22-1~deb12u1)
+Description: nss module providing dynamic user and group name resolution
+Multi-Arch: same
+Homepage: https://www.freedesktop.org/wiki/Software/systemd
+Description-md5: f5bdd7572f97a2162876ec5b0a11a2ca
+Section: admin
+Priority: standard
+Filename: pool/main/s/systemd/libnss-systemd_252.22-1~deb12u1_amd64.deb
+Size: 162868
+MD5sum: 51112448d30c4a3fdb936c87ed921288
+SHA256: d1f8acaeef3cda3068e4a2f1f275b7cc41f6f9c378e82150e11865d9597dc66b
+
+Package: libpam-systemd
+Source: systemd
+Version: 252.22-1~deb12u1
+Installed-Size: 531
+Maintainer: Debian systemd Maintainers <pkg-systemd-maintainers@lists.alioth.debian.org>
+Architecture: amd64
+Provides: default-logind (= 252.22-1~deb12u1), logind (= 252.22-1~deb12u1)
+Depends: libc6 (>= 2.34), libcap2 (>= 1:2.10), libpam0g (>= 0.99.7.1), systemd (= 252.22-1~deb12u1), libpam-runtime, default-dbus-system-bus | dbus-system-bus, systemd-sysv
+Recommends: dbus-user-session
+Description: system and service manager - PAM module
+Multi-Arch: same
+Homepage: https://www.freedesktop.org/wiki/Software/systemd
+Description-md5: 7acf141cc9da21b0ad349b6cecc40e46
+Tag: admin::login, implemented-in::c, role::plugin, role::program
+Section: admin
+Priority: standard
+Filename: pool/main/s/systemd/libpam-systemd_252.22-1~deb12u1_amd64.deb
+Size: 224716
+MD5sum: f3ac1d67091bbbec57c640d431e55533
+SHA256: 384555b212367733661bf3f7f0f8a77b615b09afe0ee0a3cedcfb6726338b623
+
+Package: libsystemd-dev
+Source: systemd
+Version: 252.22-1~deb12u1
+Installed-Size: 1109
+Maintainer: Debian systemd Maintainers <pkg-systemd-maintainers@lists.alioth.debian.org>
+Architecture: amd64
+Depends: libsystemd0 (= 252.22-1~deb12u1)
+Description: systemd utility library - development files
+Multi-Arch: same
+Homepage: https://www.freedesktop.org/wiki/Software/systemd
+Description-md5: b7a2ec6dc94dcd8833e0cab01ff4a2c0
+Tag: devel::lang:c, devel::library, implemented-in::c, role::devel-lib
+Section: libdevel
+Priority: optional
+Filename: pool/main/s/systemd/libsystemd-dev_252.22-1~deb12u1_amd64.deb
+Size: 353060
+MD5sum: 71320af7c397d3d0e4bdc2367947e085
+SHA256: cb76e61ad2cb36693916a6155e4c936ac2f019cc8bda2d259fb3291e495c775b
+
+Package: libsystemd-shared
+Source: systemd
+Version: 252.22-1~deb12u1
+Installed-Size: 5329
+Maintainer: Debian systemd Maintainers <pkg-systemd-maintainers@lists.alioth.debian.org>
+Architecture: amd64
+Depends: libacl1 (>= 2.2.23), libapparmor1 (>= 2.13), libaudit1 (>= 1:2.2.1), libblkid1 (>= 2.24), libc6 (>= 2.36), libcap2 (>= 1:2.10), libcrypt1 (>= 1:4.4.0), libgcrypt20 (>= 1.10.0), libip4tc2 (>= 1.8.3), libkmod2 (>= 15), liblz4-1 (>= 0.0~r130), liblzma5 (>= 5.1.1alpha+20120614), libmount1 (>= 2.30), libpam0g (>= 0.99.7.1), libseccomp2 (>= 2.4.1), libselinux1 (>= 3.1~), libssl3 (>= 3.0.0), libzstd1 (>= 1.5.2)
+Description: systemd shared private library
+Multi-Arch: same
+Homepage: https://www.freedesktop.org/wiki/Software/systemd
+Description-md5: 96ee33bdb47b225b7cbe0eccdc682e81
+Tag: role::shared-lib
+Section: libs
+Priority: optional
+Filename: pool/main/s/systemd/libsystemd-shared_252.22-1~deb12u1_amd64.deb
+Size: 1690708
+MD5sum: 0e87346bbe01017cb47cd0c7c68507ff
+SHA256: 1300977950f590c6de8058e2be631c4e6d427e52dab982bf933e1487f1d0ba29
+
+Package: libsystemd0
+Source: systemd
+Version: 252.22-1~deb12u1
+Installed-Size: 908
+Maintainer: Debian systemd Maintainers <pkg-systemd-maintainers@lists.alioth.debian.org>
+Architecture: amd64
+Depends: libc6 (>= 2.34), libcap2 (>= 1:2.10), libgcrypt20 (>= 1.10.0), liblz4-1 (>= 0.0~r122), liblzma5 (>= 5.1.1alpha+20120614), libzstd1 (>= 1.5.2)
+Description: systemd utility library
+Multi-Arch: same
+Homepage: https://www.freedesktop.org/wiki/Software/systemd
+Description-md5: 9afc42993cf4bce87281097b6b9586c9
+Tag: role::shared-lib
+Section: libs
+Priority: optional
+Filename: pool/main/s/systemd/libsystemd0_252.22-1~deb12u1_amd64.deb
+Size: 331220
+MD5sum: 67a1aaa293bc3b85f768ac3e6a945ad7
+SHA256: 5565f137924447e0a37f72d22dee6b117a3d22c4b39474af45191072b48cebd0
+
+Package: libudev-dev
+Source: systemd
+Version: 252.22-1~deb12u1
+Installed-Size: 141
+Maintainer: Debian systemd Maintainers <pkg-systemd-maintainers@lists.alioth.debian.org>
+Architecture: amd64
+Depends: libudev1 (= 252.22-1~deb12u1)
+Description: libudev development files
+Multi-Arch: same
+Homepage: https://www.freedesktop.org/wiki/Software/systemd
+Description-md5: 3a6ff6d519afbe7874e323cf64c41387
+Tag: devel::lang:c, devel::library, hardware::detection, implemented-in::c,
+ role::devel-lib, role::program
+Section: libdevel
+Priority: optional
+Filename: pool/main/s/systemd/libudev-dev_252.22-1~deb12u1_amd64.deb
+Size: 52100
+MD5sum: 1de9c95796d56ccda30451418c10f276
+SHA256: 0ec2b8b22fb53f702a01e2542deedfc6f1d54e2132f7b4c963fcd9be30ec5ded
+
+Package: libudev1
+Source: systemd
+Version: 252.22-1~deb12u1
+Installed-Size: 239
+Maintainer: Debian systemd Maintainers <pkg-systemd-maintainers@lists.alioth.debian.org>
+Architecture: amd64
+Depends: libc6 (>= 2.34)
+Description: libudev shared library
+Multi-Arch: same
+Homepage: https://www.freedesktop.org/wiki/Software/systemd
+Description-md5: ee41de00cbb160aaa4ae2b193df34f91
+Tag: role::shared-lib
+Section: libs
+Priority: optional
+Filename: pool/main/s/systemd/libudev1_252.22-1~deb12u1_amd64.deb
+Size: 107768
+MD5sum: b42a220bfe5b7515d332c2c5c264bfb0
+SHA256: c5c3eba9c8a3abe1e9988c89879ab912364544941b6f5863da5cf5e9ed78000e
+
+Package: systemd
+Version: 252.22-1~deb12u1
+Installed-Size: 9653
+Maintainer: Debian systemd Maintainers <pkg-systemd-maintainers@lists.alioth.debian.org>
+Architecture: amd64
+Provides: systemd-sysusers (= 252.22-1~deb12u1), systemd-tmpfiles (= 252.22-1~deb12u1)
+Depends: libacl1 (>= 2.2.23), libaudit1 (>= 1:2.2.1), libblkid1 (>= 2.24.2), libcryptsetup12 (>= 2:2.4), libfdisk1 (>= 2.33), libkmod2 (>= 15), libp11-kit0 (>= 0.23.18.1), libseccomp2 (>= 2.3.1), libsystemd-shared (= 252.22-1~deb12u1), libsystemd0 (= 252.22-1~deb12u1), mount
+Pre-Depends: libblkid1 (>= 2.24), libc6 (>= 2.34), libcap2 (>= 1:2.10), libgcrypt20 (>= 1.10.0), liblz4-1 (>= 0.0~r122), liblzma5 (>= 5.1.1alpha+20120614), libmount1 (>= 2.30), libselinux1 (>= 3.1~), libssl3 (>= 3.0.0), libzstd1 (>= 1.5.2)
+Recommends: default-dbus-system-bus | dbus-system-bus, systemd-timesyncd | time-daemon
+Suggests: systemd-container, systemd-homed, systemd-userdbd, systemd-boot, systemd-resolved, libfido2-1, libqrencode4, libtss2-esys-3.0.2-0, libtss2-mu0, libtss2-rc0, polkitd | policykit-1
+Conflicts: consolekit, libpam-ck-connector, systemd-shim
+Breaks: less (<< 563), resolvconf (<< 1.83~), sicherboot (<< 0.1.6), udev (<< 247~)
+Description: system and service manager
+Multi-Arch: foreign
+Homepage: https://www.freedesktop.org/wiki/Software/systemd
+Description-md5: 2728f00e9cb47f195aa39097a3afbc42
+Tag: admin::boot, implemented-in::c, interface::daemon, role::program,
+ works-with::software:running
+Section: admin
+Priority: important
+Filename: pool/main/s/systemd/systemd_252.22-1~deb12u1_amd64.deb
+Size: 3031764
+MD5sum: 1eabc7000ba33dcf2017d1b7da391f20
+SHA256: 0c971c39033481078058f2407d8c68234ea454ea168ba2a17649bb97242ec674
+
+Package: systemd-boot
+Source: systemd
+Version: 252.22-1~deb12u1
+Installed-Size: 244
+Maintainer: Debian systemd Maintainers <pkg-systemd-maintainers@lists.alioth.debian.org>
+Architecture: amd64
+Replaces: systemd (<< 251.2-3~)
+Depends: libc6 (>= 2.34), libsystemd-shared (= 252.22-1~deb12u1), systemd-boot-efi (= 252.22-1~deb12u1)
+Recommends: efibootmgr
+Breaks: systemd (<< 251.2-3~)
+Description: simple UEFI boot manager - tools and services
+Homepage: https://www.freedesktop.org/wiki/Software/systemd
+Description-md5: 5ba77b2b4bc86eae081746facb23c909
+Section: admin
+Priority: optional
+Filename: pool/main/s/systemd/systemd-boot_252.22-1~deb12u1_amd64.deb
+Size: 99608
+MD5sum: 5a8af8f24607d38bfe3b0c8606a965c4
+SHA256: 46b95b0b0160f7a8633770a7d8213081c3a4fe64f49d12ed79bc0acdb6834322
+
+Package: systemd-boot-efi
+Source: systemd
+Version: 252.22-1~deb12u1
+Installed-Size: 389
+Maintainer: Debian systemd Maintainers <pkg-systemd-maintainers@lists.alioth.debian.org>
+Architecture: amd64
+Replaces: systemd (<< 251.2-3~)
+Breaks: systemd (<< 251.2-3~)
+Description: simple UEFI boot manager - EFI binaries
+Multi-Arch: same
+Homepage: https://www.freedesktop.org/wiki/Software/systemd
+Description-md5: 1a28c616cc5e8559e958ebd9ceb453da
+Section: admin
+Priority: optional
+Filename: pool/main/s/systemd/systemd-boot-efi_252.22-1~deb12u1_amd64.deb
+Size: 111820
+MD5sum: ad56347eb8bdecb56a35a3cde4f822ae
+SHA256: f30e54f8e535ceab9031a5c3ac38afec47985b70b1a60386f26554ed6ca8cda1
+
+Package: systemd-container
+Source: systemd
+Version: 252.22-1~deb12u1
+Installed-Size: 1258
+Maintainer: Debian systemd Maintainers <pkg-systemd-maintainers@lists.alioth.debian.org>
+Architecture: amd64
+Depends: libacl1 (>= 2.2.23), libbz2-1.0, libc6 (>= 2.34), libcurl4 (>= 7.16.3), liblzma5 (>= 5.1.1alpha+20120614), libseccomp2 (>= 2.3.1), libselinux1 (>= 3.1~), libssl3 (>= 3.0.0), libsystemd-shared (= 252.22-1~deb12u1), zlib1g (>= 1:1.1.4), systemd, default-dbus-system-bus | dbus-system-bus
+Recommends: libnss-mymachines
+Description: systemd container/nspawn tools
+Multi-Arch: foreign
+Homepage: https://www.freedesktop.org/wiki/Software/systemd
+Description-md5: 06057fffc2ba14e4be80360a092a18b4
+Tag: admin::virtualization, implemented-in::c, implemented-in::python,
+ role::program, suite::openstack, system::cloud, system::virtual
+Section: admin
+Priority: optional
+Filename: pool/main/s/systemd/systemd-container_252.22-1~deb12u1_amd64.deb
+Size: 413760
+MD5sum: c038ce8f44b7b55114796f3bbfb43ec3
+SHA256: 2dca5d9c9bbf094ca72528189513e574d1ea3b7a55aaf9ad4ef71244549891db
+
+Package: systemd-coredump
+Source: systemd
+Version: 252.22-1~deb12u1
+Installed-Size: 253
+Maintainer: Debian systemd Maintainers <pkg-systemd-maintainers@lists.alioth.debian.org>
+Architecture: amd64
+Replaces: core-dump-handler
+Provides: core-dump-handler
+Depends: libc6 (>= 2.34), liblz4-1 (>= 0.0~r130), liblzma5 (>= 5.1.1alpha+20120614), libsystemd-shared (= 252.22-1~deb12u1), libzstd1 (>= 1.5.2), systemd
+Recommends: libdw1
+Conflicts: core-dump-handler
+Description: tools for storing and retrieving coredumps
+Multi-Arch: foreign
+Homepage: https://www.freedesktop.org/wiki/Software/systemd
+Description-md5: 149b22bdf2366b7d731957d1b710e54f
+Section: admin
+Priority: optional
+Filename: pool/main/s/systemd/systemd-coredump_252.22-1~deb12u1_amd64.deb
+Size: 96992
+MD5sum: 06611ccdf289454b74bc984a28ce77f7
+SHA256: 8257584eeea5df870fe74b5ec25729cd81bf167d2b256c19dd0d9190822b91bb
+
+Package: systemd-homed
+Source: systemd
+Version: 252.22-1~deb12u1
+Installed-Size: 1080
+Maintainer: Debian systemd Maintainers <pkg-systemd-maintainers@lists.alioth.debian.org>
+Architecture: amd64
+Depends: libblkid1 (>= 2.24), libc6 (>= 2.36), libcap2 (>= 1:2.10), libfdisk1 (>= 2.33), libp11-kit0 (>= 0.23.18.1), libpam0g (>= 1.1.1), libssl3 (>= 3.0.0), libsystemd-shared (= 252.22-1~deb12u1), systemd-userdbd (= 252.22-1~deb12u1), systemd (= 252.22-1~deb12u1), libpam-runtime
+Pre-Depends: init-system-helpers (>= 1.64~)
+Description: home area manager
+Homepage: https://www.freedesktop.org/wiki/Software/systemd
+Description-md5: e71da21f82a0832ca7fcbdc41f810503
+Section: admin
+Priority: optional
+Filename: pool/main/s/systemd/systemd-homed_252.22-1~deb12u1_amd64.deb
+Size: 399152
+MD5sum: 27338de6d259b0e7212f4ab655da0e36
+SHA256: 32d1c358ae535330923b70a467b7b82f7c2cce899dbbb98f4439c6cc282ecdff
+
+Package: systemd-journal-remote
+Source: systemd
+Version: 252.22-1~deb12u1
+Installed-Size: 271
+Maintainer: Debian systemd Maintainers <pkg-systemd-maintainers@lists.alioth.debian.org>
+Architecture: amd64
+Depends: libc6 (>= 2.34), libcurl4 (>= 7.16.2), libmicrohttpd12 (>= 0.9.50), libsystemd-shared (= 252.22-1~deb12u1), systemd
+Description: tools for sending and receiving remote journal logs
+Multi-Arch: foreign
+Homepage: https://www.freedesktop.org/wiki/Software/systemd
+Description-md5: 6bd80842a0c96acb169877c7a6a25ff6
+Tag: admin::logging, implemented-in::c, network::service, role::program
+Section: admin
+Priority: optional
+Filename: pool/main/s/systemd/systemd-journal-remote_252.22-1~deb12u1_amd64.deb
+Size: 96104
+MD5sum: 4a46c03c2acc20e632ea95c4d6d1af81
+SHA256: 68ad07bfc244946a2daf81e8a41823cd0dc5975467637f9ac8011f63ce7b91c2
+
+Package: systemd-oomd
+Source: systemd
+Version: 252.22-1~deb12u1
+Installed-Size: 186
+Maintainer: Debian systemd Maintainers <pkg-systemd-maintainers@lists.alioth.debian.org>
+Architecture: amd64
+Replaces: systemd (<< 250.2-2~)
+Depends: libc6 (>= 2.34), libsystemd-shared (= 252.22-1~deb12u1), systemd | systemd-standalone-sysusers | systemd-sysusers
+Breaks: systemd (<< 250.2-2~)
+Description: userspace out-of-memory (OOM) killer
+Homepage: https://www.freedesktop.org/wiki/Software/systemd
+Description-md5: 2250389a2113f869d77c032878886a16
+Section: admin
+Priority: optional
+Filename: pool/main/s/systemd/systemd-oomd_252.22-1~deb12u1_amd64.deb
+Size: 67932
+MD5sum: 9710cfb87c7521e574448009a4b4624b
+SHA256: bade44b83d6265ce6385e184b6069bf9e0b78b8226b1ed046610a496ca0cf848
+
+Package: systemd-resolved
+Source: systemd
+Version: 252.22-1~deb12u1
+Installed-Size: 808
+Maintainer: Debian systemd Maintainers <pkg-systemd-maintainers@lists.alioth.debian.org>
+Architecture: amd64
+Replaces: resolvconf, systemd (<< 251.3-2~)
+Provides: resolvconf
+Depends: libc6 (>= 2.34), libssl3 (>= 3.0.0), libsystemd-shared (= 252.22-1~deb12u1), systemd (= 252.22-1~deb12u1), default-dbus-system-bus | dbus-system-bus
+Recommends: libnss-myhostname, libnss-resolve
+Suggests: polkitd | policykit-1
+Conflicts: resolvconf
+Breaks: systemd (<< 251.3-2~)
+Description: systemd DNS resolver
+Multi-Arch: foreign
+Homepage: https://www.freedesktop.org/wiki/Software/systemd
+Description-md5: 846dc3eb3129c6a17b29965b209c161e
+Section: admin
+Priority: optional
+Filename: pool/main/s/systemd/systemd-resolved_252.22-1~deb12u1_amd64.deb
+Size: 304860
+MD5sum: a88915bd531e08a8d59daadaaa0f1428
+SHA256: d2cd32d62915b0aea7a87f572881e95c554cbb22990b2ba66cb9158e1f70379c
+
+Package: systemd-standalone-sysusers
+Source: systemd
+Version: 252.22-1~deb12u1
+Installed-Size: 260
+Maintainer: Debian systemd Maintainers <pkg-systemd-maintainers@lists.alioth.debian.org>
+Architecture: amd64
+Replaces: systemd (<< 249.3-3), systemd-sysusers
+Provides: systemd-sysusers (= 252.22-1~deb12u1)
+Depends: libc6 (>= 2.34), libcap2 (>= 1:2.10), libcrypt1 (>= 1:4.4.0), libselinux1 (>= 3.1~)
+Conflicts: systemd (<< 249.3-3), systemd-sysusers
+Description: standalone sysusers binary for use in non-systemd systems
+Homepage: https://www.freedesktop.org/wiki/Software/systemd
+Description-md5: 59eb167fc8fbdb9ddb8918d80524736d
+Section: admin
+Priority: optional
+Filename: pool/main/s/systemd/systemd-standalone-sysusers_252.22-1~deb12u1_amd64.deb
+Size: 126952
+MD5sum: ceae5484650db07793d2d0da1a229d1b
+SHA256: d5561665a6835a663e54e09f09e99ceb0ba828b7904542c633acf0ffaf1eaac0
+
+Package: systemd-standalone-tmpfiles
+Source: systemd
+Version: 252.22-1~deb12u1
+Installed-Size: 366
+Maintainer: Debian systemd Maintainers <pkg-systemd-maintainers@lists.alioth.debian.org>
+Architecture: amd64
+Replaces: systemd (<< 249.3-3), systemd-tmpfiles
+Provides: systemd-tmpfiles (= 252.22-1~deb12u1)
+Depends: libacl1 (>= 2.2.23), libc6 (>= 2.34), libcap2 (>= 1:2.10), libselinux1 (>= 3.1~)
+Conflicts: systemd (<< 249.3-3), systemd-tmpfiles
+Description: standalone tmpfiles binary for use in non-systemd systems
+Homepage: https://www.freedesktop.org/wiki/Software/systemd
+Description-md5: e59a151e226689c494584c32d7f05a2c
+Section: admin
+Priority: optional
+Filename: pool/main/s/systemd/systemd-standalone-tmpfiles_252.22-1~deb12u1_amd64.deb
+Size: 177180
+MD5sum: 021b65b7d12a67ae7d8cdf29007cb1fc
+SHA256: 5b10ff694271b50f95de532a411ddc711a7cb8dc5b4abe6a314480d9a74cad87
+
+Package: systemd-sysv
+Source: systemd
+Version: 252.22-1~deb12u1
+Installed-Size: 73
+Maintainer: Debian systemd Maintainers <pkg-systemd-maintainers@lists.alioth.debian.org>
+Architecture: amd64
+Replaces: sysvinit-core
+Pre-Depends: systemd
+Recommends: libpam-systemd, libnss-systemd
+Conflicts: file-rc, systemd-shim, sysvinit-core
+Description: system and service manager - SysV compatibility symlinks
+Multi-Arch: foreign
+Homepage: https://www.freedesktop.org/wiki/Software/systemd
+Description-md5: d704d23b3cdeb076982e788442f6eee1
+Tag: admin::boot, implemented-in::c, role::program,
+ works-with::software:running
+Section: admin
+Priority: important
+Filename: pool/main/s/systemd/systemd-sysv_252.22-1~deb12u1_amd64.deb
+Size: 41920
+MD5sum: f00a786f70ed333657bd2a421eb0e47d
+SHA256: d733335d37e52f72e03b87f6988a66784bc7f91fc4332bf0940e65d7180dae99
+
+Package: systemd-tests
+Source: systemd
+Version: 252.22-1~deb12u1
+Installed-Size: 21001
+Maintainer: Debian systemd Maintainers <pkg-systemd-maintainers@lists.alioth.debian.org>
+Architecture: amd64
+Depends: libacl1 (>= 2.2.23), libblkid1 (>= 2.37.2), libc6 (>= 2.36), libcap2 (>= 1:2.10), libcrypt1 (>= 1:4.4.0), libdbus-1-3 (>= 1.9.14), libgcrypt20 (>= 1.10.0), libglib2.0-0 (>= 2.26.0), libkmod2 (>= 15), liblz4-1 (>= 0.0~r130), liblzma5 (>= 5.1.1alpha+20120614), libmount1 (>= 2.30), libseccomp2 (>= 2.3.1), libselinux1 (>= 3.1~), libssl3 (>= 3.0.0), libsystemd-shared (= 252.22-1~deb12u1), libsystemd0 (= 252.22-1~deb12u1), libudev1 (>= 247), libzstd1 (>= 1.5.2), zlib1g (>= 1:1.1.4), systemd (= 252.22-1~deb12u1), python3
+Description: tests for systemd
+Homepage: https://www.freedesktop.org/wiki/Software/systemd
+Description-md5: ece07db851f8a2e9731975ec11eedb8d
+Section: admin
+Priority: optional
+Filename: pool/main/s/systemd/systemd-tests_252.22-1~deb12u1_amd64.deb
+Size: 3918320
+MD5sum: e902da28922ba90caabb3292ec4263f8
+SHA256: 4e52fa8d820cd379a9c3676babcdf8f5adc2c89b9b671a5608ec1f44aaab30dd
+
+Package: systemd-timesyncd
+Source: systemd
+Version: 252.22-1~deb12u1
+Installed-Size: 147
+Maintainer: Debian systemd Maintainers <pkg-systemd-maintainers@lists.alioth.debian.org>
+Architecture: amd64
+Replaces: systemd (<< 245.4-2~), time-daemon
+Provides: time-daemon
+Depends: libc6 (>= 2.34), libsystemd-shared (= 252.22-1~deb12u1), systemd
+Conflicts: time-daemon
+Breaks: systemd (<< 245.4-2~)
+Description: minimalistic service to synchronize local time with NTP servers
+Multi-Arch: foreign
+Homepage: https://www.freedesktop.org/wiki/Software/systemd
+Description-md5: cc67d85c248836d96a6310e58a659de0
+Section: admin
+Priority: standard
+Filename: pool/main/s/systemd/systemd-timesyncd_252.22-1~deb12u1_amd64.deb
+Size: 63080
+MD5sum: 2ccdad633f825285836bd9b64d7dd756
+SHA256: ad5aee7db29147489f292238962f1aee831fd61e518dbcc8765f592e06f59542
+
+Package: systemd-userdbd
+Source: systemd
+Version: 252.22-1~deb12u1
+Installed-Size: 173
+Maintainer: Debian systemd Maintainers <pkg-systemd-maintainers@lists.alioth.debian.org>
+Architecture: amd64
+Depends: libc6 (>= 2.34), libsystemd-shared (= 252.22-1~deb12u1), systemd (= 252.22-1~deb12u1)
+Description: dynamic user/group manager
+Homepage: https://www.freedesktop.org/wiki/Software/systemd
+Description-md5: 86b45a916ba4cb12ae812c532cd56008
+Section: admin
+Priority: optional
+Filename: pool/main/s/systemd/systemd-userdbd_252.22-1~deb12u1_amd64.deb
+Size: 69308
+MD5sum: d38c094d2abb88a12b114917701657fe
+SHA256: 4a15eab14d2321bf4648a043e717ebeee8c65c76f5159e8343563d90bb992e6d
+
+Package: udev
+Source: systemd
+Version: 252.22-1~deb12u1
+Installed-Size: 10395
+Maintainer: Debian systemd Maintainers <pkg-systemd-maintainers@lists.alioth.debian.org>
+Architecture: amd64
+Depends: libacl1 (>= 2.2.23), libblkid1 (>= 2.37.2), libc6 (>= 2.34), libcap2 (>= 1:2.10), libkmod2 (>= 15), libselinux1 (>= 3.1~), adduser, libudev1 (= 252.22-1~deb12u1)
+Description: /dev/ and hotplug management daemon
+Multi-Arch: foreign
+Homepage: https://www.freedesktop.org/wiki/Software/systemd
+Description-md5: e875ddb09f46f1f7672af537f0c875ca
+Tag: admin::boot, admin::filesystem, admin::hardware, admin::kernel,
+ devel::lang:c, devel::library, hardware::detection, implemented-in::c,
+ implemented-in::shell, interface::daemon, role::devel-lib,
+ role::program
+Section: admin
+Priority: important
+Filename: pool/main/s/systemd/udev_252.22-1~deb12u1_amd64.deb
+Size: 1661568
+MD5sum: 7040233eed92ec63e62cf0666fe9b54a
+SHA256: b47f033470c663b63a179c761aad4b8f75fa1a775a8a44be06683679ef61f0eb
+
+Package: wget
+Source: wget (1.21.3-1)
+Version: 1.21.3-1+b2
+Installed-Size: 3605
+Maintainer: Noël Köthe <noel@debian.org>
+Architecture: amd64
+Depends: libc6 (>= 2.33), libgnutls30 (>= 3.7.2), libidn2-0 (>= 0.6), libnettle8, libpcre2-8-0 (>= 10.22), libpsl5 (>= 0.16.0), libuuid1 (>= 2.16), zlib1g (>= 1:1.1.4)
+Recommends: ca-certificates
+Conflicts: wget-ssl
+Description: retrieves files from the web
+Multi-Arch: foreign
+Homepage: https://www.gnu.org/software/wget/
+Description-md5: 63a4a740bcd9e8e94bf661e4f1806e02
+Tag: implemented-in::c, interface::commandline, network::client,
+ protocol::ftp, protocol::http, protocol::ssl, role::program,
+ suite::gnu, use::downloading, works-with::file
+Section: web
+Priority: standard
+Filename: pool/main/w/wget/wget_1.21.3-1+b2_amd64.deb
+Size: 983848
+MD5sum: 01d3fb89c7d4435f46abdf2042c3201e
+SHA256: 6995822451e1300baa41b953c19f1094640ad4237982612583e980d32e18eee5
+
+Package: libwget0
+Source: wget2
+Version: 1.99.1-2.2
+Installed-Size: 395
+Maintainer: Noël Köthe <noel@debian.org>
+Architecture: amd64
+Depends: libbrotli1 (>= 0.6.0), libbz2-1.0, libc6 (>= 2.28), libgnutls30 (>= 3.7.0), libidn2-0 (>= 0.6), liblzma5 (>= 5.1.1alpha+20120614), libnghttp2-14 (>= 1.3.0), libpsl5 (>= 0.16.0), zlib1g (>= 1:1.1.4)
+Description: Download library for files and recursive websites
+Homepage: https://gitlab.com/gnuwget/wget2
+Description-md5: 3cb4ed03cbc78579a7e509e41156a73f
+Tag: role::shared-lib
+Section: libs
+Priority: optional
+Filename: pool/main/w/wget2/libwget0_1.99.1-2.2_amd64.deb
+Size: 146312
+MD5sum: 8a56a871b27e0074026608827308ff3e
+SHA256: 4d40cf5f9bc656ec13c74cea8d342f46db3892e7b1e91b02cf2996395494342c
+
+Package: wget2
+Version: 1.99.1-2.2
+Installed-Size: 237
+Maintainer: Noël Köthe <noel@debian.org>
+Architecture: amd64
+Depends: libc6 (>= 2.27), libgpgme11 (>= 1.2.0), libpcre2-8-0 (>= 10.22), libwget0
+Recommends: ca-certificates
+Description: file and recursive website downloader
+Homepage: https://gitlab.com/gnuwget/wget2
+Description-md5: 645e0d0ba9e191f2d558315b17fd49ef
+Section: web
+Priority: optional
+Filename: pool/main/w/wget2/wget2_1.99.1-2.2_amd64.deb
+Size: 99084
+MD5sum: 4f83d494b41095f2a77a518783037a08
+SHA256: 148fe82f3f52ff4b3c0606eb2a312ec445ae8ddd91f2b99ac59dbd2a2c9d1dae
+
+Package: malicious
+Version: 1
+Installed-Size: 1
+Maintainer: Hacker <email@example.com>
+Architecture: amd64
+Depends: libc6 (>= 2.27)
+Description: Wrong pool file
+Homepage: https://gitlab.com/some
+Description-md5: 645e0d0ba9e191f2d558315b17fd49ef
+Section: web
+Priority: optional
+Filename: ../../../../../../../etc/passwd
+Size: 3
+MD5sum: d8e8fca2dc0f896fd7cb4cb0031ba249
+SHA256: f2ca1bb6c7e907d06dafe4687e579fce76b37e4e93b7605022da52e6ccc26fd2
+
+Package: wget2-dev
+Source: wget2
+Version: 1.99.1-2.2
+Installed-Size: 146
+Maintainer: Noël Köthe <noel@debian.org>
+Architecture: amd64
+Depends: wget2 (= 1.99.1-2.2)
+Description: development file for libwget2
+Homepage: https://gitlab.com/gnuwget/wget2
+Description-md5: 380fdcaca6778f07ceecdfce83609258
+Tag: devel::library, role::devel-lib
+Section: libdevel
+Priority: optional
+Filename: pool/main/w/wget2/wget2-dev_1.99.1-2.2_amd64.deb
+Size: 53556
+MD5sum: e627c0f3f17d45cadb0235d4393a57c4
+SHA256: d943444ef8e61c256b350400fde1bb1af7fdb9614adc242f6aba5387bfa10f95
+

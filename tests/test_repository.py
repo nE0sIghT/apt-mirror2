@@ -1,13 +1,17 @@
 from pathlib import Path
 from typing import Iterable
+from unittest.mock import patch
 
 from apt_mirror.download import DownloadFile
 from apt_mirror.download.url import URL
+from apt_mirror.filter import PackageFilter
 from apt_mirror.repository import (
     ByHash,
     Codename,
     InvalidReleaseFilesException,
+    PackagesParser,
     Repository,
+    SourcesParser,
 )
 from tests.base import BaseTest
 
@@ -391,3 +395,44 @@ class TestRepository(BaseTest):
             },
             {d.path for d in files},
         )
+
+    def test_metadata_outside_root(self):
+        repository = self.get_repository(["main"], [], True)
+
+        with patch.object(
+            repository,
+            "_metadata_file_allowed",
+            lambda *args, **kwargs: True,  # type: ignore
+        ):
+            files = [
+                str(f.path)
+                for f in repository.get_metadata_files(
+                    self.TEST_DATA / "MaliciousRepository", False, set()
+                )
+            ]
+
+            self.assertFalse(any(".." in path for path in files))
+
+    def test_source_outside_root(self):
+        source_parser = SourcesParser(
+            self.TEST_DATA / "MaliciousRepository/repo",
+            {Path("dists/test/main/source/Sources")},
+            set(),
+            PackageFilter(),
+        )
+
+        files = [str(f.path) for f in source_parser.parse()]
+
+        self.assertFalse(any(".." in path for path in files))
+
+    def test_binary_outside_root(self):
+        source_parser = PackagesParser(
+            self.TEST_DATA / "MaliciousRepository/repo",
+            {Path("dists/test/main/binary-amd64/Packages")},
+            set(),
+            PackageFilter(),
+        )
+
+        files = [str(f.path) for f in source_parser.parse()]
+
+        self.assertFalse(any(".." in path for path in files))

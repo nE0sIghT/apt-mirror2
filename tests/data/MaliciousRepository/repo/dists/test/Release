@@ -1,0 +1,40 @@
+Origin: Debian
+Label: Debian
+Suite: stable
+Version: 12.5
+Codename: bookworm
+Changelogs: https://metadata.ftp-master.debian.org/changelogs/@CHANGEPATH@_changelog
+Date: Sat, 10 Feb 2024 11:07:25 UTC
+Acquire-By-Hash: yes
+No-Support-for-Architecture-all: Packages
+Architectures: all amd64 arm64 armel armhf i386 mips64el mipsel ppc64el s390x
+Components: main contrib non-free-firmware non-free
+Description: Debian 12.5 Released 10 February 2024
+MD5Sum:
+ 20be5d77cf9c89cb7d4a1aa53c0023c1 22219719 main/binary-all/Packages
+ 98c9e0984ce7c8ba06cd3766744750a6  5668128 main/binary-all/Packages.gz
+ 033c926c3a2656ff86318461a0e9c635  4208092 main/binary-all/Packages.xz
+ 359be2bcad5278d81accefce8e268a0f      114 main/binary-all/Release
+ acde57f83b461ac929783be09341074a 49974557 main/binary-amd64/Packages
+ 0e6c2a54116fc03d72e6894e221fba36 12077252 main/binary-amd64/Packages.gz
+ fd26f978f97bc3687cb6018d00986b64  8786100 main/binary-amd64/Packages.xz
+ 33311aa1dbcf36aedd870ed8adc0a9cc      116 main/binary-amd64/Release
+ 641b71ceca5b034cebce4ed570d89d1c      117 main/source/Release
+ 946f93ac9f139ecf5393fab26200b566 50836717 main/source/Sources
+ 2f59c666226aa79645a1b685cdeb77f0 12735006 main/source/Sources.gz
+ fe3104297665bc38d9ef9da04d49bc96  9488652 main/source/Sources.xz
+ d8e8fca2dc0f896fd7cb4cb0031ba249      123 main/source/Release/../../../../../../../../etc/passwd
+SHA256:
+ 20482569af603f6642a55880b57dd7da2699135ccbd80980b4c35b09dd79a092 22219719 main/binary-all/Packages
+ 1975faf49d23d1ba9d66ce69ef123ffaa9498c11957f0f8cabb6d3ccb3c96039  5668128 main/binary-all/Packages.gz
+ 9dac2b63a7c5df0da0b74275ca65ff9d16702cfbf65124c237e800d8f270ad6c  4208092 main/binary-all/Packages.xz
+ f0ae4b19f8ef8e140443f109d0ac1dae9ef7efd5980668a55b2a9e2e39abd1a6      114 main/binary-all/Release
+ 9a5a1e1071f8f6fa40d8633d810f3d96f1c77046c6d32a8788e3c750faf82f2b 49974557 main/binary-amd64/Packages
+ f71fd91c7e11f1d5123a7e041d83a85238dbe2a71ebf8ccd2374b89d65b8d82c 12077252 main/binary-amd64/Packages.gz
+ 2988d7a0ed222cc0f7f292c3b5925d548703f1211b98740922611330b8782b91  8786100 main/binary-amd64/Packages.xz
+ 504660ad4c57cc674821f9ca4ed692e00d61e4214b5a7dd91b263a93330bb69e      116 main/binary-amd64/Release
+ f80fc94337f585b6d8f3bbea15b88a8666a79d37732d70c9c3e2cdeec35b1908      117 main/source/Release
+ c765f2a2976569ae6829f218c434b50d431c20aa17d16bac9d9a3aa76158ceb6 50836717 main/source/Sources
+ dd58babb3dc17cfddba61c0e2cf18b4d0257cff728e53fef94912a13802b57cc 12735006 main/source/Sources.gz
+ f863b5e8d92d342247af421d058054381909ff09b643ecae66c5717ccb2d9151  9488652 main/source/Sources.xz
+ f2ca1bb6c7e907d06dafe4687e579fce76b37e4e93b7605022da52e6ccc26fd2  9488652 main/source/Release/../../../../../../../../etc/passwd

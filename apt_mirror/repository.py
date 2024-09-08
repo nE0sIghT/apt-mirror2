@@ -28,6 +28,10 @@ def should_ignore_errors(ignored_paths: set[str], path: Path):
     return any(path.is_relative_to(ignored_path) for ignored_path in ignored_paths)
 
 
+def is_safe_path(root_path: Path, path: Path):
+    return (root_path / path).resolve().is_relative_to(root_path)
+
+
 class InvalidReleaseFilesException(RuntimeError):
     def __init__(self, message: str) -> None:
         super().__init__(message)
@@ -40,13 +44,13 @@ class PackageFile:
     size: int
     hashes: dict[HashType, HashSum]
 
-    def to_download_file(self, directory: str):
+    def to_download_file(self, directory: Path):
         download_file = DownloadFile.from_path(
-            path=Path(directory) / self.path, check_size=True
+            path=directory / self.path, check_size=True
         )
         for hash_type, hashsum in self.hashes.items():
             download_file.add_compression_variant(
-                Path(directory) / self.path,
+                directory / self.path,
                 size=self.size,
                 hash_type=hash_type,
                 hash_sum=hashsum,
@@ -105,6 +109,9 @@ class IndexFileParser(ABC):
 
         return set(self._pool_files.values())
 
+    def _is_safe_path(self, path: Path):
+        return is_safe_path(self._repository_path, path)
+
     def _unpack_index(self, file: Path) -> bool:
         for suffix, open_function in BaseRepository.COMPRESSION_SUFFIXES.items():
             compressed_file = file.with_name(f"{file.name}{suffix}")
@@ -150,7 +157,7 @@ class SourcesParser(IndexFileParser):
     # https://github.com/pylint-dev/pylint/issues/5214
     def _reset_block_parser(self):
         self._package: str | None = None
-        self._directory: str | None = None
+        self._directory: Path | None = None
         self._hash_type = None
         self._package_files: dict[Path, PackageFile] = {}
 
@@ -173,6 +180,10 @@ class SourcesParser(IndexFileParser):
                     continue
 
                 file_path = Path(filename)
+                if not self._is_safe_path(file_path):
+                    self._log.warning(f"Skipping unsafe path: {file_path}")
+                    continue
+
                 self._package_files.setdefault(
                     file_path,
                     PackageFile(path=file_path, size=int(_size), hashes={}),
@@ -185,9 +196,16 @@ class SourcesParser(IndexFileParser):
                         )
                     case line if line.startswith(b"Directory:"):
                         # https://github.com/pylint-dev/pylint/issues/5214
-                        _, self._directory = (  # pylint: disable=W0201
+                        _, directory = (  # pylint: disable=W0201
                             line.decode().strip().split()
                         )
+
+                        directory = Path(directory)
+                        if not self._is_safe_path(directory):
+                            self._log.warning(f"Skipping unsafe Directory: {directory}")
+                            continue
+
+                        self._directory = directory  # pylint: disable=W0201
                     case line if line.startswith(b"Files:"):
                         self._hash_type = HashType.MD5  # pylint: disable=W0201
                         continue
@@ -266,9 +284,13 @@ class PackagesParser(IndexFileParser):
                             line
                         ).split()[0]
                     case line if line.startswith(b"Filename:"):
-                        self._file_path = Path(  # pylint: disable=W0201
-                            self._get_line_value(line)
-                        )
+                        file_path = Path(self._get_line_value(line))
+
+                        if not self._is_safe_path(file_path):
+                            self._log.warning(f"Skipping unsafe path: {file_path}")
+                            continue
+
+                        self._file_path = file_path  # pylint: disable=W0201
                     case line if line.startswith(b"Size:"):
                         self._size = int(  # pylint: disable=W0201
                             self._get_line_value(line)
@@ -436,6 +458,7 @@ class BaseRepository(ABC):
         self, repository_root: Path, encode_tilde: bool, missing_sources: set[Path]
     ) -> Iterable[DownloadFile]:
         metadata_files: set[DownloadFile] = set()
+        mirror_path = repository_root / self.get_mirror_path(encode_tilde)
 
         for (
             metadata,
@@ -450,11 +473,7 @@ class BaseRepository(ABC):
                 if release_file_relative_path in missing_sources:
                     continue
 
-                release_file = (
-                    repository_root
-                    / self.get_mirror_path(encode_tilde)
-                    / release_file_relative_path
-                )
+                release_file = mirror_path / release_file_relative_path
 
                 if not release_file.exists():
                     continue
@@ -472,6 +491,11 @@ class BaseRepository(ABC):
                 for hash_type in HashType:
                     for file in release.get(hash_type.value, []):
                         path = Path(file["name"])
+
+                        if not is_safe_path(mirror_path, path):
+                            self._log.warning(f"Skipping unsafe path: {path}")
+                            continue
+
                         try:
                             size = int(file["size"])
                         except ValueError:

@@ -191,6 +191,8 @@ build image:
   rules:
     - if: $CI_PIPELINE_SOURCE == "schedule"
       when: never
+    - if: $CI_COMMIT_REF_NAME =~ /^stable-/
+      when: never
     - if: $CI_COMMIT_REF_PROTECTED == "true"
 
 .docker deploy:

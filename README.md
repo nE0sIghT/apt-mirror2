@@ -13,14 +13,24 @@ Python 3.10 is the minimum supported version. PyPy 3.10 (7.3) is supported also.
 For additional dependencies look to the `pyproject.yml` and/or `requirements.txt`.
 
 # Installation
-## Docker
+## Container (Docker/Podman)
 
-Docker image is available in the Docker Hub under [aptmirror/apt-mirror2](https://hub.docker.com/r/aptmirror/apt-mirror2) repository.
+Container images are available in the Docker Hub under [aptmirror/apt-mirror2](https://hub.docker.com/r/aptmirror/apt-mirror2) repository and in the
+Red Hat Quay.io inder [apt-mirror2/apt-mirror2](https://quay.io/repository/apt-mirror2/apt-mirror2) repository.
+
 You can try it using
 
 ```bash
-docker run -it --rm aptmirror/apt-mirror2 --help
+docker run -it --rm docker.io/aptmirror/apt-mirror2 --help
 ```
+
+or
+
+```bash
+docker run -it --rm quay.io/apt-mirror2/apt-mirror2 --help
+```
+
+You may wish to use `podman` command instead `docker`.
 
 ### Image variants
 #### `aptmirror/apt-mirror2:latest`

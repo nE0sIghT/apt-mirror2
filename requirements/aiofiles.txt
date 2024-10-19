@@ -4,19 +4,19 @@
 #
 #    pip-compile --constraint=requirements/prod.txt --extra=aiofiles --generate-hashes --output-file=requirements/aiofiles.txt
 #
-aiofile==3.8.8 \
-    --hash=sha256:41e8845cce055779cd77713d949a339deb012eab605b857765e8f8e52a5ed811 \
-    --hash=sha256:41f3dc40bd730459d58610476e82e5efb2f84ae6e9fa088a9545385d838b8a43
+aiofile==3.9.0 \
+    --hash=sha256:ce2f6c1571538cbdfa0143b04e16b208ecb0e9cb4148e528af8a640ed51cc8aa \
+    --hash=sha256:e5ad718bb148b265b6df1b3752c4d1d83024b93da9bd599df74b9d9ffcf7919b
     # via
     #   -c requirements/prod.txt
     #   apt-mirror (setup.py)
-aiofiles==23.2.1 \
-    --hash=sha256:19297512c647d4b27a2cf7c34caa7e405c0d60b5560618a29a9fe027b18b0107 \
-    --hash=sha256:84ec2218d8419404abcb9f0c02df3f34c6e0a68ed41072acfb1cef5cbc29051a
+aiofiles==24.1.0 \
+    --hash=sha256:22a075c9e5a3810f0c2e48f3008c94d68c65d763b9b03857924c99e57355166c \
+    --hash=sha256:b4ec55f4195e3eb5d7abd1bf7e061763e864dd4954231fb8539a0ef8bb8260e5
     # via apt-mirror (setup.py)
-aioftp==0.21.4 \
-    --hash=sha256:28bb26d4616c7c381a1543281f987051b8d2d1d5bfaf023d9e7e2c2105c51bb9 \
-    --hash=sha256:ad7c1136754799808fca890ea41ea7ec8fcd1bb5167a1f46e04db15267242324
+aioftp==0.23.1 \
+    --hash=sha256:62d1e59804afc7e42c57e8b3fa44e03e39630323cc666018a4e870d79dc58ec0 \
+    --hash=sha256:b80eadd8ca95d2bbbcfabe7de15cbe01ac117b2e7467717374de467bad93570b
     # via
     #   -c requirements/prod.txt
     #   apt-mirror (setup.py)
@@ -95,9 +95,9 @@ httpcore==1.0.2 \
     # via
     #   -c requirements/prod.txt
     #   httpx
-httpx[http2]==0.26.0 \
-    --hash=sha256:451b55c30d5185ea6b23c2c793abf9bb237d2a7dfb901ced6ff69ad37ec1dfaf \
-    --hash=sha256:8915f5a3627c4d47b73e8202457cb28f1266982d1159bd5779d86a80c0eab1cd
+httpx[http2]==0.27.2 \
+    --hash=sha256:7bb2708e112d8fdd7829cd4243970f0c223274051cb35ee80c03301ee29a3df0 \
+    --hash=sha256:f7c2be1d2f3c3c3160d441802406b206c2b76f5947b11115e6df10c6c65e66c2
     # via
     #   -c requirements/prod.txt
     #   apt-mirror (setup.py)

@@ -30,6 +30,7 @@ class TestRepository(BaseTest):
         components: list[str] | None = None,
         arches: list[str] | None = None,
         mirror_source: bool = True,
+        mirror_dist_upgrader: bool = False,
     ):
         if components is None:
             components = ["main", "contrib", "non-free", "non-free/debian-installer"]
@@ -41,6 +42,7 @@ class TestRepository(BaseTest):
             url=URL.from_string("http://localhost.local/repo"),
             clean=False,
             skip_clean=set(),
+            mirror_dist_upgrader=mirror_dist_upgrader,
             mirror_path=Path("repo"),
             ignore_errors=set(),
             codenames=Repository.Codenames(
@@ -363,6 +365,36 @@ class TestRepository(BaseTest):
             },
             files,
         )
+
+    def test_dist_upgrader(self):
+        config = self.get_config("DebianBookworm", config_name="mirror6.list")
+
+        repository = self.ensure_repository(
+            config.repositories["http://ftp.debian.org/debian"]
+        )
+        repository.mirror_path = Path("repo")
+
+        files = set(
+            f.path
+            for f in repository.get_metadata_files(
+                self.TEST_DATA / "DebianBookworm", False, set()
+            )
+        )
+
+        base_dist_upgrader_path = Path("dists/bookworm/main/dist-upgrader-all/current")
+
+        self.assertIn(base_dist_upgrader_path / "bookworm.tar.gz", files)
+        self.assertIn(base_dist_upgrader_path / "bookworm.tar.gz.gpg", files)
+
+        for file in Repository.DIST_UPGRADER_ANNOUNCEMENTS:
+            self.assertIn(
+                base_dist_upgrader_path / file,
+                files,
+            )
+            self.assertIn(
+                (base_dist_upgrader_path / file).with_suffix(".html"),
+                files,
+            )
 
     def test_packages_last_stanza(self):
         repository = self.get_repository(["main"], ["amd64"], False)

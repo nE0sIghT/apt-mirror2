@@ -1,0 +1,3 @@
+deb [ arch=amd64 ] http://ftp.debian.org/debian bookworm main
+
+mirror_dist_upgrader http://ftp.debian.org/debian

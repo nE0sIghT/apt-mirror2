@@ -143,6 +143,10 @@ deb [ arch=amd64,arm64 ] http://archive.ubuntu.com/ubuntu mantic main restricted
 ## When not specified - do not exclude packages.
 # exclude_binary_packages http://archive.ubuntu.com/ubuntu binary_package1 binary_package2
 
+## Mirror `dist-upgrader-all` files which are used by Ubuntu's `do-release-upgrade` tool.
+## When not specified - `dist-upgrader-all` files are not mirrored.
+# mirror_dist_upgrader http://archive.ubuntu.com/ubuntu
+
 ## If specified - clean redundant files in repository (look to _autoclean option)
 clean http://archive.ubuntu.com/ubuntu
 ## If specified and repository clean enabled - skip specified paths from clean

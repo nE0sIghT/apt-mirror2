@@ -175,6 +175,21 @@ class TestConfig(BaseTest):
 
         self.assertEqual(repository.codenames["codename"].by_hash, ByHash.NO)
 
+    def test_dist_upgrader(self):
+        config = self.get_config("MixedConfig")
+
+        repository = self.ensure_flat_repository(
+            config.repositories["http://mirror.something.ru/repository"]
+        )
+
+        self.assertFalse(repository.mirror_dist_upgrader)
+
+        repository = self.ensure_repository(
+            config.repositories["http://archive.ubuntu.com/ubuntu"]
+        )
+
+        self.assertTrue(repository.mirror_dist_upgrader)
+
     def test_clean(self):
         config = self.get_config("MixedConfig")
 

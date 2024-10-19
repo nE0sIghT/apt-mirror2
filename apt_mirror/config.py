@@ -109,6 +109,7 @@ class RepositoryConfig:
                 url=self.url,
                 clean=False,
                 skip_clean=set(),
+                mirror_dist_upgrader=False,
                 mirror_path=None,
                 ignore_errors=set(),
                 directories=FlatRepository.FlatDirectories(
@@ -129,6 +130,7 @@ class RepositoryConfig:
                 url=self.url,
                 clean=False,
                 skip_clean=set(),
+                mirror_dist_upgrader=False,
                 mirror_path=None,
                 ignore_errors=set(),
                 codenames=Repository.Codenames(
@@ -291,6 +293,7 @@ class Config:
     def _parse_config_file(self):
         clean: list[str] = []
         skip_clean: list[str] = []
+        mirror_dist_upgrader: list[str] = []
         mirror_paths: dict[str, Path] = {}
         ignore_errors: dict[str, set[str]] = {}
         package_filter = Config.PackageFilter()
@@ -328,6 +331,9 @@ class Config:
                         case line if line.startswith("skip-clean "):
                             _, url = line.split()
                             skip_clean.append(url)
+                        case line if line.startswith("mirror_dist_upgrader "):
+                            _, url = line.split()
+                            mirror_dist_upgrader.append(url)
                         case line if line.startswith("mirror_path "):
                             _, url, path = line.split(maxsplit=2)
                             mirror_paths[url] = Path(path.strip("/"))
@@ -371,6 +377,7 @@ class Config:
 
         self._update_clean(clean)
         self._update_skip_clean(skip_clean)
+        self._update_mirror_dist_upgrader(mirror_dist_upgrader)
         self._update_mirror_paths(mirror_paths)
         self._update_ignore_errors(ignore_errors)
         self._update_filters(package_filter)
@@ -397,6 +404,17 @@ class Config:
                 repository.skip_clean.add(
                     Path(url.path).relative_to(Path(repository.url.path))
                 )
+
+    def _update_mirror_dist_upgrader(self, mirror_dist_upgrader: list[str]):
+        for url in mirror_dist_upgrader:
+            if url not in self._repositories:
+                self._log.warning(
+                    "mirror_dist_upgrader was specified for missing repository URL:"
+                    f" {url}"
+                )
+                continue
+
+            self._repositories[url].mirror_dist_upgrader = True
 
     def _update_mirror_paths(self, mirror_paths: dict[str, Path]):
         for url, path in mirror_paths.items():

@@ -373,8 +373,12 @@ class Downloader(ABC):
                         self._missing_sources.difference_update(variant.get_all_paths())
                         return
 
-        if source_file.ignore_errors or (source_file.ignore_missing and not error):
-            self._log.info(f"Unable to download {source_file.path}: ignoring")
+        if source_file.ignore_errors:
+            self._log.info(f"Unable to download `{source_file.path}`: ignoring")
+            return
+
+        if source_file.ignore_missing and not error:
+            self._log.info(f"Optional file `{source_file.path}` is missing on server")
             return
 
         self._missing_sources.update(

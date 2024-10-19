@@ -431,6 +431,7 @@ class BaseRepository(ABC):
 
     clean: bool
     skip_clean: set[Path]
+    mirror_dist_upgrader: bool
     mirror_path: Path | None
     ignore_errors: set[str]
 
@@ -456,7 +457,7 @@ class BaseRepository(ABC):
 
     def get_metadata_files(
         self, repository_root: Path, encode_tilde: bool, missing_sources: set[Path]
-    ) -> Iterable[DownloadFile]:
+    ) -> set[DownloadFile]:
         metadata_files: set[DownloadFile] = set()
         mirror_path = repository_root / self.get_mirror_path(encode_tilde)
 
@@ -703,8 +704,55 @@ class Repository(BaseRepository):
             return str([c for c in self])
 
     DISTS = Path("dists")
+    DIST_UPGRADER_ANNOUNCEMENTS = [
+        "DevelReleaseAnnouncement",
+        "EOLReleaseAnnouncement",
+        "ReleaseAnnouncement",
+    ]
 
     codenames: Codenames
+
+    def get_metadata_files(
+        self, repository_root: Path, encode_tilde: bool, missing_sources: set[Path]
+    ) -> set[DownloadFile]:
+        metadata_files = super().get_metadata_files(
+            repository_root, encode_tilde, missing_sources
+        )
+
+        if not self.mirror_dist_upgrader:
+            return metadata_files
+
+        # Add Ubuntu's dist-upgrader paths
+        for codename in self.codenames.values():
+            if "main" not in codename.components:
+                continue
+
+            dist_upgrader_path = Path(
+                f"dists/{codename.codename}/main/dist-upgrader-all/current"
+            )
+            for file in self.DIST_UPGRADER_ANNOUNCEMENTS:
+                announcement_path = dist_upgrader_path / file
+                metadata_files.add(
+                    DownloadFile.from_path(announcement_path, False, True)
+                )
+                metadata_files.add(
+                    DownloadFile.from_path(
+                        announcement_path.with_suffix(".html"), False, True
+                    )
+                )
+
+            metadata_files.add(
+                DownloadFile.from_path(
+                    dist_upgrader_path / f"{codename.codename}.tar.gz", False, True
+                )
+            )
+            metadata_files.add(
+                DownloadFile.from_path(
+                    dist_upgrader_path / f"{codename.codename}.tar.gz.gpg", False, True
+                )
+            )
+
+        return metadata_files
 
     def _metadata_file_allowed(
         self, metadata: BaseRepositoryMetadata, file_path: Path

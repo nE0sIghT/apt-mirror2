@@ -1,7 +1,7 @@
 ---
 variables:
   FF_NETWORK_PER_BUILD: 'true'
-  PYTHON_VERSION: '3.10'
+  PYTHON_VERSION: '3.12'
   PYTHON_IMAGE: python
   IMAGE_NAME: aptmirror/apt-mirror2
 

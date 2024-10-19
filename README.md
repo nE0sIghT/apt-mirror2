@@ -30,7 +30,7 @@ or
 docker run -it --rm quay.io/apt-mirror2/apt-mirror2 --help
 ```
 
-You may wish to use `podman` command instead `docker`.
+You may wish to use `podman` command instead of `docker`.
 
 ### Image variants
 #### `aptmirror/apt-mirror2:latest`

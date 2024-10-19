@@ -21,6 +21,7 @@ RUN \
         --clean \
         --onefile \
         --noconfirm \
+        --copy-metadata aioftp \
         --name apt-mirror \
         /usr/local/bin/apt-mirror
 

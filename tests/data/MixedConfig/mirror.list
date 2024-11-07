@@ -3,7 +3,7 @@ deb-amd64 http://ftp.debian.org/debian-security trixie-security main contrib non
 deb-arm64 http://ftp.debian.org/debian-security trixie-security main contrib non-free-firmware non-free main/debian-installer
 deb-armel http://ftp.debian.org/debian-security trixie-security main contrib non-free-firmware non-free main/debian-installer
 deb-armhf http://ftp.debian.org/debian-security trixie-security main contrib non-free-firmware non-free main/debian-installer
-deb-i386 http://ftp.debian.org/debian-security trixie-security main contrib non-free-firmware non-free main/debian-installer
+deb-i386 http://ftp.debian.org/debian-security/ trixie-security main contrib non-free-firmware non-free main/debian-installer
 deb-mips64el http://ftp.debian.org/debian-security trixie-security main contrib non-free-firmware non-free main/debian-installer
 deb-ppc64el http://ftp.debian.org/debian-security trixie-security main contrib non-free-firmware non-free main/debian-installer
 deb-s390x http://ftp.debian.org/debian-security trixie-security main contrib non-free-firmware non-free main/debian-installer
@@ -14,20 +14,20 @@ deb-arm64 http://ftp.debian.org/debian-security bookworm-security main contrib n
 deb [ arch=amd64,arm64,armel,armhf,i386,mips64el,ppc64el,s390x ] http://ftp.debian.org/debian-security bullseye-security main contrib non-free-firmware non-free main/debian-installer
 deb-src http://ftp.debian.org/debian-security bullseye-security main contrib non-free-firmware non-free main/debian-installer
 
-deb http://archive.ubuntu.com/ubuntu mantic main restricted universe multiverse
+deb http://archive.ubuntu.com/ubuntu/ mantic main restricted universe multiverse
 deb http://archive.ubuntu.com/ubuntu mantic-security main restricted universe multiverse
-deb http://archive.ubuntu.com/ubuntu mantic-updates main restricted universe multiverse
+deb http://archive.ubuntu.com/ubuntu/ mantic-updates main restricted universe multiverse
 deb http://archive.ubuntu.com/ubuntu mantic-backports main restricted universe multiverse
 
 deb http://archive.ubuntu.com/ubuntu noble main restricted universe multiverse
-deb http://archive.ubuntu.com/ubuntu noble-security main restricted universe multiverse
+deb http://archive.ubuntu.com/ubuntu/ noble-security main restricted universe multiverse
 deb http://archive.ubuntu.com/ubuntu noble-updates main restricted universe multiverse
-deb http://archive.ubuntu.com/ubuntu noble-backports main restricted universe multiverse
+deb http://archive.ubuntu.com/ubuntu/ noble-backports main restricted universe multiverse
 
 deb-src http://archive.ubuntu.com/ubuntu noble main restricted universe multiverse
-deb-src http://archive.ubuntu.com/ubuntu noble-security main restricted universe multiverse
+deb-src http://archive.ubuntu.com/ubuntu// noble-security main restricted universe multiverse
 deb-src http://archive.ubuntu.com/ubuntu noble-updates main restricted universe multiverse
-deb-src http://archive.ubuntu.com/ubuntu noble-backports main restricted universe multiverse
+deb-src http://archive.ubuntu.com/ubuntu/ noble-backports main restricted universe multiverse
 
 deb http://mirror.something.ru/repository subpath/
 

@@ -1,9 +1,11 @@
 # SPDX-License-Identifer: GPL-3.0-or-later
 
 import subprocess
+from collections.abc import MutableMapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from string import Template
+from typing import Any, Iterator
 
 from apt_mirror.download import URL, Proxy
 from apt_mirror.repository import (
@@ -98,6 +100,8 @@ class RepositoryConfig:
                 f"Mixing flat and non-flat configuration for repository {url} is not"
                 f" supported. Wrong codenames: {codenames}"
             )
+
+        url = url.rstrip("/")
 
         return cls(
             url, URL.from_string(url), arches, source, codenames, components, by_hash
@@ -212,6 +216,50 @@ class RepositoryConfig:
         return any(codename.endswith("/") for codename in self.codenames)
 
 
+class RepositoriesDict(MutableMapping[str, BaseRepository]):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__()
+        self._dict: dict[str, BaseRepository] = {}
+        self.update(dict(*args, **kwargs))
+
+    def _find_key(self, key: Any):
+        if key in self._dict:
+            return key
+
+        if isinstance(key, str):
+            if key.endswith("/"):
+                stripped_key = key.rstrip("/")
+                if stripped_key in self._dict:
+                    return stripped_key
+            else:
+                key_with_slash = f"{key}/"
+                if key_with_slash in self._dict:
+                    return key_with_slash
+
+        return key
+
+    def __contains__(self, key: object) -> bool:
+        return self._find_key(key) in self._dict
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._dict)
+
+    def __len__(self) -> int:
+        return len(self._dict)
+
+    def __getitem__(self, key: str) -> Any:
+        return self._dict[self._find_key(key)]
+
+    def __setitem__(self, key: str, value: BaseRepository) -> None:
+        self._dict[self._find_key(key)] = value
+
+    def __delitem__(self, key: str) -> None:
+        del self._dict[self._find_key(key)]
+
+    def copy(self):
+        return RepositoriesDict(self)
+
+
 class Config:
     @dataclass
     class PackageFilter:
@@ -224,7 +272,7 @@ class Config:
 
     def __init__(self, config_file: Path) -> None:
         self._log = LoggerFactory.get_logger(self)
-        self._repositories: dict[str, BaseRepository] = {}
+        self._repositories = RepositoriesDict()
 
         self._files = [config_file]
         config_directory = config_file.with_name(f"{config_file.name}.d")
@@ -627,7 +675,7 @@ class Config:
         return self.get_path("postmirror_script")
 
     @property
-    def repositories(self):
+    def repositories(self) -> RepositoriesDict:
         return self._repositories.copy()
 
     @property

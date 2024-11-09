@@ -326,3 +326,30 @@ class TestConfig(BaseTest):
         ensure_auth(config, "https://host1.example.com/path11", "login2", "password2")
         ensure_auth(config, "https://host2.example.com/path2")
         ensure_auth(config, "ftp://host3.example.com/path3")
+
+    def test_slash_independent(self):
+        config = self.get_config("SlashConfig")
+
+        repository = self.ensure_repository(
+            config.repositories["http://example.com/debian1"]
+        )
+
+        self.assertTrue(repository.clean)
+        self.assertTrue(repository.mirror_dist_upgrader)
+        self.assertEqual(repository.mirror_path, Path("path1"))
+        self.assertIn("isource1", repository.package_filter.include_source_name)
+        self.assertIn("esource1", repository.package_filter.exclude_source_name)
+        self.assertIn("ibinary1", repository.package_filter.include_binary_packages)
+        self.assertIn("ebinary1", repository.package_filter.exclude_binary_packages)
+
+        repository = self.ensure_repository(
+            config.repositories["http://example.com/debian2/"]
+        )
+
+        self.assertTrue(repository.clean)
+        self.assertTrue(repository.mirror_dist_upgrader)
+        self.assertEqual(repository.mirror_path, Path("path2"))
+        self.assertIn("isource2", repository.package_filter.include_source_name)
+        self.assertIn("esource2", repository.package_filter.exclude_source_name)
+        self.assertIn("ibinary2", repository.package_filter.include_binary_packages)
+        self.assertIn("ebinary2", repository.package_filter.exclude_binary_packages)

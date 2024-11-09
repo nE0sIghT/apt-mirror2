@@ -1,0 +1,24 @@
+deb http://example.com/debian1 suite1 component1
+
+clean http://example.com/debian1/
+mirror_dist_upgrader http://example.com/debian1/
+
+mirror_path http://example.com/debian1/ path1
+ignore_errors http://example.com/debian1/ ignore1
+include_source_name http://example.com/debian1/ isource1
+exclude_source_name http://example.com/debian1/ esource1
+include_binary_packages http://example.com/debian1/ ibinary1
+exclude_binary_packages http://example.com/debian1/ ebinary1
+
+
+deb http://example.com/debian2/ suite2 component2
+
+clean http://example.com/debian2
+mirror_dist_upgrader http://example.com/debian2
+
+mirror_path http://example.com/debian2 path2
+ignore_errors http://example.com/debian2 ignore2
+include_source_name http://example.com/debian2 isource2
+exclude_source_name http://example.com/debian2 esource2
+include_binary_packages http://example.com/debian2 ibinary2
+exclude_binary_packages http://example.com/debian2 ebinary2

@@ -375,43 +375,43 @@ class Config:
                                 )
                         case line if line.startswith("clean "):
                             _, url = line.split()
-                            clean.append(url)
+                            clean.append(url.rstrip("/"))
                         case line if line.startswith("skip-clean "):
                             _, url = line.split()
                             skip_clean.append(url)
                         case line if line.startswith("mirror_dist_upgrader "):
                             _, url = line.split()
-                            mirror_dist_upgrader.append(url)
+                            mirror_dist_upgrader.append(url.rstrip("/"))
                         case line if line.startswith("mirror_path "):
                             _, url, path = line.split(maxsplit=2)
-                            mirror_paths[url] = Path(path.strip("/"))
+                            mirror_paths[url.rstrip("/")] = Path(path.strip("/"))
                         case line if line.startswith("ignore_errors "):
                             _, url, path = line.split(maxsplit=2)
-                            ignore_errors.setdefault(url, set()).add(path)
+                            ignore_errors.setdefault(url.rstrip("/"), set()).add(path)
                         case line if line.startswith("include_source_name "):
                             sources = line.split()[1:]
-                            url = sources.pop(0)
+                            url = sources.pop(0).rstrip("/")
 
                             package_filter.include_source_name.setdefault(
                                 url, set()
                             ).update(sources)
                         case line if line.startswith("exclude_source_name "):
                             sources = line.split()[1:]
-                            url = sources.pop(0)
+                            url = sources.pop(0).rstrip("/")
 
                             package_filter.exclude_source_name.setdefault(
                                 url, set()
                             ).update(sources)
                         case line if line.startswith("include_binary_packages "):
                             packages = line.split()[1:]
-                            url = packages.pop(0)
+                            url = packages.pop(0).rstrip("/")
 
                             package_filter.include_binary_packages.setdefault(
                                 url, set()
                             ).update(packages)
                         case line if line.startswith("exclude_binary_packages "):
                             packages = line.split()[1:]
-                            url = packages.pop(0)
+                            url = packages.pop(0).rstrip("/")
 
                             package_filter.exclude_binary_packages.setdefault(
                                 url, set()

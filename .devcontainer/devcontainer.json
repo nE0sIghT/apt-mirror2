@@ -74,7 +74,7 @@
                 "ms-python.isort",
                 "ms-python.pylint",
                 "ms-python.vscode-pylance",
-                "bungcip.better-toml"
+                "tamasfe.even-better-toml"
             ]
         }
     },

@@ -1,14 +1,16 @@
 # SPDX-License-Identifer: GPL-3.0-or-later
 
 import asyncio
+import contextlib
 import itertools
 import os
 import shutil
 from abc import ABC, abstractmethod
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, AsyncGenerator
+from typing import Any
 
 from aiolimiter import AsyncLimiter
 
@@ -72,7 +74,7 @@ class Downloader(ABC):
 
         self.__post_init__()
 
-    def __post_init__(self):
+    def __post_init__(self):  # noqa: B027
         pass
 
     def reset_stats(self):
@@ -186,22 +188,19 @@ class Downloader(ABC):
             await remove_finished_tasks(tasks)
 
         progress_task.cancel()
-        try:
+        with contextlib.suppress(asyncio.CancelledError):
             await progress_task
-        except asyncio.CancelledError:
-            pass
 
         self.log_status("Download finished")
 
     def need_update(self, path: Path, size: int | None, date: datetime | None) -> bool:
-        if path.exists():
-            if date and size:
-                stat = path.stat()
-                target_date = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc)
-                target_size = stat.st_size
+        if path.exists() and date and size:
+            stat = path.stat()
+            target_date = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc)
+            target_size = stat.st_size
 
-                if date == target_date and size == target_size:
-                    return False
+            if date == target_date and size == target_size:
+                return False
 
         return True
 

@@ -8,11 +8,12 @@ import os
 import shutil
 import signal
 import sys
-from contextlib import ExitStack
+from collections.abc import Awaitable, Iterable, Sequence
+from contextlib import ExitStack, contextmanager
 from errno import EWOULDBLOCK
 from fcntl import LOCK_EX, LOCK_NB, flock
 from pathlib import Path
-from typing import IO, Any, Awaitable, Iterable, Sequence
+from typing import IO, Any
 
 from aiolimiter import AsyncLimiter
 
@@ -650,113 +651,115 @@ class APTMirror:
             self._log.error("No repositories are found in the configuration")
             return 2
 
-        self.lock()
-
-        tasks: list[Awaitable[bool]] = []
-        mirrors: list[RepositoryMirror] = []
-        for repository in self._config.repositories.values():
-            mirror = await RepositoryMirror.create(
-                repository,
-                self._config,
-                self._semaphore,
-                self._download_semaphore,
-                self._rate_limiter,
-                self._metrics_collector,
-            )
-            tasks.append(asyncio.create_task(mirror.mirror()))
-            mirrors.append(mirror)
-
-        self._error = not all(await asyncio.gather(*tasks))
-
-        if not self._config.autoclean and any(
-            r.clean for r in self._config.repositories.values()
-        ):
-            self._log.info(f"Writing clean script {self._config.cleanscript}")
-            with open(self._config.cleanscript, "wt", encoding="utf-8") as fp:
-                fp.write(
-                    "\n".join(
-                        [
-                            "#!/bin/sh",
-                            "set -e",
-                            "",
-                        ]
-                    )
+        with self.lock():
+            tasks: list[Awaitable[bool]] = []
+            mirrors: list[RepositoryMirror] = []
+            for repository in self._config.repositories.values():
+                mirror = await RepositoryMirror.create(
+                    repository,
+                    self._config,
+                    self._semaphore,
+                    self._download_semaphore,
+                    self._rate_limiter,
+                    self._metrics_collector,
                 )
+                tasks.append(asyncio.create_task(mirror.mirror()))
+                mirrors.append(mirror)
 
-                for repository in self._config.repositories.values():
-                    if not repository.clean:
-                        continue
+            self._error = not all(await asyncio.gather(*tasks))
 
-                    clean_script = (
-                        self._config.cleanscript.parent
-                        / repository.get_clean_script_name(self._config.encode_tilde)
-                    )
-                    fp.write(f"sh '{clean_script}'\n")
-
-            self._config.cleanscript.chmod(0o750)
-
-        if self._config.write_file_lists:
-            with ExitStack() as stack:
-                fp_all = stack.enter_context(
-                    open(self._config.var_path / "ALL", "wt", encoding="utf-8")
-                )
-                fp_new = stack.enter_context(
-                    open(self._config.var_path / "NEW", "wt", encoding="utf-8")
-                )
-
-                fp_hash_types: dict[HashType, IO[str]] = {}
-                for hash_type in HashType:
-                    fp_hash_types[hash_type] = stack.enter_context(
-                        open(
-                            self._config.var_path / hash_type.name,
-                            "wt",
-                            encoding="utf-8",
+            if not self._config.autoclean and any(
+                r.clean for r in self._config.repositories.values()
+            ):
+                self._log.info(f"Writing clean script {self._config.cleanscript}")
+                with open(self._config.cleanscript, "wt", encoding="utf-8") as fp:
+                    fp.write(
+                        "\n".join(
+                            [
+                                "#!/bin/sh",
+                                "set -e",
+                                "",
+                            ]
                         )
                     )
 
-                for mirror in mirrors:
-                    for download_variant in mirror.get_downloaded_files():
-                        fp_all.write(f"{download_variant.path}{os.linesep}")
-                        fp_new.write(
-                            mirror.get_repository().url.for_path(download_variant.path)
-                            + os.linesep
+                    for repository in self._config.repositories.values():
+                        if not repository.clean:
+                            continue
+
+                        clean_script = (
+                            self._config.cleanscript.parent
+                            / repository.get_clean_script_name(
+                                self._config.encode_tilde
+                            )
+                        )
+                        fp.write(f"sh '{clean_script}'\n")
+
+                self._config.cleanscript.chmod(0o750)
+
+            if self._config.write_file_lists:
+                with ExitStack() as stack:
+                    fp_all = stack.enter_context(
+                        open(self._config.var_path / "ALL", "wt", encoding="utf-8")
+                    )
+                    fp_new = stack.enter_context(
+                        open(self._config.var_path / "NEW", "wt", encoding="utf-8")
+                    )
+
+                    fp_hash_types: dict[HashType, IO[str]] = {}
+                    for hash_type in HashType:
+                        fp_hash_types[hash_type] = stack.enter_context(
+                            open(
+                                self._config.var_path / hash_type.name,
+                                "wt",
+                                encoding="utf-8",
+                            )
                         )
 
-                        self._write_hashsums(fp_hash_types, download_variant)
+                    for mirror in mirrors:
+                        for download_variant in mirror.get_downloaded_files():
+                            fp_all.write(f"{download_variant.path}{os.linesep}")
+                            fp_new.write(
+                                mirror.get_repository().url.for_path(
+                                    download_variant.path
+                                )
+                                + os.linesep
+                            )
 
-                    for download_variant in mirror.get_unmodified_files():
-                        self._write_hashsums(fp_hash_types, download_variant)
+                            self._write_hashsums(fp_hash_types, download_variant)
 
-        if self._config.run_postmirror:
-            if not self._config.postmirror_script.is_file():
-                self._log.error(
-                    f"Post Mirror script is missing: {self._config.postmirror_script}"
-                )
-            else:
-                self._log.info(
-                    "Running the Post Mirror script"
-                    f" {self._config.postmirror_script}..."
-                )
-                args = [self._config.postmirror_script]
-                if not os.access(self._config.postmirror_script, os.X_OK):
-                    args = ["/bin/sh"] + args
+                        for download_variant in mirror.get_unmodified_files():
+                            self._write_hashsums(fp_hash_types, download_variant)
 
-                process = await asyncio.create_subprocess_exec(
-                    *args,
-                    stdout=None,
-                    stderr=None,
-                    env=self._config.as_environment(),
-                )
-                await process.wait()
+            if self._config.run_postmirror:
+                if not self._config.postmirror_script.is_file():
+                    self._log.error(
+                        "Post Mirror script is missing: "
+                        f"{self._config.postmirror_script}"
+                    )
+                else:
+                    self._log.info(
+                        "Running the Post Mirror script"
+                        f" {self._config.postmirror_script}..."
+                    )
+                    args = [self._config.postmirror_script]
+                    if not os.access(self._config.postmirror_script, os.X_OK):
+                        args = ["/bin/sh"] + args
 
-                self._log.info(
-                    "Post Mirror script has completed. See above output for any"
-                    " possible errors."
-                )
+                    process = await asyncio.create_subprocess_exec(
+                        *args,
+                        stdout=None,
+                        stderr=None,
+                        env=self._config.as_environment(),
+                    )
+                    await process.wait()
 
-        self._metrics_collector.shutdown()
+                    self._log.info(
+                        "Post Mirror script has completed. See above output for any"
+                        " possible errors."
+                    )
 
-        self.unlock()
+            self._metrics_collector.shutdown()
 
         if self._error:
             self._log.error(
@@ -773,26 +776,23 @@ class APTMirror:
     def get_lock_file(self):
         return self._config.var_path / self.LOCK_FILE
 
+    @contextmanager
     def lock(self):
         lock_file = self.get_lock_file()
-        self._lock_fd = open(lock_file, "wb")
-        try:
-            flock(self._lock_fd, LOCK_EX | LOCK_NB)
-        except OSError as ex:
-            if ex.errno == EWOULDBLOCK:
-                self.die("apt-mirror is already running, exiting")
+        with open(lock_file, "wb") as fp:
+            try:
+                flock(fp, LOCK_EX | LOCK_NB)
+                yield
+            except OSError as ex:
+                if ex.errno == EWOULDBLOCK:
+                    self.die("apt-mirror is already running, exiting")
 
-            self.die(
-                f"Unable to obtain lock on {lock_file}: error {ex.errno}:"
-                f" {os.strerror(ex.errno)}"
-            )
+                self.die(
+                    f"Unable to obtain lock on {lock_file}: error {ex.errno}:"
+                    f" {os.strerror(ex.errno)}"
+                )
 
-    def unlock(self):
-        if self._lock_fd:
-            self._lock_fd.close()
-            self._lock_fd = None
-
-            self.get_lock_file().unlink(missing_ok=True)
+        lock_file.unlink(missing_ok=True)
 
     def _write_hashsums(
         self,

@@ -20,9 +20,6 @@
 
                 "isort.check": true,
 
-                "editor.codeActionsOnSave": {
-                    "source.organizeImports": true
-                },
                 "json.format.enable": false,
 
                 "python.analysis.packageIndexDepths": [
@@ -60,20 +57,21 @@
                 ],
 
                 "python.defaultInterpreterPath": "/usr/local/bin/python",
-                "python.formatting.provider": "black",
+                "python.formatting.provider": "ruff",
                 "[python]": {
-                    "editor.defaultFormatter": "ms-python.black-formatter",
+                    "editor.codeActionsOnSave": {
+                        "source.fixAll.ruff": "always",
+                        "source.organizeImports.ruff": "always"
+                    },
                     "editor.formatOnSave": true
                 }
             },
             "extensions": [
                 "ms-azuretools.vscode-docker",
                 "ms-python.python",
-                "ms-python.black-formatter",
-                "ms-python.flake8",
-                "ms-python.isort",
                 "ms-python.pylint",
                 "ms-python.vscode-pylance",
+                "charliermarsh.ruff",
                 "tamasfe.even-better-toml"
             ]
         }

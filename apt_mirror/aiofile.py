@@ -1,9 +1,11 @@
 # SPDX-License-Identifer: GPL-3.0-or-later
 
+import contextlib
 from abc import ABC, abstractmethod
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import AsyncIterator, Protocol
+from typing import Protocol
 
 from .logs import LoggerFactory
 
@@ -25,8 +27,8 @@ class BaseAsyncIOFileWriterFactory(ABC):
 
         return clazz
 
-    async def test_storage(self, *test_paths: Path):
-        pass
+    @abstractmethod
+    async def test_storage(self, *test_paths: Path): ...
 
     @asynccontextmanager
     @abstractmethod
@@ -67,10 +69,8 @@ try:
                         )
                         break
                 finally:
-                    try:
+                    with contextlib.suppress(OSError):
                         path.unlink(missing_ok=True)
-                    except OSError:
-                        pass
 
         @asynccontextmanager
         async def open(self, path: Path) -> AsyncIterator[AsyncSupportsWrite]:

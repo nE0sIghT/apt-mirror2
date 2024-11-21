@@ -1,7 +1,8 @@
 # SPDX-License-Identifer: GPL-3.0-or-later
 
 from abc import ABC, abstractmethod
-from typing import Any, Generator, Iterable
+from collections.abc import Generator, Iterable
+from typing import Any
 
 from .download.downloader import Downloader
 from .repository import BaseRepository
@@ -16,7 +17,7 @@ class BaseDownloaderCollector(ABC):
     def prometheus_available(self) -> bool:
         return False
 
-    def shutdown(self):
+    def shutdown(self):  # noqa: B027
         pass
 
     def add_downloader(self, repository: BaseRepository, downloader: Downloader):

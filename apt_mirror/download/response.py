@@ -1,8 +1,8 @@
 # SPDX-License-Identifer: GPL-3.0-or-later
 
+from collections.abc import AsyncIterator, Callable
 from dataclasses import dataclass
 from datetime import datetime
-from typing import AsyncIterator, Callable
 
 
 @dataclass

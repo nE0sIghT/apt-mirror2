@@ -8,7 +8,8 @@
 
 import asyncio
 import sys
-from typing import TYPE_CHECKING, Any, Callable, Coroutine, Optional, TypeVar
+from collections.abc import Callable, Coroutine
+from typing import TYPE_CHECKING, Any, TypeVar
 
 _T = TypeVar("_T")
 
@@ -47,8 +48,8 @@ try:
         def run(  # type: ignore
             main: Coroutine[Any, Any, _T],
             *,
-            loop_factory: Optional[Callable[[], Loop]] = uvloop.new_event_loop,
-            debug: Optional[bool] = None,
+            loop_factory: Callable[[], Loop] | None = uvloop.new_event_loop,
+            debug: bool | None = None,
         ) -> _T:  # type: ignore
             """The preferred way of running a coroutine with uvloop."""
 

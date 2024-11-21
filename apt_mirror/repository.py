@@ -7,11 +7,12 @@ import lzma
 import os
 import shutil
 from abc import ABC, abstractmethod
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from enum import Enum
 from mmap import MADV_SEQUENTIAL, MAP_PRIVATE, mmap
 from pathlib import Path
-from typing import IO, Any, Iterable, Sequence
+from typing import IO, Any
 
 from debian.deb822 import Release
 
@@ -119,12 +120,14 @@ class IndexFileParser(ABC):
                 continue
 
             try:
-                with open_function(compressed_file, "rb") as source_fp:
-                    with open(file, "wb") as target_fp:
-                        shutil.copyfileobj(source_fp, target_fp)
-                        shutil.copystat(compressed_file, file)
+                with (
+                    open_function(compressed_file, "rb") as source_fp,
+                    open(file, "wb") as target_fp,
+                ):
+                    shutil.copyfileobj(source_fp, target_fp)
+                    shutil.copystat(compressed_file, file)
 
-                        return True
+                    return True
             except (lzma.LZMAError, OSError):
                 return False
 
@@ -537,8 +540,10 @@ class BaseRepository(ABC):
                                 )
                             )
 
-                        codename_metadata_files[uncompressed_path].ignore_errors = (
-                            should_ignore_errors(self.ignore_errors, uncompressed_path)
+                        codename_metadata_files[
+                            uncompressed_path
+                        ].ignore_errors = should_ignore_errors(
+                            self.ignore_errors, uncompressed_path
                         )
 
             if not codename_metadata_files:

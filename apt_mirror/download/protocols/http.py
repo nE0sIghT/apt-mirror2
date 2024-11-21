@@ -86,7 +86,9 @@ class HTTPDownloader(Downloader):
     @asynccontextmanager
     async def stream(self, source_path: Path):
         try:
-            async with (self._httpx.stream("GET", str(source_path)) as response,):
+            async with (
+                self._httpx.stream("GET", str(source_path)) as response,
+            ):
                 date: datetime | None
                 try:
                     date = parsedate_to_datetime(  # type: ignore

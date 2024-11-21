@@ -1,11 +1,11 @@
 # SPDX-License-Identifer: GPL-3.0-or-later
 
 import subprocess
-from collections.abc import MutableMapping
+from collections.abc import Iterator, MutableMapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from string import Template
-from typing import Any, Iterator
+from typing import Any
 
 from apt_mirror.download import URL, Proxy
 from apt_mirror.repository import (
@@ -278,7 +278,7 @@ class Config:
         config_directory = config_file.with_name(f"{config_file.name}.d")
         if config_directory.is_dir():
             for file in config_directory.glob("*"):
-                if not file.is_file() or not file.suffix == ".list":
+                if not file.is_file() or file.suffix != ".list":
                     continue
 
                 self._files.append(file)

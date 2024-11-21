@@ -2,10 +2,10 @@
 
 import itertools
 import re
+from collections.abc import Generator
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Generator
 from urllib.parse import urlparse
 
 from .download.url import URL

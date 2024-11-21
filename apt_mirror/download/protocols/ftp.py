@@ -1,10 +1,10 @@
 # SPDX-License-Identifer: GPL-3.0-or-later
 
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
-from typing import AsyncIterator
 
 import aioftp  # type: ignore
 from aioftp.errors import StatusCodeError  # type: ignore
@@ -94,7 +94,9 @@ class FTPDownloader(Downloader):
         return do_parse_list_line
 
     async def _get_stat(
-        self, ftp: aioftp.Client, path: Path  # type: ignore
+        self,
+        ftp: aioftp.Client,
+        path: Path,  # type: ignore
     ) -> FTPStat:  # type: ignore
         ftp_stat = FTPStat()
 
@@ -132,9 +134,7 @@ class FTPDownloader(Downloader):
             except (AttributeError, KeyError, ValueError):
                 pass
         except (StatusCodeError, FTPFileMissingException) as ex:
-            if isinstance(ex, FTPFileMissingException) or ex.received_codes[
-                -1
-            ].matches(  # type: ignore
+            if isinstance(ex, FTPFileMissingException) or ex.received_codes[-1].matches(  # type: ignore
                 "550"
             ):
                 raise FTPFileMissingException() from ex

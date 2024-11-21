@@ -29,13 +29,11 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "black==24.10.0",
-    "flake8==7.1.1",
-    "isort==5.13.2",
     "pip-tools==7.4.1",
     "pyinstaller==6.11.0",
     "pylint==3.3.1",
     "pytest==8.3.3",
+    "ruff==0.7.4",
 ]
 aiofiles = [
     "aiofiles==24.1.0"
@@ -59,15 +57,6 @@ Changelog = "https://gitlab.com/apt-mirror2/apt-mirror2/-/commits/master/"
 
 [tool.setuptools.packages.find]
 include = ["apt_mirror*"]
-
-[tool.black]
-preview = true
-enable-unstable-feature = ["string_processing"]
-
-[tool.isort]
-profile = "black"
-default_section = "THIRDPARTY"
-known_first_party = "apt_mirror"
 
 [tool.pylint.main]
 ignore-patterns = "^\\.#"
@@ -100,4 +89,32 @@ pythonpath = [
 ]
 testpaths = [
     "tests",
+]
+
+[tool.ruff]
+target-version = "py310"
+
+[tool.ruff.lint.isort]
+known-first-party = ["apt_mirror"]
+
+[tool.ruff.lint]
+select = [
+    # pycodestyle
+    "E",
+    # Pyflakes
+    "F",
+    # pyupgrade
+    "UP",
+    # flake8-bugbear
+    "B",
+    # flake8-simplify
+    "SIM",
+    # isort
+    "I",
+]
+ignore = [
+    # We don't want to replace huge `if` statements with return
+    "SIM103",
+    # Explicit is better than implicit
+    "UP015",
 ]

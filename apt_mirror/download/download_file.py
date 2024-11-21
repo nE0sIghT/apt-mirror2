@@ -1,9 +1,9 @@
 # SPDX-License-Identifer: GPL-3.0-or-later
 
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Iterable, Sequence
 
 
 class HashType(Enum):
@@ -76,9 +76,7 @@ class DownloadFileCompressionVariant:
             paths.append(self.path)
 
         if self.use_by_hash:
-            paths += [
-                self._get_hashed_path(hash_type) for hash_type in self.hashes.keys()
-            ]
+            paths += [self._get_hashed_path(hash_type) for hash_type in self.hashes]
 
         if self.use_by_hash:
             paths.append(self.path)

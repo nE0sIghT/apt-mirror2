@@ -6,7 +6,7 @@
     "configurations": [
         {
             "name": "Run mirror",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/apt_mirror.py",
             "args": [
@@ -17,7 +17,7 @@
         },
         {
             "name": "Python: Current File",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
@@ -25,7 +25,7 @@
         },
         {
             "name": "Python: test",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "pytest",
             "justMyCode": false

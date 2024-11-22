@@ -23,6 +23,7 @@ class HTTPDownloader(Downloader):
 
         proxy_mounts: dict[str, httpx.AsyncHTTPTransport] = {}
         for scheme in ("http://", "https://"):
+            proxy = self._proxy.for_scheme(scheme)
             proxy_mounts[scheme] = httpx.AsyncHTTPTransport(
                 verify=self._verify_ca_certificate,
                 http1=True,
@@ -32,7 +33,7 @@ class HTTPDownloader(Downloader):
                     max_keepalive_connections=32,
                     keepalive_expiry=5,
                 ),
-                proxy=self._proxy.for_scheme(scheme),
+                proxy=httpx.Proxy(proxy) if proxy else None,
                 retries=5,
             )
 

@@ -30,6 +30,14 @@ SHELL ["/bin/sh", "-ex", "-c"]
 
 COPY --from=builder /dist/apt-mirror /usr/local/bin/apt-mirror
 
+RUN \
+    if which apk > /dev/null; then \
+        apk upgrade --no-cache ;\
+    else \
+        apt-get -y update ;\
+        apt-get -y dist-upgrade ;\
+        rm -rf /var/lib/apt/lists/* ;\
+    fi
 RUN apt-mirror --version
 
 ENTRYPOINT [ "apt-mirror" ]

@@ -38,12 +38,35 @@ class BaseAsyncIOFileWriterFactory(ABC):
 
 try:
     from aiofile import async_open as aiofile_open
-    from caio import linux_aio_asyncio, thread_aio_asyncio
+    from caio import (
+        AsyncioContext,
+        linux_aio_asyncio,
+        python_aio_asyncio,
+        thread_aio_asyncio,
+    )
 
     class AsyncIOFileFactory(BaseAsyncIOFileWriterFactory):  # type: ignore
         def __init__(self) -> None:
             super().__init__()
-            self._context = linux_aio_asyncio.AsyncioContext()
+            self._context = self._get_supported_context()
+
+        def _get_supported_context(
+            self, fallback_context: bool = False
+        ) -> AsyncioContext:
+            if linux_aio_asyncio and not fallback_context:
+                return linux_aio_asyncio.AsyncioContext()
+            elif thread_aio_asyncio:
+                self._log.warning(
+                    "Native Linux AIO doesn't supported on this system. "
+                    "Fallback to threaded AIO implementation."
+                )
+                return thread_aio_asyncio.AsyncioContext()
+            else:
+                self._log.warning(
+                    "Nor native Linux AIO nor threaded AIO implementation are "
+                    "supported on this system. Fallback to pure Python implementation."
+                )
+                return python_aio_asyncio.AsyncioContext()
 
         @asynccontextmanager
         async def _open(
@@ -62,7 +85,9 @@ try:
                     path.unlink()
                 except SystemError as e:
                     if "not supported" in str(e):
-                        self._context = thread_aio_asyncio.AsyncioContext()
+                        self._context = self._get_supported_context(
+                            fallback_context=True
+                        )
                         self._log.warning(
                             f"Linux AIO check failed for path {path}. Falling back to"
                             " non-AIO threaded IO implementation."

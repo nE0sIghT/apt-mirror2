@@ -54,16 +54,19 @@ try:
             if linux_aio_asyncio and not fallback_context:
                 return linux_aio_asyncio.AsyncioContext()
             elif thread_aio_asyncio:
-                self._log.warning(
-                    "Native Linux AIO doesn't supported on this system. "
-                    "Fallback to threaded AIO implementation."
-                )
+                if not fallback_context:
+                    self._log.warning(
+                        "Native Linux AIO doesn't supported on this system. "
+                        "Fallback to threaded AIO implementation."
+                    )
                 return thread_aio_asyncio.AsyncioContext()
             else:
-                self._log.warning(
-                    "Nor native Linux AIO nor threaded AIO implementation are "
-                    "supported on this system. Fallback to pure Python implementation."
-                )
+                if not fallback_context:
+                    self._log.warning(
+                        "Nor native Linux AIO nor threaded AIO implementation are "
+                        "supported on this system. Fallback to pure Python "
+                        "implementation."
+                    )
                 return python_aio_asyncio.AsyncioContext()
 
         @asynccontextmanager
@@ -88,7 +91,7 @@ try:
                         )
                         self._log.warning(
                             f"Linux AIO check failed for path {path}. Falling back to"
-                            " non-AIO threaded IO implementation."
+                            " non-AIO IO implementation."
                         )
                         break
                 finally:

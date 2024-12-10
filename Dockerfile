@@ -8,7 +8,11 @@ COPY ./ /tmp/apt-mirror2/
 
 RUN \
     if which apk > /dev/null; then \
-        apk add --no-cache binutils ;\
+        apk add --no-cache \
+            binutils \
+            gcc \
+            linux-headers \
+            musl-dev ;\
     fi ;\
     cd /tmp/apt-mirror2 ;\
     pip --disable-pip-version-check --no-cache-dir install \

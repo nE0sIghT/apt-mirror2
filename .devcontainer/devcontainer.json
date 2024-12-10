@@ -13,13 +13,6 @@
     "customizations": {
         "vscode": {
             "settings": {
-                "black-formatter.args": [
-                    "--preview"
-                ],
-                "black-formatter.importStrategy": "fromEnvironment",
-
-                "isort.check": true,
-
                 "json.format.enable": false,
 
                 "python.analysis.packageIndexDepths": [

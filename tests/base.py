@@ -8,6 +8,7 @@ from apt_mirror.repository import BaseRepository, FlatRepository, Repository
 
 class BaseTest(TestCase):
     TEST_DATA = Path(__file__).parent / "data"
+    maxDiff = None
 
     def get_config(self, name: str, config_name: str = "mirror.list"):
         return Config(self.TEST_DATA / name / config_name)

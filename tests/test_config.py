@@ -83,6 +83,10 @@ class TestConfig(BaseTest):
                 "noble-security",
                 "noble-updates",
                 "noble-backports",
+                "oracular",
+                "oracular-security",
+                "oracular-updates",
+                "oracular-backports",
             ),
         )
 
@@ -353,3 +357,98 @@ class TestConfig(BaseTest):
         self.assertIn("esource2", repository.package_filter.exclude_source_name)
         self.assertIn("ibinary2", repository.package_filter.include_binary_packages)
         self.assertIn("ebinary2", repository.package_filter.exclude_binary_packages)
+
+    def test_redundant_sources(self):
+        config = self.get_config("MixedConfig")
+
+        debian_security = self.ensure_repository(
+            config.repositories["http://ftp.debian.org/debian-security"]
+        )
+
+        self.assertCountEqual(
+            [str(s) for s in debian_security.sources_files],
+            (
+                "dists/bullseye-security/main/source/Sources",
+                "dists/bullseye-security/contrib/source/Sources",
+                "dists/bullseye-security/non-free-firmware/source/Sources",
+                "dists/bullseye-security/non-free/source/Sources",
+                "dists/bullseye-security/main/debian-installer/source/Sources",
+            ),
+        )
+
+    def test_redundant_packages(self):
+        config = self.get_config("MixedConfig")
+
+        ubuntu = self.ensure_repository(
+            config.repositories["http://archive.ubuntu.com/ubuntu"]
+        )
+
+        self.assertCountEqual(
+            [str(s) for s in ubuntu.packages_files],
+            (
+                "dists/mantic/main/binary-amd64/Packages",
+                "dists/mantic/main/binary-all/Packages",
+                "dists/mantic/restricted/binary-amd64/Packages",
+                "dists/mantic/restricted/binary-all/Packages",
+                "dists/mantic/universe/binary-amd64/Packages",
+                "dists/mantic/universe/binary-all/Packages",
+                "dists/mantic/multiverse/binary-amd64/Packages",
+                "dists/mantic/multiverse/binary-all/Packages",
+                "dists/mantic-security/main/binary-amd64/Packages",
+                "dists/mantic-security/main/binary-all/Packages",
+                "dists/mantic-security/restricted/binary-amd64/Packages",
+                "dists/mantic-security/restricted/binary-all/Packages",
+                "dists/mantic-security/universe/binary-amd64/Packages",
+                "dists/mantic-security/universe/binary-all/Packages",
+                "dists/mantic-security/multiverse/binary-amd64/Packages",
+                "dists/mantic-security/multiverse/binary-all/Packages",
+                "dists/mantic-updates/main/binary-amd64/Packages",
+                "dists/mantic-updates/main/binary-all/Packages",
+                "dists/mantic-updates/restricted/binary-amd64/Packages",
+                "dists/mantic-updates/restricted/binary-all/Packages",
+                "dists/mantic-updates/universe/binary-amd64/Packages",
+                "dists/mantic-updates/universe/binary-all/Packages",
+                "dists/mantic-updates/multiverse/binary-amd64/Packages",
+                "dists/mantic-updates/multiverse/binary-all/Packages",
+                "dists/mantic-backports/main/binary-amd64/Packages",
+                "dists/mantic-backports/main/binary-all/Packages",
+                "dists/mantic-backports/restricted/binary-amd64/Packages",
+                "dists/mantic-backports/restricted/binary-all/Packages",
+                "dists/mantic-backports/universe/binary-amd64/Packages",
+                "dists/mantic-backports/universe/binary-all/Packages",
+                "dists/mantic-backports/multiverse/binary-amd64/Packages",
+                "dists/mantic-backports/multiverse/binary-all/Packages",
+                "dists/noble/main/binary-amd64/Packages",
+                "dists/noble/main/binary-all/Packages",
+                "dists/noble/restricted/binary-amd64/Packages",
+                "dists/noble/restricted/binary-all/Packages",
+                "dists/noble/universe/binary-amd64/Packages",
+                "dists/noble/universe/binary-all/Packages",
+                "dists/noble/multiverse/binary-amd64/Packages",
+                "dists/noble/multiverse/binary-all/Packages",
+                "dists/noble-security/main/binary-amd64/Packages",
+                "dists/noble-security/main/binary-all/Packages",
+                "dists/noble-security/restricted/binary-amd64/Packages",
+                "dists/noble-security/restricted/binary-all/Packages",
+                "dists/noble-security/universe/binary-amd64/Packages",
+                "dists/noble-security/universe/binary-all/Packages",
+                "dists/noble-security/multiverse/binary-amd64/Packages",
+                "dists/noble-security/multiverse/binary-all/Packages",
+                "dists/noble-updates/main/binary-amd64/Packages",
+                "dists/noble-updates/main/binary-all/Packages",
+                "dists/noble-updates/restricted/binary-amd64/Packages",
+                "dists/noble-updates/restricted/binary-all/Packages",
+                "dists/noble-updates/universe/binary-amd64/Packages",
+                "dists/noble-updates/universe/binary-all/Packages",
+                "dists/noble-updates/multiverse/binary-amd64/Packages",
+                "dists/noble-updates/multiverse/binary-all/Packages",
+                "dists/noble-backports/main/binary-amd64/Packages",
+                "dists/noble-backports/main/binary-all/Packages",
+                "dists/noble-backports/restricted/binary-amd64/Packages",
+                "dists/noble-backports/restricted/binary-all/Packages",
+                "dists/noble-backports/universe/binary-amd64/Packages",
+                "dists/noble-backports/universe/binary-all/Packages",
+                "dists/noble-backports/multiverse/binary-amd64/Packages",
+                "dists/noble-backports/multiverse/binary-all/Packages",
+            ),
+        )

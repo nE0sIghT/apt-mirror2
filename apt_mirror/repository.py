@@ -856,6 +856,7 @@ class Repository(BaseRepository):
             self.DISTS / codename.as_string() / component.name / "source" / "Sources"
             for codename in self.codenames.values()
             for component in codename.components.values()
+            if component.mirror_source
         ]
 
     @property
@@ -882,6 +883,7 @@ class Repository(BaseRepository):
                 )
                 for codename in self.codenames.values()
                 for component in codename.components.values()
+                if component.arches
             )
         ]
 

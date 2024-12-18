@@ -367,7 +367,7 @@ class TestRepository(BaseTest):
         )
 
     def test_dist_upgrader(self):
-        config = self.get_config("DebianBookworm", config_name="mirror6.list")
+        config = self.get_config("MixedConfig", config_name="mirror1.list")
 
         repository = self.ensure_repository(
             config.repositories["http://ftp.debian.org/debian"]
@@ -377,7 +377,7 @@ class TestRepository(BaseTest):
         files = set(
             f.path
             for f in repository.get_metadata_files(
-                self.TEST_DATA / "DebianBookworm", False, set()
+                self.TEST_DATA / "MixedConfig", False, set()
             )
         )
 
@@ -385,6 +385,38 @@ class TestRepository(BaseTest):
 
         self.assertIn(base_dist_upgrader_path / "bookworm.tar.gz", files)
         self.assertIn(base_dist_upgrader_path / "bookworm.tar.gz.gpg", files)
+
+        for file in Repository.DIST_UPGRADER_ANNOUNCEMENTS:
+            self.assertIn(
+                base_dist_upgrader_path / file,
+                files,
+            )
+            self.assertIn(
+                (base_dist_upgrader_path / file).with_suffix(".html"),
+                files,
+            )
+
+    def test_dist_upgrader_updates(self):
+        config = self.get_config("MixedConfig", config_name="mirror1.list")
+
+        repository = self.ensure_repository(
+            config.repositories["https://archive.ubuntu.com/ubuntu"]
+        )
+        repository.mirror_path = Path("repo")
+
+        files = set(
+            f.path
+            for f in repository.get_metadata_files(
+                self.TEST_DATA / "MixedConfig", False, set()
+            )
+        )
+
+        base_dist_upgrader_path = Path(
+            "dists/bionic-updates/main/dist-upgrader-all/current"
+        )
+
+        self.assertIn(base_dist_upgrader_path / "bionic.tar.gz", files)
+        self.assertIn(base_dist_upgrader_path / "bionic.tar.gz.gpg", files)
 
         for file in Repository.DIST_UPGRADER_ANNOUNCEMENTS:
             self.assertIn(

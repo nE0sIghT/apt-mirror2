@@ -1,0 +1,5 @@
+deb [ arch=amd64 ] http://ftp.debian.org/debian bookworm main
+deb [ arch=amd64 ] https://archive.ubuntu.com/ubuntu bionic-updates main
+
+mirror_dist_upgrader http://ftp.debian.org/debian
+mirror_dist_upgrader https://archive.ubuntu.com/ubuntu

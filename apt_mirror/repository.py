@@ -746,14 +746,15 @@ class Repository(BaseRepository):
                     )
                 )
 
+            metadata_filename = codename.codename.split("-", maxsplit=1)[0]
             metadata_files.add(
                 DownloadFile.from_path(
-                    dist_upgrader_path / f"{codename.codename}.tar.gz", False, True
+                    dist_upgrader_path / f"{metadata_filename}.tar.gz", False, True
                 )
             )
             metadata_files.add(
                 DownloadFile.from_path(
-                    dist_upgrader_path / f"{codename.codename}.tar.gz.gpg", False, True
+                    dist_upgrader_path / f"{metadata_filename}.tar.gz.gpg", False, True
                 )
             )
 

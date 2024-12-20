@@ -9,6 +9,7 @@ import shutil
 import signal
 import sys
 from collections.abc import Awaitable, Iterable, Sequence
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import ExitStack, contextmanager
 from errno import EWOULDBLOCK
 from fcntl import LOCK_EX, LOCK_NB, flock
@@ -424,11 +425,14 @@ class RepositoryMirror:
         )
 
         self._log.info(f"Processing metadata for repository {self._repository}")
-        pool_files = self._repository.get_pool_files(
-            self._config.skel_path,
-            self._config.encode_tilde,
-            self._downloader.get_missing_sources(),
-        )
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            pool_files = await asyncio.get_running_loop().run_in_executor(
+                executor,
+                self._repository.get_pool_files,
+                self._config.skel_path,
+                self._config.encode_tilde,
+                self._downloader.get_missing_sources(),
+            )
 
         self._downloader.add(*pool_files)
 

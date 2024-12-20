@@ -21,6 +21,12 @@ class HTTPDownloader(Downloader):
         if not base_url.endswith("/"):
             base_url += "/"
 
+        http_limits = httpx.Limits(
+            max_connections=256,
+            max_keepalive_connections=32,
+            keepalive_expiry=5,
+        )
+
         proxy_mounts: dict[str, httpx.AsyncHTTPTransport] = {}
         for scheme in ("http://", "https://"):
             proxy = self._proxy.for_scheme(scheme)
@@ -28,11 +34,7 @@ class HTTPDownloader(Downloader):
                 verify=self._verify_ca_certificate,
                 http1=True,
                 http2=True,
-                limits=httpx.Limits(
-                    max_connections=256,
-                    max_keepalive_connections=32,
-                    keepalive_expiry=5,
-                ),
+                limits=http_limits,
                 proxy=httpx.Proxy(proxy) if proxy else None,
                 retries=5,
             )
@@ -62,11 +64,7 @@ class HTTPDownloader(Downloader):
                 cert=client_certificate,
                 http1=True,
                 http2=True,
-                limits=httpx.Limits(
-                    max_connections=256,
-                    max_keepalive_connections=32,
-                    keepalive_expiry=5,
-                ),
+                limits=http_limits,
                 retries=5,
             ),
             max_redirects=5,

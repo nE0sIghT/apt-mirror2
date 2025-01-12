@@ -243,6 +243,7 @@ update docker hub readme:
            '{ "username": $username, "password": $password }' | \
         curl -H "Content-Type: application/json" \
              -X POST \
+             --fail \
              --data-binary @- \
              'https://hub.docker.com/v2/users/login' | \
         jq -r '.token' \

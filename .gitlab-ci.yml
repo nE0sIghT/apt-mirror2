@@ -255,7 +255,7 @@ update docker hub readme:
            --header "Authorization: Bearer $token" \
            --fail-with-body \
            --data-binary @- \
-           "https://hub.docker.com/v2/repositories/${IMAGE_NAME}/"
+           "https://hub.docker.com/v2/repositories/${DOCKER_HUB_IMAGE_NAME##docker.io/}/"
 
 publish to pypi:
   stage: deploy

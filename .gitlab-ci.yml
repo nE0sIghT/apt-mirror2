@@ -239,7 +239,7 @@ update docker hub readme:
       token="$( \
         jq -n \
            --arg username "${DOCKER_HUB_USERNAME}" \
-           --arg password "${DOCKER_HUB_PASSWORD}" \
+           --rawfile password "${DOCKER_HUB_PASSWORD}" \
            '{ "username": $username, "password": $password }' | \
         curl -H "Content-Type: application/json" \
              -X POST \
@@ -248,7 +248,6 @@ update docker hub readme:
              'https://hub.docker.com/v2/users/login' | \
         jq -r '.token' \
       )"
-    - echo "https://hub.docker.com/v2/repositories/${DOCKER_HUB_IMAGE_NAME##docker.io/}/"
     - >-
       jq -n \
          --arg readme "$(cat README.md)" \

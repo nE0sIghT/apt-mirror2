@@ -1,6 +1,7 @@
 ---
 variables:
   FF_NETWORK_PER_BUILD: 'true'
+  FF_SCRIPT_SECTIONS: 'true'
   PYTHON_VERSION: '3.12'
   PYTHON_IMAGE: python
   DOCKER_HUB_IMAGE_NAME: docker.io/aptmirror/apt-mirror2
@@ -246,6 +247,7 @@ update docker hub readme:
              'https://hub.docker.com/v2/users/login' | \
         jq -r '.token' \
       )"
+    - echo "https://hub.docker.com/v2/repositories/${DOCKER_HUB_IMAGE_NAME##docker.io/}/"
     - >-
       jq -n \
          --arg readme "$(cat README.md)" \

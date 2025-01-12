@@ -251,7 +251,7 @@ update docker hub readme:
          --arg readme "$(cat README.md)" \
          '{ "full_description": $readme }' | \
       curl -X PATCH \
-           --header "Content-Type: application/json"\
+           --header "Content-Type: application/json" \
            --header "Authorization: Bearer $token" \
            --fail-with-body \
            --data-binary @- \

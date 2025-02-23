@@ -8,6 +8,7 @@ import shutil
 from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -24,41 +25,31 @@ from .slow_rate_protector import SlowRateProtectorFactory
 from .url import URL
 
 
+@dataclass
+class DownloaderSettings:
+    url: URL
+    target_root_path: Path
+    aiofile_factory: BaseAsyncIOFileWriterFactory
+    proxy: Proxy
+    user_agent: str
+    semaphore: asyncio.Semaphore
+    slow_rate_protector_factory: SlowRateProtectorFactory
+    rate_limiter: AsyncLimiter | None = None
+    verify_ca_certificate: bool | str = True
+    client_certificate: str | None = None
+    client_private_key: str | None = None
+
+
 class Downloader(ABC):
     BUFFER_SIZE = 8 * 1024 * 1024
 
-    def __init__(
-        self,
-        *,
-        url: URL,
-        target_root_path: Path,
-        aiofile_factory: BaseAsyncIOFileWriterFactory,
-        proxy: Proxy,
-        user_agent: str,
-        semaphore: asyncio.Semaphore,
-        slow_rate_protector_factory: SlowRateProtectorFactory,
-        rate_limiter: AsyncLimiter | None = None,
-        verify_ca_certificate: bool | str = True,
-        client_certificate: str | None = None,
-        client_private_key: str | None = None,
-    ):
+    def __init__(self, *, settings: DownloaderSettings):
         self._log = LoggerFactory.get_logger(
             self,
-            logger_id=url,
+            logger_id=settings.url,
         )
 
-        self._url = url
-        self._target_root_path = target_root_path
-        self._aiofile_factory = aiofile_factory
-        self._semaphore = semaphore
-        self._slow_rate_protector_factory = slow_rate_protector_factory
-        self._rate_limiter = rate_limiter
-        self._proxy = proxy
-        self._user_agent = user_agent
-
-        self._verify_ca_certificate = verify_ca_certificate
-        self._client_certificate = client_certificate
-        self._client_private_key = client_private_key
+        self._settings = settings
 
         # Download queue. Reseted in download()
         self._sources: list[DownloadFile] = []
@@ -93,7 +84,7 @@ class Downloader(ABC):
         self._missing_sources: set[Path] = set()
 
     def set_target_path(self, path: Path):
-        self._target_root_path = path
+        self._settings.target_root_path = path
 
     def add(self, *args: DownloadFile):
         self._sources.extend(a for a in args)
@@ -162,7 +153,9 @@ class Downloader(ABC):
             file_unmodified = False
             if source_file.check_size:
                 for variant in source_file.iter_variants():
-                    target_path = self._target_root_path / variant.get_source_path()
+                    target_path = (
+                        self._settings.target_root_path / variant.get_source_path()
+                    )
 
                     try:
                         stat = target_path.stat()
@@ -248,12 +241,12 @@ class Downloader(ABC):
             expected_size = variant.size
 
             for source_path in variant.get_all_paths():
-                target_path = self._target_root_path / source_path
+                target_path = self._settings.target_root_path / source_path
 
                 tries = 10
                 while tries > 0:
                     async with (
-                        self._semaphore,
+                        self._settings.semaphore,
                         self.stream(source_path) as response,
                     ):
                         target_path.parent.mkdir(parents=True, exist_ok=True)
@@ -301,7 +294,7 @@ class Downloader(ABC):
                             continue
 
                         mirror_paths = [
-                            self._target_root_path / path
+                            self._settings.target_root_path / path
                             for path in variant.get_all_paths()
                         ]
 
@@ -323,17 +316,25 @@ class Downloader(ABC):
 
                         size = 0
                         target_path.unlink(missing_ok=True)
-                        async with self._aiofile_factory.open(target_path) as fp:
+                        async with self._settings.aiofile_factory.open(
+                            target_path
+                        ) as fp:
                             try:
+                                slow_rate_protector_factory = (
+                                    self._settings.slow_rate_protector_factory
+                                )
                                 slow_rate_protector = (
-                                    self._slow_rate_protector_factory.for_target(
+                                    slow_rate_protector_factory.for_target(
                                         variant.get_source_path()
                                     )
                                 )
                                 async for chunk in response.stream():
-                                    if self._rate_limiter:
-                                        await self._rate_limiter.acquire(
-                                            min(len(chunk), self._rate_limiter.max_rate)
+                                    if self._settings.rate_limiter:
+                                        await self._settings.rate_limiter.acquire(
+                                            min(
+                                                len(chunk),
+                                                self._settings.rate_limiter.max_rate,
+                                            )
                                         )
 
                                     size += len(chunk)

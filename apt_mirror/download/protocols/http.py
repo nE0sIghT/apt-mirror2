@@ -14,10 +14,10 @@ from ..response import DownloadResponse
 class HTTPDownloader(Downloader):
     def __post_init__(self):
         auth = None
-        if self._url.username and self._url.password:
-            auth = (self._url.username, self._url.password)
+        if self._settings.url.username and self._settings.url.password:
+            auth = (self._settings.url.username, self._settings.url.password)
 
-        base_url = str(self._url)
+        base_url = str(self._settings.url)
         if not base_url.endswith("/"):
             base_url += "/"
 
@@ -29,9 +29,9 @@ class HTTPDownloader(Downloader):
 
         proxy_mounts: dict[str, httpx.AsyncHTTPTransport] = {}
         for scheme in ("http://", "https://"):
-            proxy = self._proxy.for_scheme(scheme)
+            proxy = self._settings.proxy.for_scheme(scheme)
             proxy_mounts[scheme] = httpx.AsyncHTTPTransport(
-                verify=self._verify_ca_certificate,
+                verify=self._settings.verify_ca_certificate,
                 http1=True,
                 http2=True,
                 limits=http_limits,
@@ -40,14 +40,14 @@ class HTTPDownloader(Downloader):
             )
 
         client_certificate = None
-        if self._client_certificate:
-            if self._client_private_key:
+        if self._settings.client_certificate:
+            if self._settings.client_private_key:
                 client_certificate = (
-                    self._client_certificate,
-                    self._client_private_key,
+                    self._settings.client_certificate,
+                    self._settings.client_private_key,
                 )
             else:
-                client_certificate = self._client_certificate
+                client_certificate = self._settings.client_certificate
 
         self._httpx = httpx.AsyncClient(
             base_url=base_url,
@@ -60,7 +60,7 @@ class HTTPDownloader(Downloader):
             follow_redirects=True,
             mounts=proxy_mounts,
             transport=httpx.AsyncHTTPTransport(
-                verify=self._verify_ca_certificate,
+                verify=self._settings.verify_ca_certificate,
                 cert=client_certificate,
                 http1=True,
                 http2=True,
@@ -72,7 +72,7 @@ class HTTPDownloader(Downloader):
                 "Accept-Encoding": "identity",
                 "Cache-Control": "no-cache",
                 "Pragma": "no-cache",
-                "User-Agent": self._user_agent,
+                "User-Agent": self._settings.user_agent,
             },
         )
 

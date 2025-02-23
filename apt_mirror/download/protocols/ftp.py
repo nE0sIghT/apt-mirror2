@@ -38,16 +38,16 @@ class FTPDownloader(Downloader):
     async def stream(self, source_path: Path):
         try:
             async with aioftp.Client.context(  # type: ignore
-                self._url.hostname,
-                port=self._url.port or aioftp.DEFAULT_PORT,
-                user=self._url.username or aioftp.DEFAULT_USER,
-                password=self._url.password or aioftp.DEFAULT_PASSWORD,
+                self._settings.url.hostname,
+                port=self._settings.url.port or aioftp.DEFAULT_PORT,
+                user=self._settings.url.username or aioftp.DEFAULT_USER,
+                password=self._settings.url.password or aioftp.DEFAULT_PASSWORD,
                 parse_list_line_custom_first=True,
                 socket_timeout=30,
             ) as ftp:
                 ftp.parse_list_line_custom = self.parse_list_line_unix_links(ftp)
 
-                await ftp.change_directory(self._url.path)
+                await ftp.change_directory(self._settings.url.path)
 
                 try:
                     stat = await self._get_stat(ftp, source_path)

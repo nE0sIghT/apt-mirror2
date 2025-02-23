@@ -27,6 +27,7 @@ from .download import (
     DownloadFileCompressionVariant,
     HashType,
 )
+from .download.downloader import DownloaderSettings
 from .download.format import format_size
 from .logs import LoggerFactory
 from .prometheus import (
@@ -265,19 +266,21 @@ class RepositoryMirror:
         self._semaphore = semaphore
         self._rate_limiter = rate_limiter
 
-        self._downloader = DownloaderFactory.for_url(
-            url=self._repository.url,
-            target_root_path=config.skel_path
-            / repository.get_mirror_path(config.encode_tilde),
-            aiofile_factory=asyncio_file_factory,
-            proxy=self._config.proxy,
-            user_agent=self._config.user_agent,
-            semaphore=self._download_semaphore,
-            slow_rate_protector_factory=self._config.slow_rate_protector_factory,
-            rate_limiter=self._rate_limiter,
-            verify_ca_certificate=self._config.verify_ca_certificate,
-            client_certificate=self._config.client_certificate,
-            client_private_key=self._config.client_private_key,
+        self._downloader = DownloaderFactory.for_settings(
+            settings=DownloaderSettings(
+                url=self._repository.url,
+                target_root_path=config.skel_path
+                / repository.get_mirror_path(config.encode_tilde),
+                aiofile_factory=asyncio_file_factory,
+                proxy=self._config.proxy,
+                user_agent=self._config.user_agent,
+                semaphore=self._download_semaphore,
+                slow_rate_protector_factory=self._config.slow_rate_protector_factory,
+                rate_limiter=self._rate_limiter,
+                verify_ca_certificate=self._config.verify_ca_certificate,
+                client_certificate=self._config.client_certificate,
+                client_private_key=self._config.client_private_key,
+            ),
         )
 
         metrics_collector.add_downloader(self._repository, self._downloader)

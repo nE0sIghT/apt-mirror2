@@ -124,6 +124,7 @@ security (trivy):
     TRIVY_CACHE_DIR: .trivy
     TRIVY_EXIT_CODE: 1
     TRIVY_SCANNERS: vuln,config
+    TRIVY_DEBUG: 'true'
 
 security (safety):
   extends:

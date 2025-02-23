@@ -434,6 +434,7 @@ class BaseRepository(ABC):
 
     clean: bool
     skip_clean: set[Path]
+    http2_disable: bool
     mirror_dist_upgrader: bool
     mirror_path: Path | None
     ignore_errors: set[str]

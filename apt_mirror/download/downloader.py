@@ -31,6 +31,7 @@ class DownloaderSettings:
     target_root_path: Path
     aiofile_factory: BaseAsyncIOFileWriterFactory
     proxy: Proxy
+    http2_disable: bool
     user_agent: str
     semaphore: asyncio.Semaphore
     slow_rate_protector_factory: SlowRateProtectorFactory

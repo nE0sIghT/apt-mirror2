@@ -273,6 +273,7 @@ class RepositoryMirror:
                 / repository.get_mirror_path(config.encode_tilde),
                 aiofile_factory=asyncio_file_factory,
                 proxy=self._config.proxy,
+                http2_disable=repository.http2_disable,
                 user_agent=self._config.user_agent,
                 semaphore=self._download_semaphore,
                 slow_rate_protector_factory=self._config.slow_rate_protector_factory,

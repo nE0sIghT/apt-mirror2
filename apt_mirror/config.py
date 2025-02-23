@@ -113,6 +113,7 @@ class RepositoryConfig:
                 url=self.url,
                 clean=False,
                 skip_clean=set(),
+                http2_disable=False,
                 mirror_dist_upgrader=False,
                 mirror_path=None,
                 ignore_errors=set(),
@@ -134,6 +135,7 @@ class RepositoryConfig:
                 url=self.url,
                 clean=False,
                 skip_clean=set(),
+                http2_disable=False,
                 mirror_dist_upgrader=False,
                 mirror_path=None,
                 ignore_errors=set(),
@@ -341,6 +343,7 @@ class Config:
     def _parse_config_file(self):
         clean: list[str] = []
         skip_clean: list[str] = []
+        http2_disable: list[str] = []
         mirror_dist_upgrader: list[str] = []
         mirror_paths: dict[str, Path] = {}
         ignore_errors: dict[str, set[str]] = {}
@@ -379,6 +382,9 @@ class Config:
                         case line if line.startswith("skip-clean "):
                             _, url = line.split()
                             skip_clean.append(url)
+                        case line if line.startswith("http2-disable "):
+                            _, url = line.split()
+                            http2_disable.append(url)
                         case line if line.startswith("mirror_dist_upgrader "):
                             _, url = line.split()
                             mirror_dist_upgrader.append(url.rstrip("/"))
@@ -425,6 +431,7 @@ class Config:
 
         self._update_clean(clean)
         self._update_skip_clean(skip_clean)
+        self._update_http2_disable(http2_disable)
         self._update_mirror_dist_upgrader(mirror_dist_upgrader)
         self._update_mirror_paths(mirror_paths)
         self._update_ignore_errors(ignore_errors)
@@ -452,6 +459,16 @@ class Config:
                 repository.skip_clean.add(
                     Path(url.path).relative_to(Path(repository.url.path))
                 )
+
+    def _update_http2_disable(self, http2_disable: list[str]):
+        for url in http2_disable:
+            if url not in self._repositories:
+                self._log.warning(
+                    f"http2-disable is specified for missing repository URL: {url}"
+                )
+                continue
+
+            self._repositories[url].http2_disable = True
 
     def _update_mirror_dist_upgrader(self, mirror_dist_upgrader: list[str]):
         for url in mirror_dist_upgrader:

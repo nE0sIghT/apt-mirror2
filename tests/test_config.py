@@ -156,6 +156,21 @@ class TestConfig(BaseTest):
         self.assertEqual(cleaner.clean_files_count, 1)
         self.assertEqual(cleaner.folders_count, 1)
 
+    def test_http2_disable(self):
+        config = self.get_config("MixedConfig")
+
+        debian = self.ensure_repository(
+            config.repositories["http://ftp.debian.org/debian-security"]
+        )
+
+        self.assertTrue(debian.http2_disable)
+
+        ubuntu = self.ensure_repository(
+            config.repositories["http://archive.ubuntu.com/ubuntu"]
+        )
+
+        self.assertFalse(ubuntu.http2_disable)
+
     def test_by_hash(self):
         config = self.get_config("ByHashConfig")
 

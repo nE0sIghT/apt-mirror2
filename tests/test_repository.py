@@ -42,6 +42,7 @@ class TestRepository(BaseTest):
             url=URL.from_string("http://localhost.local/repo"),
             clean=False,
             skip_clean=set(),
+            http2_disable=False,
             mirror_dist_upgrader=mirror_dist_upgrader,
             mirror_path=Path("repo"),
             ignore_errors=set(),

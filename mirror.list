@@ -152,3 +152,6 @@ clean http://archive.ubuntu.com/ubuntu
 ## If specified and repository clean enabled - skip specified paths from clean
 skip-clean http://archive.ubuntu.com/ubuntu/pool/c/curl
 skip-clean http://archive.ubuntu.com/ubuntu/dists/xenial
+
+## Do not use HTTP2 protocol with website
+# http2-disable https://mirrors.ocf.berkeley.edu

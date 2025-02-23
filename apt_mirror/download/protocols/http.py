@@ -33,7 +33,7 @@ class HTTPDownloader(Downloader):
             proxy_mounts[scheme] = httpx.AsyncHTTPTransport(
                 verify=self._settings.verify_ca_certificate,
                 http1=True,
-                http2=True,
+                http2=not self._settings.http2_disable,
                 limits=http_limits,
                 proxy=httpx.Proxy(proxy) if proxy else None,
                 retries=5,
@@ -63,7 +63,7 @@ class HTTPDownloader(Downloader):
                 verify=self._settings.verify_ca_certificate,
                 cert=client_certificate,
                 http1=True,
-                http2=True,
+                http2=not self._settings.http2_disable,
                 limits=http_limits,
                 retries=5,
             ),

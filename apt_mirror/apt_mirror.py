@@ -794,9 +794,10 @@ class APTMirror:
                 if ex.errno == EWOULDBLOCK:
                     self.die("apt-mirror is already running, exiting")
 
+                strerror = os.strerror(ex.errno) if ex.errno else "unknown error"
                 self.die(
                     f"Unable to obtain lock on {lock_file}: error {ex.errno}:"
-                    f" {os.strerror(ex.errno)}"
+                    f" {strerror}"
                 )
 
         lock_file.unlink(missing_ok=True)

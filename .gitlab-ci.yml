@@ -112,6 +112,8 @@ security (trivy):
   image:
     name: aquasec/trivy
     entrypoint: [""]
+  before_script:
+    - trivy --version
   script:
     - trivy fs .
   cache:

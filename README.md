@@ -149,7 +149,11 @@ This warning may appear with HTTP2 mirrors when you have too much `nthreads` con
 lower `nthreads` value or disable http2 via `http2-disable` option. As of now apt-mirror2 have no control over HTTP2 concurrent streams value used by
 httpx/h2 client but limits count of simultaneously downloaded files which still can exceeds maximum outbound streams due to unknown reason.
 
+## `RuntimeError: can't start new thread`
 
+Long story short: upgrade Docker.
+
+Look to the https://gitlab.com/apt-mirror2/apt-mirror2/-/issues/33#note_2377422047 for more solutions.
 
 # License
 

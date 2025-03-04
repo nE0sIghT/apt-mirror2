@@ -142,6 +142,15 @@ In addition there are some enhancements available:
 - `dists` folder is almost atomicaly replaced using move instead of copy/link
 - native Prometheus metrics are supported
 
+# Common problems
+## `LocalProtocolError: Max outbound streams is n, n open`
+
+This warning may appear with HTTP2 mirrors when you have too much `nthreads` configured. You may either
+lower `nthreads` value or disable http2 via `http2-disable` option. As of now apt-mirror2 have no control over HTTP2 concurrent streams value used by
+httpx/h2 client but limits count of simultaneously downloaded files which still can exceeds maximum outbound streams due to unknown reason.
+
+
+
 # License
 
 GNU General Public License v3.0 or later

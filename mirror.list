@@ -13,6 +13,14 @@ set var_path          $base_path/var
 ## Used when arch is not explicitly specified for repository.
 ## Default to host arch for Debian systems and amd64 for non-Debian.
 # set defaultarch       amd64
+
+## Maximum number of simultaneously processed mirrors and simultaneously downloaded files.
+## Eg with nthreads=4 there are may not be more than 4 mirrors processed and 4 downloads
+## for all mirrors simultaneously.
+## Because apt-mirror2 don't uses threads/processes but completely asynchronouse program
+## there is usualy no need to set this number more than 8. Moreover too high number may
+## break http2 downloads due to http2 concurrent streams limits which auto-negotiated by
+## client and server and (as of now) can not be limited by the h2 client.
 set nthreads          8
 
 ## Rate limit in bytes per second. Suffixes `k` and `m` are allowed. Do not enabled by default.

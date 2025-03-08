@@ -30,7 +30,7 @@ def should_ignore_errors(ignored_paths: set[str], path: Path):
 
 
 def is_safe_path(root_path: Path, path: Path):
-    return (root_path / path).resolve().is_relative_to(root_path)
+    return (root_path / path).resolve().is_relative_to(root_path.resolve())
 
 
 class InvalidReleaseFilesException(RuntimeError):

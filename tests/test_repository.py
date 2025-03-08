@@ -1,5 +1,7 @@
 from collections.abc import Iterable
 from pathlib import Path
+from tempfile import TemporaryDirectory
+from unittest import TestCase
 from unittest.mock import patch
 
 from apt_mirror.download import DownloadFile
@@ -12,6 +14,7 @@ from apt_mirror.repository import (
     PackagesParser,
     Repository,
     SourcesParser,
+    is_safe_path,
 )
 from tests.base import BaseTest
 
@@ -501,3 +504,35 @@ class TestRepository(BaseTest):
         files = [str(f.path) for f in source_parser.parse()]
 
         self.assertFalse(any(".." in path for path in files))
+
+
+class TestSafePath(TestCase):
+    def test_safepath(self):
+        with TemporaryDirectory() as temp_folder:
+            temp_folder = Path(temp_folder)
+
+            root_folder = temp_folder / "a"
+            b = Path("b")
+            c = Path("../c")
+
+            self.assertTrue(is_safe_path(root_folder, b))
+            self.assertTrue(is_safe_path(root_folder, b / c))
+            self.assertFalse(is_safe_path(root_folder, c))
+
+    def test_symlink(self):
+        with TemporaryDirectory() as temp_folder:
+            temp_folder = Path(temp_folder)
+
+            root_folder = temp_folder / "a"
+            symlinked_folder = root_folder / "b"
+            c = Path("c")
+            d = Path("../d")
+
+            root_folder.mkdir()
+            symlinked_folder.symlink_to(root_folder)
+
+            self.assertTrue(is_safe_path(root_folder, c))
+            self.assertFalse(is_safe_path(root_folder, d))
+
+            self.assertTrue(is_safe_path(symlinked_folder, c))
+            self.assertFalse(is_safe_path(symlinked_folder, d))

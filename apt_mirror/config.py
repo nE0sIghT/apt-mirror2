@@ -1,11 +1,11 @@
 # SPDX-License-Identifer: GPL-3.0-or-later
 
 import subprocess
-from collections.abc import Iterator, MutableMapping
+from collections.abc import Iterable, Iterator, MutableMapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from string import Template
-from typing import Any
+from typing import Any, TypeVar
 
 from apt_mirror.download import URL, Proxy
 from apt_mirror.repository import (
@@ -218,10 +218,13 @@ class RepositoryConfig:
         return any(codename.endswith("/") for codename in self.codenames)
 
 
-class RepositoriesDict(MutableMapping[str, BaseRepository]):
+T = TypeVar("T")
+
+
+class URLDict(MutableMapping[str, T]):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__()
-        self._dict: dict[str, BaseRepository] = {}
+        self._dict: dict[str, T] = {}
         self.update(dict(*args, **kwargs))
 
     def _find_key(self, key: Any):
@@ -252,29 +255,45 @@ class RepositoriesDict(MutableMapping[str, BaseRepository]):
     def __getitem__(self, key: str) -> Any:
         return self._dict[self._find_key(key)]
 
-    def __setitem__(self, key: str, value: BaseRepository) -> None:
+    def __setitem__(self, key: str, value: T) -> None:
         self._dict[self._find_key(key)] = value
 
     def __delitem__(self, key: str) -> None:
         del self._dict[self._find_key(key)]
 
     def copy(self):
-        return RepositoriesDict(self)
+        return URLDict(self)
 
 
 class Config:
+    BOOLEAN_KEYS = {
+        "clean",
+        "http2-disable",
+        "mirror_dist_upgrader",
+    }
+
+    DATA_KEYS = {
+        "ignore_errors",
+        "mirror_path",
+        "include_source_name",
+        "exclude_source_name",
+        "include_binary_packages",
+        "exclude_binary_packages",
+        "skip-clean",
+    }
+
     @dataclass
     class PackageFilter:
-        include_source_name: dict[str, set[str]] = field(default_factory=dict)
-        exclude_source_name: dict[str, set[str]] = field(default_factory=dict)
-        include_binary_packages: dict[str, set[str]] = field(default_factory=dict)
-        exclude_binary_packages: dict[str, set[str]] = field(default_factory=dict)
+        include_source_name: URLDict[Sequence[str]] = field(default_factory=URLDict)
+        exclude_source_name: URLDict[Sequence[str]] = field(default_factory=URLDict)
+        include_binary_packages: URLDict[Sequence[str]] = field(default_factory=URLDict)
+        exclude_binary_packages: URLDict[Sequence[str]] = field(default_factory=URLDict)
 
     DEFAULT_CONFIGFILE = "/etc/apt/mirror.list"
 
     def __init__(self, config_file: Path) -> None:
         self._log = LoggerFactory.get_logger(self)
-        self._repositories = RepositoriesDict()
+        self._repositories: URLDict[BaseRepository] = URLDict()
 
         self._files = [config_file]
         config_directory = config_file.with_name(f"{config_file.name}.d")
@@ -341,21 +360,23 @@ class Config:
         self._substitute_variables()
 
     def _parse_config_file(self):
-        clean: list[str] = []
-        skip_clean: list[str] = []
-        http2_disable: list[str] = []
-        mirror_dist_upgrader: list[str] = []
-        mirror_paths: dict[str, Path] = {}
-        ignore_errors: dict[str, set[str]] = {}
-        package_filter = Config.PackageFilter()
+        boolean_options: dict[str, set[str]] = {}
+        data_options: dict[str, dict[str, list[str]]] = {}
 
         for file in self._files:
             with open(file, "rt", encoding="utf-8") as fp:
                 for line in fp:
                     line = line.strip()
 
+                    if not line or any(
+                        line.startswith(prefix) for prefix in ("#", ";")
+                    ):
+                        continue
+
+                    command = next(iter(line.split(maxsplit=1)), None)
+
                     match line:
-                        case line if line.startswith("set "):
+                        case line if command == "set":
                             _, key, value = line.split(maxsplit=2)
                             self._variables[key] = value
                         case line if line.startswith("deb"):
@@ -376,79 +397,47 @@ class Config:
                                 self._repositories[repository_config.key] = (
                                     repository_config.to_repository()
                                 )
-                        case line if line.startswith("clean "):
-                            _, url = line.split()
-                            clean.append(url.rstrip("/"))
-                        case line if line.startswith("skip-clean "):
-                            _, url = line.split()
-                            skip_clean.append(url)
-                        case line if line.startswith("http2-disable "):
-                            _, url = line.split()
-                            http2_disable.append(url)
-                        case line if line.startswith("mirror_dist_upgrader "):
-                            _, url = line.split()
-                            mirror_dist_upgrader.append(url.rstrip("/"))
-                        case line if line.startswith("mirror_path "):
-                            _, url, path = line.split(maxsplit=2)
-                            mirror_paths[url.rstrip("/")] = Path(path.strip("/"))
-                        case line if line.startswith("ignore_errors "):
-                            _, url, path = line.split(maxsplit=2)
-                            ignore_errors.setdefault(url.rstrip("/"), set()).add(path)
-                        case line if line.startswith("include_source_name "):
-                            sources = line.split()[1:]
-                            url = sources.pop(0).rstrip("/")
-
-                            package_filter.include_source_name.setdefault(
-                                url, set()
-                            ).update(sources)
-                        case line if line.startswith("exclude_source_name "):
-                            sources = line.split()[1:]
-                            url = sources.pop(0).rstrip("/")
-
-                            package_filter.exclude_source_name.setdefault(
-                                url, set()
-                            ).update(sources)
-                        case line if line.startswith("include_binary_packages "):
-                            packages = line.split()[1:]
-                            url = packages.pop(0).rstrip("/")
-
-                            package_filter.include_binary_packages.setdefault(
-                                url, set()
-                            ).update(packages)
-                        case line if line.startswith("exclude_binary_packages "):
-                            packages = line.split()[1:]
-                            url = packages.pop(0).rstrip("/")
-
-                            package_filter.exclude_binary_packages.setdefault(
-                                url, set()
-                            ).update(packages)
-                        case line if not line or any(
-                            line.startswith(prefix) for prefix in ("#", ";")
-                        ):
-                            pass
+                        case line if command in self.BOOLEAN_KEYS:
+                            key, repository = line.split(maxsplit=1)
+                            boolean_options.setdefault(key, set()).add(repository)
+                        case line if command in self.DATA_KEYS:
+                            key, data = line.split(maxsplit=1)
+                            data = data.split()
+                            data_options.setdefault(key, {}).setdefault(
+                                data[0], []
+                            ).extend(data[1:])
                         case _:
                             self._log.warning(f"Unknown line in config: {line}")
 
-        self._update_clean(clean)
-        self._update_skip_clean(skip_clean)
-        self._update_http2_disable(http2_disable)
-        self._update_mirror_dist_upgrader(mirror_dist_upgrader)
-        self._update_mirror_paths(mirror_paths)
-        self._update_ignore_errors(ignore_errors)
-        self._update_filters(package_filter)
+        self._set_boolean_fields(boolean_options)
+        self._update_mirror_paths(data_options.get("mirror_path", {}))
+        self._update_ignore_errors(data_options.get("ignore_errors", {}))
+        self._update_skip_clean(data_options.get("skip-clean", {}).keys())
+
+        self._update_filters(data_options)
         self._update_netrc()
 
-    def _update_clean(self, clean: list[str]):
-        for url in clean:
-            if url not in self._repositories:
-                self._log.warning(
-                    f"Clean was specified for missing repository URL: {url}"
-                )
+    def _set_boolean_fields(self, options: dict[str, set[str]]):
+        for option in options:
+            if option not in self.BOOLEAN_KEYS:
                 continue
 
-            self._repositories[url].clean = True
+            for url in options[option]:
+                if url not in self._repositories:
+                    self._log.warning(
+                        f"`{option}` was specified for missing repository URL: {url}"
+                    )
+                    continue
 
-    def _update_skip_clean(self, skip_clean: list[str]):
+                attribute = option.replace("-", "_")
+                if not hasattr(self._repositories[url], attribute):
+                    raise RuntimeError(
+                        f"Repository object doesn't have `{attribute}` attribute"
+                    )
+
+                setattr(self._repositories[url], attribute, True)
+
+    def _update_skip_clean(self, skip_clean: Iterable[str]):
         for key in skip_clean:
             url = URL.from_string(key)
             repositories = [
@@ -460,38 +449,20 @@ class Config:
                     Path(url.path).relative_to(Path(repository.url.path))
                 )
 
-    def _update_http2_disable(self, http2_disable: list[str]):
-        for url in http2_disable:
-            if url not in self._repositories:
-                self._log.warning(
-                    f"http2-disable is specified for missing repository URL: {url}"
-                )
-                continue
-
-            self._repositories[url].http2_disable = True
-
-    def _update_mirror_dist_upgrader(self, mirror_dist_upgrader: list[str]):
-        for url in mirror_dist_upgrader:
-            if url not in self._repositories:
-                self._log.warning(
-                    "mirror_dist_upgrader was specified for missing repository URL:"
-                    f" {url}"
-                )
-                continue
-
-            self._repositories[url].mirror_dist_upgrader = True
-
-    def _update_mirror_paths(self, mirror_paths: dict[str, Path]):
-        for url, path in mirror_paths.items():
+    def _update_mirror_paths(self, mirror_paths: dict[str, list[str]]):
+        for url, paths in mirror_paths.items():
             if url not in self._repositories:
                 self._log.warning(
                     f"mirror_path was specified for missing repository URL: {url}"
                 )
                 continue
 
-            self._repositories[url].mirror_path = path
+            if not paths:
+                raise RuntimeError(f"Missing mirror path for URL {url}")
 
-    def _update_ignore_errors(self, ignore_errors: dict[str, set[str]]):
+            self._repositories[url].mirror_path = Path(paths[0])
+
+    def _update_ignore_errors(self, ignore_errors: dict[str, list[str]]):
         for url, paths in ignore_errors.items():
             if url not in self._repositories:
                 self._log.warning(
@@ -503,8 +474,26 @@ class Config:
 
     def _update_filters(
         self,
-        package_filter: "Config.PackageFilter",
+        data_options: dict[str, dict[str, list[str]]],
     ):
+        package_filter = Config.PackageFilter()
+
+        for filter_name in (
+            "include_source_name",
+            "exclude_source_name",
+            "include_binary_packages",
+            "exclude_binary_packages",
+        ):
+            attr = getattr(package_filter, filter_name)
+            attr.update(data_options.get(filter_name, {}))
+
+            for url in attr:
+                if url not in self._repositories:
+                    self._log.warning(
+                        f"{filter_name} was specified for missing repository URL: {url}"
+                    )
+                    continue
+
         for url, repository in self._repositories.items():
             repository.package_filter.include_source_name.update(
                 package_filter.include_source_name.get(url, set())
@@ -518,19 +507,6 @@ class Config:
             repository.package_filter.exclude_binary_packages.update(
                 package_filter.exclude_binary_packages.get(url, set())
             )
-
-        for filter_name in (
-            "include_source_name",
-            "exclude_source_name",
-            "include_binary_packages",
-            "exclude_binary_packages",
-        ):
-            for url in getattr(package_filter, filter_name):
-                if url not in self._repositories:
-                    self._log.warning(
-                        f"{filter_name} was specified for missing repository URL: {url}"
-                    )
-                    continue
 
     def _update_netrc(self):
         netrc = NetRC(self.etc_netrc)
@@ -692,7 +668,7 @@ class Config:
         return self.get_path("postmirror_script")
 
     @property
-    def repositories(self) -> RepositoriesDict:
+    def repositories(self) -> URLDict[BaseRepository]:
         return self._repositories.copy()
 
     @property

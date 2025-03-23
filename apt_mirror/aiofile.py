@@ -82,7 +82,7 @@ try:
             for path in test_paths:
                 try:
                     path.parent.mkdir(parents=True, exist_ok=True)
-                    async with self._open(path) as fp:
+                    async with self._open(path) as fp:  # type: ignore
                         await fp.write(b" ")
 
                     path.unlink()

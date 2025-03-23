@@ -38,6 +38,14 @@ stages:
   image: docker.io/$PYTHON_IMAGE:$PYTHON_VERSION
   before_script:
     - python --version
+
+    # No uvloop support for pypy
+    # https://github.com/MagicStack/uvloop/issues/380
+    # https://github.com/MagicStack/uvloop/issues/657
+    - if [ "${PYTHON_IMAGE}" == "pypy" ]; then
+    -   sed -i -e '/uvloop/d' requirements.txt
+    - fi
+
     - pip install -r requirements.txt -r requirements/dev.txt
   needs: []
 
@@ -98,11 +106,11 @@ test:
     matrix:
       - PYTHON_VERSION:
           - '3.10'
+          - '3.11'
         PYTHON_IMAGE:
           - python
           - pypy
       - PYTHON_VERSION:
-          - '3.11'
           - '3.12'
           - '3.13'
 

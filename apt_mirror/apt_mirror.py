@@ -814,11 +814,15 @@ class APTMirror:
             )
 
 
+def is_alternative_binary_path():
+    return Path(sys.argv[0]).name == "apt-mirror2"
+
+
 def get_config_file() -> Path:
     parser = argparse.ArgumentParser()
 
     default_configfile = Config.DEFAULT_CONFIGFILE
-    if parser.prog == "apt-mirror2" and Path(Config.DEFAULT_CONFIGFILE2).exists():
+    if is_alternative_binary_path() and Path(Config.DEFAULT_CONFIGFILE2).exists():
         default_configfile = Config.DEFAULT_CONFIGFILE2
 
     parser.add_argument("--version", action="store_true", help="Show version")
@@ -844,7 +848,12 @@ def get_config_file() -> Path:
 
 
 def main() -> int:
-    config = Config(get_config_file())
+    config = Config(
+        get_config_file(),
+        Config.DEFAULT_BASE_PATH2
+        if is_alternative_binary_path()
+        else Config.DEFAULT_BASE_PATH,
+    )
 
     # We should create working directories before using file logs
     config.create_working_directories()

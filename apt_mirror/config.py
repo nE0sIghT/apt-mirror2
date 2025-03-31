@@ -291,8 +291,12 @@ class Config:
 
     DEFAULT_CONFIGFILE = "/etc/apt/mirror.list"
     DEFAULT_CONFIGFILE2 = "/etc/apt/mirror2.list"
+    DEFAULT_BASE_PATH = "/var/spool/apt-mirror"
+    DEFAULT_BASE_PATH2 = "/var/spool/apt-mirror2"
 
-    def __init__(self, config_file: Path) -> None:
+    def __init__(
+        self, config_file: Path, default_base_path: str = DEFAULT_BASE_PATH
+    ) -> None:
         self._log = LoggerFactory.get_logger(self)
         self._repositories: URLDict[BaseRepository] = URLDict()
 
@@ -322,7 +326,7 @@ class Config:
             "defaultarch": default_arch,
             "nthreads": "20",
             "uvloop": "1",
-            "base_path": "/var/spool/apt-mirror",
+            "base_path": default_base_path,
             "mirror_path": "$base_path/mirror",
             "skel_path": "$base_path/skel",
             "var_path": "$base_path/var",

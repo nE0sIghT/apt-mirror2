@@ -99,7 +99,7 @@ set _tilde            0
 
 ## Mirrors are configured using standard sources.list syntax
 ## Binary mirrors
-deb [ arch=amd64,arm64 ] http://archive.ubuntu.com/ubuntu mantic main restricted universe multiverse
+# deb [ arch=amd64,arm64 ] http://archive.ubuntu.com/ubuntu mantic main restricted universe multiverse
 
 ## Or via `deb-arch`
 # deb-amd64 http://archive.ubuntu.com/ubuntu mantic main restricted universe multiverse
@@ -156,10 +156,10 @@ deb [ arch=amd64,arm64 ] http://archive.ubuntu.com/ubuntu mantic main restricted
 # mirror_dist_upgrader http://archive.ubuntu.com/ubuntu
 
 ## If specified - clean redundant files in repository (look to _autoclean option)
-clean http://archive.ubuntu.com/ubuntu
+# clean http://archive.ubuntu.com/ubuntu
 ## If specified and repository clean enabled - skip specified paths from clean
-skip-clean http://archive.ubuntu.com/ubuntu/pool/c/curl
-skip-clean http://archive.ubuntu.com/ubuntu/dists/xenial
+# skip-clean http://archive.ubuntu.com/ubuntu/pool/c/curl
+# skip-clean http://archive.ubuntu.com/ubuntu/dists/xenial
 
 ## Do not use HTTP2 protocol with repository
 # http2-disable https://mirrors.ocf.berkeley.edu/debian

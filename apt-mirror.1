@@ -94,6 +94,15 @@ Positional arguments:
 .It Ar Sy  configfile
 Path to config file. Default
 .Ql /etc/apt/mirror.list
+when run with the
+.Ql apt-mirror
+filename and
+.Ql /etc/apt/mirror2.list
+when run with the
+.Ql apt-mirror2
+filename and file
+.Ql /etc/apt/mirror2.list
+is exists.
 .El
 .sp 1
 .Bl -tag -width Ds
@@ -111,11 +120,23 @@ Log level as supported by Python logging module. Default
 \&.
 .El
 .Sh FILES
-.Bl -tag -width "/etc/apt/mirror.list.d/*.list" -compact
+.Bl -tag -width "/etc/apt/mirror2.list.d/*.list" -compact
 .It Pa /etc/apt/mirror.list
-Main configuration file
+Main configuration file when run with the
+.Ql apt-mirror
+filename
 .It Pa /etc/apt/mirror.list.d/*.list
-Additional configuration files
+Additional configuration files when run with the
+.Ql apt-mirror
+filename
+.It Pa /etc/apt/mirror2.list
+Main configuration file when run with the
+.Ql apt-mirror2
+filename
+.It Pa /etc/apt/mirror2.list.d/*.list
+Additional configuration files when run with the
+.Ql apt-mirror2
+filename
 .El
 .Sh AUTHORS 
 .An Yuri Konotopov Aq Mt ykonotopov@gnome.org

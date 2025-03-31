@@ -816,12 +816,17 @@ class APTMirror:
 
 def get_config_file() -> Path:
     parser = argparse.ArgumentParser()
+
+    default_configfile = Config.DEFAULT_CONFIGFILE
+    if parser.prog == "apt-mirror2" and Path(Config.DEFAULT_CONFIGFILE2).exists():
+        default_configfile = Config.DEFAULT_CONFIGFILE2
+
     parser.add_argument("--version", action="store_true", help="Show version")
     parser.add_argument(
         "configfile",
         help=f"Path to config file. Default {Config.DEFAULT_CONFIGFILE}",
         nargs="?",
-        default=Config.DEFAULT_CONFIGFILE,
+        default=default_configfile,
     )
 
     args = parser.parse_args()

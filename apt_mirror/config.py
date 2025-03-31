@@ -290,6 +290,7 @@ class Config:
         exclude_binary_packages: URLDict[Sequence[str]] = field(default_factory=URLDict)
 
     DEFAULT_CONFIGFILE = "/etc/apt/mirror.list"
+    DEFAULT_CONFIGFILE2 = "/etc/apt/mirror2.list"
 
     def __init__(self, config_file: Path) -> None:
         self._log = LoggerFactory.get_logger(self)

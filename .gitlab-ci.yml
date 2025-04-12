@@ -93,7 +93,7 @@ check commits:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 
-test:
+test amd64:
   extends:
     - .test defaults
   stage: test
@@ -113,6 +113,14 @@ test:
       - PYTHON_VERSION:
           - '3.12'
           - '3.13'
+  tags:
+    - saas-linux-small-amd64
+
+test arm64:
+  extends:
+    - test amd64
+  tags:
+    - saas-linux-small-arm64
 
 security (trivy):
   extends:

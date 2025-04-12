@@ -1,3 +1,5 @@
+set defaultarch       amd64
+
 deb http://ftp.debian.org/debian-security trixie-security main contrib non-free-firmware non-free main/debian-installer
 deb-amd64 http://ftp.debian.org/debian-security trixie-security main contrib non-free-firmware non-free main/debian-installer
 deb-arm64 http://ftp.debian.org/debian-security trixie-security main contrib non-free-firmware non-free main/debian-installer

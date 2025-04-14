@@ -1,3 +1,4 @@
+import os
 import platform
 from unittest import IsolatedAsyncioTestCase
 
@@ -10,7 +11,10 @@ class TestAIOFile(IsolatedAsyncioTestCase):
         self._platform = platform.system().lower()
 
     def linux_aio_supported(self):
-        if "linux" not in self._platform:
+        # For some reason AIO doesn't works on s390x
+        # We hit it in the Debian's CI and I observe it in the s390x docker image
+        # https://ci.debian.net/packages/a/apt-mirror2/testing/s390x/59830526/
+        if "linux" not in self._platform or os.uname().machine == "s390x":
             return False
 
         if platform.python_implementation() != "CPython":

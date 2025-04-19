@@ -141,17 +141,6 @@ security (trivy):
     TRIVY_EXIT_CODE: 1
     TRIVY_SCANNERS: vuln,config
 
-security (safety):
-  extends:
-    - .pip cache
-    - .security defaults
-  image:
-    name: python:$PYTHON_VERSION
-  before_script:
-    - pip install safety
-  script:
-    - safety check -r requirements.txt
-
 security (pip-audit):
   extends:
     - .pip cache

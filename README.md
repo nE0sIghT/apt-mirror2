@@ -57,7 +57,17 @@ pip install apt-mirror
 apt-mirror --help
 ```
 
-## Debian and Ubuntu packages
+## Distro packages
+
+[![Packaging status](https://repology.org/badge/vertical-allrepos/apt-mirror2.svg)](https://repology.org/project/apt-mirror2/versions)
+
+### Debian
+
+`apt-miror2` is available in the Debian Unstable (sid). Please note, that as of now `apt-mirror2` do not
+replaces `apt-mirror` in the Debian and thus package provides `apt-mirror2` executable and
+`/etc/apt/mirror2.list` configuration file.
+
+### Packagecloud builds
 
 Debian (bookworm, trixie) and Ubuntu (22.04, 24.04) packages are available in the [Packagecloud repository](https://packagecloud.io/nE0sIghT/apt-mirror2).
 

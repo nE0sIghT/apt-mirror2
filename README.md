@@ -165,6 +165,13 @@ Long story short: upgrade Docker.
 
 Look to the https://gitlab.com/apt-mirror2/apt-mirror2/-/issues/33#note_2377422047 for more solutions.
 
+## `dists` folder is missing after running apt-mirror2
+
+This is usually a result of errors in your source mirror. You should see some warnings about either missing files in the source or problems with metadata files.
+There should be `Metadata movement skipped because of download errors` message in the log file and apt-mirror2 should exit with non-zero code.
+
+You could try to change your mirror source, report this problem to mirror owner or try to increase timeouts in your mirror.list.
+
 # License
 
 GNU General Public License v3.0 or later

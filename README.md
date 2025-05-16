@@ -2,15 +2,15 @@
 
 [`apt-mirror2`](https://gitlab.com/apt-mirror2/apt-mirror2) is the Python/asyncio reimplementation of the
 [apt-mirror](https://github.com/apt-mirror/apt-mirror) developed as drop-in replacement for the latest.  
-This project should be suitable as general [apt-mirror](https://github.com/apt-mirror/apt-mirror) replacement.  
+This project should be suitable as a general [apt-mirror](https://github.com/apt-mirror/apt-mirror) replacement.  
 
-One of the main advantages of the `apt-mirror2` over the `apt-mirror` - you should never got broken mirror in case `apt-mirror2` returns 0 exit code.
+One of the main advantages of the `apt-mirror2` over the `apt-mirror` - you should never conclude with a broken mirror in the case that `apt-mirror2` returns an exit code of 0.
 This is ensured by data integrity checks at all stages of mirroring.
 
 # Requirements
 
-Python 3.10 is the minimum supported version. PyPy 3.10 (7.3) is supported also.  
-For additional dependencies look to the `pyproject.yml` and/or `requirements.txt`.
+Python 3.10 is the minimum supported version. PyPy 3.10 (7.3) is also supported.  
+For additional dependencies, please refer to the `pyproject.yml` and/or `requirements.txt`.
 
 # Installation
 ## Container (Docker/Podman)
@@ -18,7 +18,7 @@ For additional dependencies look to the `pyproject.yml` and/or `requirements.txt
 Container images are available in the Docker Hub under [aptmirror/apt-mirror2](https://hub.docker.com/r/aptmirror/apt-mirror2) repository and in the
 Red Hat Quay.io inder [apt-mirror2/apt-mirror2](https://quay.io/repository/apt-mirror2/apt-mirror2) repository.
 
-You can try it using
+You can try them using
 
 ```bash
 docker run -it --rm docker.io/aptmirror/apt-mirror2 --help
@@ -50,7 +50,7 @@ Images based on `alpine:3` image.
 
 ## PyPi
 
-PyPi package is available with the name [`apt-mirror`](https://pypi.org/project/apt-mirror/):
+PyPi package is available under the name [`apt-mirror`](https://pypi.org/project/apt-mirror/):
 
 ```bash
 pip install apt-mirror
@@ -63,8 +63,8 @@ apt-mirror --help
 
 ### Debian
 
-`apt-miror2` is available in the Debian Unstable (sid). Please note, that as of now `apt-mirror2` do not
-replaces `apt-mirror` in the Debian and thus package provides `apt-mirror2` executable and
+`apt-mirror2` is available in the Debian Unstable (sid). Please note that as of now, `apt-mirror2` does not
+replace `apt-mirror` in the Debian and thus package provides `apt-mirror2` executable and
 `/etc/apt/mirror2.list` configuration file.
 
 ### Packagecloud builds
@@ -83,7 +83,7 @@ Package installation:
 sudo apt-get install apt-mirror2
 ```
 
-For manual steps please look to the [Packagecloud repository](https://packagecloud.io/nE0sIghT/apt-mirror2).
+For manual steps, please refer to the [Packagecloud repository](https://packagecloud.io/nE0sIghT/apt-mirror2).
 
 ## Build from source with virtualenv
 
@@ -112,7 +112,7 @@ apt-mirror --help
 
 # Usage
 
-As the drop-in replacement for the `apt-mirror` this project supports same CLI syntax.
+As the drop-in replacement for the `apt-mirror`, this project supports same CLI syntax.
 
 ```
 usage: apt-mirror [-h] [--version] [configfile]
@@ -128,49 +128,49 @@ options:
 # apt-mirror compatibility
 
 Most of `apt-mirror` configuration directives are supported.  
-As of now proxy for FTP repositories is not supported.  
+As of now proxy for FTP repositories are not supported.  
 
 File lists (ALL, NEW, MD5, SHA256, SHA512) are not written by default, but you can enable them with the `write_file_lists` option.
 
 In addition there are some enhancements available:
 
 - Repositories without MD5 hashsums are correctly mirrored
-- Old index files are properly cleaned and don't produces errors in mirror processing
+- Old index files are properly cleaned and don't produce errors during the mirror processing
 - Standard source.list `[ arch=arch1,arch2 ]` can be used to specify multiple repository architectures for mirroring.
-- multiple codenames (or flat folders) can be specified using comma as delimiter.
-- `mirror_path URL PATH` option may be used to specify `PATH` to use for saving mirror files instead of path that is generated from `URL`.
-- Additional configuration is loaded from the `*.list` files in the directory named same as `configfile` with the `.d` suffix. Eg `/etc/apt/mirror.list.d/*.list`.
+- Multiple codenames (or flat folders) can be specified using comma as delimiter.
+- `mirror_path URL PATH` option may be used to specify `PATH` to use for saving mirror files instead of the path that is generated from `URL`.
+- Additional configurations are loaded from the `*.list` files in the directory named the same as the `configfile` with the `.d` suffix. Eg `/etc/apt/mirror.list.d/*.list`.
 - Rate limit is enforced for overall download rate.
 - Slow download rate protection is enabled by default and can be configured via `mirror.list`.
 - Non-zero exit code is returned if some of required files were not downloaded due to network or server errors or
   no repositories were configured.
 - HTTP user agent can be configured via `user_agent` configuration.
-- Configuration variables are exposed to postmirror_script.
+- Configuration variables are exposed to the postmirror_script.
 - `by-hash` list option can be used to control whether `Acquire-By-Hash` Release option should be respected or enforced.
-- mirror wipe protection is available and configurable via `wipe_size_ratio` and `wipe_count_ratio` settings.
-- per-repository log files are available in the `var_path` folder
+- Mirror wipe protection is available and configurable via `wipe_size_ratio` and `wipe_count_ratio` settings.
+- Per-repository log files are available in the `var_path` folder
 - `dists` folder is almost atomicaly replaced using move instead of copy/link
-- native Prometheus metrics are supported
+- Native Prometheus metrics are supported
 
 # Common problems
 ## `LocalProtocolError: Max outbound streams is n, n open`
 
 This warning may appear with HTTP2 mirrors when you have too much `nthreads` configured. You may either
-lower `nthreads` value or disable http2 via `http2-disable` option. As of now apt-mirror2 have no control over HTTP2 concurrent streams value used by
-httpx/h2 client but limits count of simultaneously downloaded files which still can exceeds maximum outbound streams due to unknown reason.
+lower `nthreads` value or disable http2 via `http2-disable` option. As of now, apt-mirror2 has no control over HTTP2 concurrent streams value used by
+httpx/h2 client, but does limit the count of simultaneously downloaded files (which still can exceeds maximum outbound streams due to unknown reasons).
 
 ## `RuntimeError: can't start new thread`
 
 Long story short: upgrade Docker.
 
-Look to the https://gitlab.com/apt-mirror2/apt-mirror2/-/issues/33#note_2377422047 for more solutions.
+Look to [this issue](https://gitlab.com/apt-mirror2/apt-mirror2/-/issues/33#note_2377422047) for more solutions.
 
 ## `dists` folder is missing after running apt-mirror2
 
 This is usually a result of errors in your source mirror. You should see some warnings either about missing files in the source or problems with metadata files.
-There should be `Metadata movement skipped because of download errors` message in the log file and apt-mirror2 should exit with non-zero code.
+There should be a `Metadata movement skipped because of download errors` message in the log file and apt-mirror2 should exit with non-zero code.
 
-You could try to change your mirror source, report this problem to mirror owner or try to increase timeouts in your mirror.list.
+You could try to change your mirror source, report this problem to mirror owner, or increase the timeouts in your mirror.list.
 
 # License
 

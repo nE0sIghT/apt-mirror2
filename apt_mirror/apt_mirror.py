@@ -819,7 +819,13 @@ def is_alternative_binary_path():
 
 
 def get_config_file() -> Path:
-    parser = argparse.ArgumentParser()
+    def get_prog() -> str | None:
+        if Path(sys.argv[0]).name == "__main__.py":
+            return f"{Path(sys.executable).name} -m apt_mirror"
+
+        return None
+
+    parser = argparse.ArgumentParser(prog=get_prog())
 
     default_configfile = Config.DEFAULT_CONFIGFILE
     if is_alternative_binary_path() and Path(Config.DEFAULT_CONFIGFILE2).exists():
@@ -875,7 +881,3 @@ def main() -> int:
 
         LOG.exception(ex)
         return 1
-
-
-if __name__ == "__main__":
-    sys.exit(main())

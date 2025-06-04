@@ -27,18 +27,6 @@ class HTTPDownloader(Downloader):
             keepalive_expiry=5,
         )
 
-        proxy_mounts: dict[str, httpx.AsyncHTTPTransport] = {}
-        for scheme in ("http://", "https://"):
-            proxy = self._settings.proxy.for_scheme(scheme)
-            proxy_mounts[scheme] = httpx.AsyncHTTPTransport(
-                verify=self._settings.verify_ca_certificate,
-                http1=True,
-                http2=not self._settings.http2_disable,
-                limits=http_limits,
-                proxy=httpx.Proxy(proxy) if proxy else None,
-                retries=5,
-            )
-
         client_certificate = None
         if self._settings.client_certificate:
             if self._settings.client_private_key:
@@ -48,6 +36,26 @@ class HTTPDownloader(Downloader):
                 )
             else:
                 client_certificate = self._settings.client_certificate
+
+        transport_params = {
+            "verify": self._settings.verify_ca_certificate,
+            "http1": True,
+            "http2": not self._settings.http2_disable,
+            "limits": http_limits,
+            "retries": 5,
+        }
+
+        if client_certificate:
+            transport_params["cert"] = client_certificate
+
+        proxy_mounts: dict[str, httpx.AsyncHTTPTransport] = {}
+        for scheme in ("http://", "https://"):
+            proxy = self._settings.proxy.for_scheme(scheme)
+            scheme_params = transport_params.copy()
+            if proxy:
+                scheme_params["proxy"] = httpx.Proxy(proxy)
+
+            proxy_mounts[scheme] = httpx.AsyncHTTPTransport(**scheme_params)
 
         self._httpx = httpx.AsyncClient(
             base_url=base_url,
@@ -59,14 +67,6 @@ class HTTPDownloader(Downloader):
             ),
             follow_redirects=True,
             mounts=proxy_mounts,
-            transport=httpx.AsyncHTTPTransport(
-                verify=self._settings.verify_ca_certificate,
-                cert=client_certificate,
-                http1=True,
-                http2=not self._settings.http2_disable,
-                limits=http_limits,
-                retries=5,
-            ),
             max_redirects=5,
             headers={
                 "Accept-Encoding": "identity",
@@ -85,9 +85,7 @@ class HTTPDownloader(Downloader):
     @asynccontextmanager
     async def stream(self, source_path: Path):
         try:
-            async with (
-                self._httpx.stream("GET", str(source_path)) as response,
-            ):
+            async with self._httpx.stream("GET", str(source_path)) as response:
                 date: datetime | None
                 try:
                     date = parsedate_to_datetime(  # type: ignore
@@ -112,6 +110,7 @@ class HTTPDownloader(Downloader):
                     size=size,
                     _stream=self.aiter_bytes(response),
                 )
+
         except httpx.RemoteProtocolError as ex:
             # https://github.com/encode/httpx/discussions/2056
             server_disconnected = (

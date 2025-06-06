@@ -332,6 +332,7 @@ class Config:
             "var_path": "$base_path/var",
             "etc_netrc": "/etc/apt/auth.conf",
             "cleanscript": "$var_path/clean.sh",
+            "append_logs": "off",
             "write_file_lists": "off",
             "run_postmirror": "0",
             "postmirror_script": "$var_path/postmirror.sh",
@@ -555,6 +556,9 @@ class Config:
             path.mkdir(parents=True, exist_ok=True)
 
     def init_log_files(self):
+        if self.append_logs:
+            LoggerFactory.enable_append_logs()
+
         LoggerFactory.add_log_file(None, self.var_path / "apt-mirror2.log")
         for repository in self.repositories.values():
             log_name = repository.as_filename(self.encode_tilde)
@@ -675,6 +679,10 @@ class Config:
     @property
     def repositories(self) -> URLDict[BaseRepository]:
         return self._repositories.copy()
+
+    @property
+    def append_logs(self):
+        return self.get_bool("append_logs")
 
     @property
     def write_file_lists(self):

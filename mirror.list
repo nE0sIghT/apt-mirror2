@@ -10,6 +10,9 @@ set var_path          $base_path/var
 ## Path to apt_auth.conf. See `man apt_auth.conf`
 # set etc_netrc         /etc/apt/auth.conf
 
+## Set to `on` to append to logs instead of truncate them
+# set append_logs       off
+
 ## Used when arch is not explicitly specified for repository.
 ## Default to host arch for Debian systems and amd64 for non-Debian.
 # set defaultarch       amd64

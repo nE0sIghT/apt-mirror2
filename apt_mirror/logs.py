@@ -17,6 +17,7 @@ class LoggerFactory:
     )
     FILES: dict[Any, PurePath] = {}
     FILE_HANDLERS: dict[Any, logging.FileHandler] = {}
+    FILE_MODE = "w"
 
     @staticmethod
     def init_logging():
@@ -31,6 +32,10 @@ class LoggerFactory:
             logging.getLogger("httpx").setLevel(logging.WARNING)
 
         logging.debug("Logging started")
+
+    @staticmethod
+    def enable_append_logs():
+        LoggerFactory.FILE_MODE = "a"
 
     @staticmethod
     def get_logger(
@@ -53,7 +58,7 @@ class LoggerFactory:
             if logger_id not in LoggerFactory.FILE_HANDLERS:
                 file_handler = logging.FileHandler(
                     LoggerFactory.FILES[logger_id],
-                    mode="w",
+                    mode=LoggerFactory.FILE_MODE,
                     encoding="utf-8",
                 )
                 file_handler.setFormatter(

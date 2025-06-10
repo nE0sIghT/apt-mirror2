@@ -1,8 +1,8 @@
 # SPDX-License-Identifer: GPL-3.0-or-later
 
 import subprocess
-from collections.abc import Iterable, Iterator, MutableMapping, Sequence
-from dataclasses import dataclass, field
+from collections.abc import Iterable, Iterator, MutableMapping
+from dataclasses import dataclass
 from pathlib import Path
 from string import Template
 from typing import Any, TypeVar
@@ -282,13 +282,6 @@ class Config:
         "skip-clean",
     }
 
-    @dataclass
-    class PackageFilter:
-        include_source_name: URLDict[Sequence[str]] = field(default_factory=URLDict)
-        exclude_source_name: URLDict[Sequence[str]] = field(default_factory=URLDict)
-        include_binary_packages: URLDict[Sequence[str]] = field(default_factory=URLDict)
-        exclude_binary_packages: URLDict[Sequence[str]] = field(default_factory=URLDict)
-
     DEFAULT_CONFIGFILE = "/etc/apt/mirror.list"
     DEFAULT_CONFIGFILE2 = "/etc/apt/mirror2.list"
     DEFAULT_BASE_PATH = "/var/spool/apt-mirror"
@@ -482,37 +475,24 @@ class Config:
         self,
         data_options: dict[str, dict[str, list[str]]],
     ):
-        package_filter = Config.PackageFilter()
-
         for filter_name in (
             "include_source_name",
             "exclude_source_name",
             "include_binary_packages",
             "exclude_binary_packages",
         ):
-            attr = getattr(package_filter, filter_name)
-            attr.update(data_options.get(filter_name, {}))
+            filter_data = data_options.get(filter_name, {})
 
-            for url in attr:
+            for url in filter_data:
                 if url not in self._repositories:
                     self._log.warning(
                         f"{filter_name} was specified for missing repository URL: {url}"
                     )
                     continue
 
-        for url, repository in self._repositories.items():
-            repository.package_filter.include_source_name.update(
-                package_filter.include_source_name.get(url, set())
-            )
-            repository.package_filter.exclude_source_name.update(
-                package_filter.exclude_source_name.get(url, set())
-            )
-            repository.package_filter.include_binary_packages.update(
-                package_filter.include_binary_packages.get(url, set())
-            )
-            repository.package_filter.exclude_binary_packages.update(
-                package_filter.exclude_binary_packages.get(url, set())
-            )
+                getattr(self._repositories[url].package_filter, filter_name).update(
+                    filter_data[url]
+                )
 
     def _update_netrc(self):
         netrc = NetRC(self.etc_netrc)

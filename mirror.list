@@ -10,29 +10,29 @@ set var_path          $base_path/var
 ## Path to apt_auth.conf. See `man apt_auth.conf`
 # set etc_netrc         /etc/apt/auth.conf
 
-## Set to `on` to append to logs instead of truncate them
+## Set to `on` to append to logs instead of truncating them
 # set append_logs       off
 
-## Used when arch is not explicitly specified for repository.
-## Default to host arch for Debian systems and amd64 for non-Debian.
+## Used when architecture is not explicitly specified for a repository.
+## Defaults to the host architecture on Debian systems and to amd64 on non-Debian systems.
 # set defaultarch       amd64
 
 ## Maximum number of simultaneously processed mirrors and simultaneously downloaded files.
-## Eg with nthreads=4 there are may not be more than 4 mirrors processed and 4 downloads
-## for all mirrors simultaneously.
-## Because apt-mirror2 don't uses threads/processes but completely asynchronouse program
-## there is usualy no need to set this number more than 8. Moreover too high number may
-## break http2 downloads due to http2 concurrent streams limits which auto-negotiated by
-## client and server and (as of now) can not be limited by the h2 client.
+## E.g., with nthreads=4, no more than 4 mirrors will be processed and 4 downloads
+## across all mirrors will occur simultaneously.
+## Since apt-mirror2 does not use threads/processes but is a fully asynchronous program,
+## there is usually no need to set this number higher than 8. Moreover, setting it too high may
+## break HTTP/2 downloads due to HTTP/2 concurrent stream limits, which are auto-negotiated
+## between client and server and (as of now) cannot be limited by the h2 client.
 set nthreads          8
 
-## Rate limit in bytes per second. Suffixes `k` and `m` are allowed. Do not enabled by default.
-## You should never set it lower than `slow_rate`.
+## Rate limit in bytes per second. Suffixes `k` and `m` are allowed. Not enabled by default.
+## You should never set this lower than `slow_rate`.
 # set limit_rate        1k
 
-## Enable slow download rate protection. Default `on`.
+## Enable slow download rate protection. Default: `on`.
 # set slow_rate_protection on
-## The period in seconds during which slow download protection will not be applied
+## The period (in seconds) during which slow download rate protection will not be applied
 ## to each individual downloaded file.
 # set slow_rate_startup  15
 ## Slow download protection threshold.
@@ -44,19 +44,19 @@ set _tilde            0
 # set uvloop            1
 
 ## Proxy configuration.
-## Only supported for http repositories.
+## Only supported for HTTP repositories.
 # set use_proxy             off
-## If proxy scheme is ommited, `http://` assumed
+## If the proxy scheme is omitted, `http://` is assumed.
 # set http_proxy            127.0.0.1:3128
 # set https_proxy           127.0.0.1:3128
 # set proxy_user            user
 # set proxy_password        password
 
-## User agent for http repositories. Default `apt-mirror2/VERSION`
+## User-Agent for HTTP repositories. Default: `apt-mirror2/VERSION`
 # set http_user_agent       apt-mirror2
 
 ## Certificates configuration
-## Whether to verify https certificate
+## Whether to verify HTTPS certificates
 # set no_check_certificate  off
 ## Path to custom CA certificates bundle
 # set ca_certificate        /etc/ssl/certs/ca-certificates.crt
@@ -65,7 +65,7 @@ set _tilde            0
 # set private_key           /etc/ssl/certs/key.pem
 
 ## Whether to write file lists (ALL, NEW, MD5, SHA256, SHA512 files) as apt-mirror does.
-## Default - off, since apt-mirror2 doesn't use them.
+## Default: off, as apt-mirror2 does not utilize them.
 # set write_file_lists        off
 
 ## Enable Prometheus client
@@ -74,31 +74,30 @@ set _tilde            0
 # set prometheus_port     8000
 
 ## Retries
-## How much times retry to download broken release files
+## How many times to retry downloading broken release files
 # set release_files_retries 15
 
-## Run script after mirror complete
+## Run a script after the mirror process completes
 # set run_postmirror    0
-## Path to Post Mirror script
-# All configuration variables are available in `postmirror_script` uppercased
-# with prefix `APT_MIRROR_`, eg `${APT_MIRROR_BASE_PATH}`
+## Path to post-mirror script
+## All configuration variables are available in the script, uppercased
+## with the prefix `APT_MIRROR_`, e.g., `${APT_MIRROR_BASE_PATH}`
 # set postmirror_script $var_path/postmirror.sh
 
-## By default redundant files are not removed after mirror update.
-## Shell script is created in the path specified by `cleanscript` option
-## that can be used to clean mirror.
+## By default, redundant files are not removed after a mirror update.
+## A shell script is created at the path specified by the `cleanscript` option,
+## which can be used to clean the mirror.
 # set cleanscript     $var_path/clean.sh
 
-## If `_autoclean` option is specified and enabled, clean script will
-## not be created and mirror will be cleaned
+## If the `_autoclean` option is specified and enabled, the clean script will
+## not be created, and the mirror will be cleaned automatically.
 # set _autoclean 0
-## To protect repositories against erroneous wiping do not perform repository cleanup
-## when more than `repository_size * wipe_size_ratio` total size to be cleaned or
-## more than `repository_files_count * wipe_count_ratio` total files to be removed.
+## To protect repositories from accidental wiping, do not perform cleanup
+## if more than `repository_size * wipe_size_ratio` of total size is to be removed, or
+## more than `repository_files_count * wipe_count_ratio` of total files.
 ## Use 0 to disable wipe protection.
 # set wipe_size_ratio 0.4
 # set wipe_count_ratio 0.4
-
 
 ## Mirrors are configured using standard sources.list syntax
 ## Binary mirrors
@@ -108,15 +107,15 @@ set _tilde            0
 # deb-amd64 http://archive.ubuntu.com/ubuntu mantic main restricted universe multiverse
 # deb-arm64 http://archive.ubuntu.com/ubuntu mantic main restricted universe multiverse
 
-## Although not supported by sources.list it's possible to specify codenames or directories
+## Although not supported by sources.list, it’s possible to specify codenames or directories
 ## separated by commas without spaces here.
 # deb-amd64 http://archive.ubuntu.com/ubuntu mantic,jammy main restricted universe multiverse
 # deb https://packages.ntop.org/apt-stable/20.04/ x64/,all/
 
-## `by-hash` option can be used to control mirroring using hashsums paths.
+## The `by-hash` option can be used to control mirroring using hashsums paths.
 ## A `yes` or `no` value activates/disables the use of this feature if this source indicates support for it,
 ## while `force` will enable the feature regardless of what the source indicates.
-## Default - `yes`.
+## Default: `yes`.
 # deb [ arch=amd64,arm64 by-hash=no ] http://archive.ubuntu.com/ubuntu mantic main restricted universe multiverse
 
 ## Source mirrors
@@ -125,33 +124,31 @@ set _tilde            0
 # deb-src http://archive.ubuntu.com/ubuntu mantic-updates main restricted universe multiverse
 # deb-src http://archive.ubuntu.com/ubuntu mantic-backports main restricted universe multiverse
 
-## Special `src` value for `arch` option can be used to specify src repository too
+## Use the special `src` value in the `arch` option to specify a source repository
 # deb [ arch=src ] http://archive.ubuntu.com/ubuntu mantic main restricted universe multiverse
 
-## By default the name of mirrored folder constructed from mirror URL.
-## Using mirror_path it's possible to override mirror folder name
+## By default, the name of the mirrored folder is derived from the mirror URL.
+## Use `mirror_path` to override the mirror folder name.
 # mirror_path http://archive.ubuntu.com/ubuntu ubuntu
 
-## Ignore errors for specified repository path.
-## Can be exact file or folder.
+## Ignore errors for a specified repository path.
+## Can be an exact file or folder.
 # ignore_errors https://packages.gitlab.com/runner/gitlab-runner/debian pool/bullseye/main/g/gitlab-runner/gitlab-runner_14.8.1_amd64.deb
 
-## Mirror source packages with specified names and binary packages which were built from
-## source packages with specified names.
-## When not specified - mirror all packages.
+## Mirror source packages with the specified names and binary packages built from them.
+## If not specified, all packages are mirrored.
 # include_source_name http://archive.ubuntu.com/ubuntu source_name1 source_name2 source_name3
 
-## Do not mirror source packages with specified names and binary packages which were built from
-## source packages with specified names.
-## When not specified - do not exclude packages.
+## Do not mirror source packages with specified names and binary packages built from them.
+## If not specified, no packages are excluded.
 # exclude_source_name http://archive.ubuntu.com/ubuntu source_name1 source_name2 source_name3
 
-## Mirror binary packages with specified names.
-## When not specified - mirror all packages.
+## Mirror binary packages with the specified names.
+## If not specified, all packages are mirrored.
 # include_binary_packages http://archive.ubuntu.com/ubuntu binary_package1 binary_package2
 
-## Do not mirror binary packages with specified names.
-## When not specified - do not exclude packages.
+## Exclude binary packages with the specified names.
+## If not specified, no packages are excluded.
 # exclude_binary_packages http://archive.ubuntu.com/ubuntu binary_package1 binary_package2
 
 ## Mirror only packages that belong to specified sections.
@@ -171,15 +168,15 @@ set _tilde            0
 ## If not specified, no packages are excluded.
 # exclude_tags http://archive.ubuntu.com/ubuntu facet1::tag1 facet2
 
-## Mirror `dist-upgrader-all` files which are used by Ubuntu's `do-release-upgrade` tool.
-## When not specified - `dist-upgrader-all` files are not mirrored.
+## Mirror `dist-upgrader-all` files used by Ubuntu’s `do-release-upgrade` tool.
+## If not specified, these files are not mirrored.
 # mirror_dist_upgrader http://archive.ubuntu.com/ubuntu
 
-## If specified - clean redundant files in repository (look to _autoclean option)
+## If specified, redundant files in the repository will be cleaned (see `_autoclean` option).
 # clean http://archive.ubuntu.com/ubuntu
-## If specified and repository clean enabled - skip specified paths from clean
+## If specified and repository cleaning is enabled, skip the specified paths during cleaning.
 # skip-clean http://archive.ubuntu.com/ubuntu/pool/c/curl
 # skip-clean http://archive.ubuntu.com/ubuntu/dists/xenial
 
-## Do not use HTTP2 protocol with repository
+## Do not use the HTTP/2 protocol with this repository.
 # http2-disable https://mirrors.ocf.berkeley.edu/debian

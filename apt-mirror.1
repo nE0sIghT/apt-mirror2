@@ -18,8 +18,7 @@ This project should be suitable as general apt-mirror replacement.
 .sp 1
 One of the main advantages of the
 .Nm
-over the apt-mirror - you should
-never got broken mirror in case
+over the apt-mirror - you should never got broken mirror in case
 .Nm
 returns 0 exit code.
 This is ensured by data integrity checks at all stages of mirroring.
@@ -34,9 +33,11 @@ can enable them with the write_file_lists option.
 .Bl -dash -offset 14
 In addition there are some enhancements available:
 .It
+Flexible support for filtering by package name, source name, section, or Debtags
+.It
 Repositories without MD5 hashsums are correctly mirrored
 .It
-Old index files are properly cleaned and don't produces errors in mirror
+Old index files are properly cleaned and don't produce errors during the mirror
 processing
 .It
 Standard source.list
@@ -45,12 +46,12 @@ can be used to specify multiple repository architectures for mirroring.
 multiple codenames (or flat folders) can be specified using comma as delimiter.
 .It
 .Ql mirror_path URL PATH
-option may be used to specify PATH to use for saving mirror files instead of
+option may be used to specify PATH to use for saving mirror files instead of the
 path that is generated from URL.
 .It
-Additional configuration is loaded from the
+Additional configurations are loaded from the
 .Ql *.list
-files in the directory named same as configfile with the .d suffix. Eg
+files in the directory named the same as the configfile with the .d suffix. Eg
 .Ql /etc/apt/mirror.list.d/*.list
 \&.
 .It
@@ -65,26 +66,26 @@ to network or server errors or no repositories were configured.
 .It
 HTTP user agent can be configured via user_agent configuration.
 .It
-Configuration variables are exposed to postmirror_script.
+Configuration variables are exposed to the postmirror_script.
 .It
 .Ql by-hash
 list option can be used to control whether Acquire-By-Hash Release
 option should be respected or enforced.
 .It
-mirror wipe protection is available and configurable via
+Mirror wipe protection is available and configurable via
 .Ql wipe_size_ratio
 and
 .Ql wipe_count_ratio
 settings.
 .It
-per-repository log files are available in the
+Per-repository log files are available in the
 .Ql var_path
 folder
 .It
 .Ql dists
 folder is almost atomicaly replaced using move instead of copy/link
 .It
-native Prometheus metrics are supported
+Native Prometheus metrics are supported
 .It
 \&... and others
 .El

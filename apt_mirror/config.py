@@ -266,6 +266,17 @@ class URLDict(MutableMapping[str, T]):
 
 
 class Config:
+    PACKAGE_FILTERS_KEYS = {
+        "include_source_name",
+        "exclude_source_name",
+        "include_binary_packages",
+        "exclude_binary_packages",
+        "include_sections",
+        "exclude_sections",
+        "include_tags",
+        "exclude_tags",
+    }
+
     BOOLEAN_KEYS = {
         "clean",
         "http2-disable",
@@ -275,12 +286,8 @@ class Config:
     DATA_KEYS = {
         "ignore_errors",
         "mirror_path",
-        "include_source_name",
-        "exclude_source_name",
-        "include_binary_packages",
-        "exclude_binary_packages",
         "skip-clean",
-    }
+    } | PACKAGE_FILTERS_KEYS
 
     DEFAULT_CONFIGFILE = "/etc/apt/mirror.list"
     DEFAULT_CONFIGFILE2 = "/etc/apt/mirror2.list"
@@ -475,12 +482,7 @@ class Config:
         self,
         data_options: dict[str, dict[str, list[str]]],
     ):
-        for filter_name in (
-            "include_source_name",
-            "exclude_source_name",
-            "include_binary_packages",
-            "exclude_binary_packages",
-        ):
+        for filter_name in self.PACKAGE_FILTERS_KEYS:
             filter_data = data_options.get(filter_name, {})
 
             for url in filter_data:

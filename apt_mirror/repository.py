@@ -163,6 +163,7 @@ class SourcesParser(IndexFileParser):
         self._directory: Path | None = None
         self._hash_type = None
         self._package_files: dict[Path, PackageFile] = {}
+        self._section: str | None = None
 
     def _do_parse_index(self, fp: IO[bytes] | mmap):
         self._reset_block_parser()
@@ -209,6 +210,9 @@ class SourcesParser(IndexFileParser):
                             continue
 
                         self._directory = directory  # pylint: disable=W0201
+                    case line if line.startswith(b"Section:"):
+                        _, self._section = line.decode().strip().split()
+                        continue
                     case line if line.startswith(b"Files:"):
                         self._hash_type = HashType.MD5  # pylint: disable=W0201
                         continue
@@ -236,7 +240,9 @@ class SourcesParser(IndexFileParser):
                     self._reset_block_parser()
                     continue
 
-                if not self._package_filter.package_allowed(self._package):
+                if not self._package_filter.package_allowed(
+                    self._package, section=self._section
+                ):
                     self._reset_block_parser()
                     continue
 
@@ -270,12 +276,27 @@ class PackagesParser(IndexFileParser):
     def _reset_block_parser(self):
         self._package = None
         self._source = None
+        self._section: str | None = None
+        self._tags: set[str] = set()
         self._file_path = None
         self._size = 0
         self._hashes: dict[HashType, HashSum] = {}
+        self._multiline: bytes | None = None
 
     def _do_parse_index(self, fp: IO[bytes] | mmap):
         for bytes_line in itertools.chain(iter(fp.readline, b""), (b"\n",)):
+            if self._multiline is not None:
+                if bytes_line[0] == ord(" "):
+                    self._multiline += bytes_line
+                else:
+                    match self._multiline:
+                        case line if line.startswith(b"Tag:"):
+                            self._tags = {
+                                v.strip() for v in self._get_line_value(line).split(",")
+                            }
+
+                    self._multiline = None
+
             if bytes_line[0] != ord("\n"):
                 match bytes_line:
                     case line if line.startswith(b"Package:"):
@@ -298,6 +319,12 @@ class PackagesParser(IndexFileParser):
                         self._size = int(  # pylint: disable=W0201
                             self._get_line_value(line)
                         )
+                    case line if line.startswith(b"Section:"):
+                        self._section = self._get_line_value(line)
+                        continue
+                    case line if line.startswith(b"Tag:"):
+                        self._multiline = line
+                        continue
                     case line if line.startswith(b"%s:" % HashType.MD5.value.encode()):
                         self._hashes[HashType.MD5] = HashSum(
                             type=HashType.MD5, hash=self._get_line_value(line)
@@ -328,7 +355,9 @@ class PackagesParser(IndexFileParser):
 
                 source_name = self._source if self._source else self._package
 
-                if not self._package_filter.package_allowed(source_name, self._package):
+                if not self._package_filter.package_allowed(
+                    source_name, self._package, section=self._section, tags=self._tags
+                ):
                     self._reset_block_parser()
                     continue
 

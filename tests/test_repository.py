@@ -370,6 +370,120 @@ class TestRepository(BaseTest):
             files,
         )
 
+    def test_include_sections(self):
+        config = self.get_config("DebianBookworm", config_name="mirror6.list")
+
+        repository = self.ensure_repository(
+            config.repositories["http://ftp.debian.org/debian"]
+        )
+        repository.mirror_path = Path("repo")
+
+        files = {
+            d.path.name
+            for d in repository.get_pool_files(
+                self.TEST_DATA / "DebianBookworm", False, set()
+            )
+        }
+
+        self.assertNotIn("curl_7.88.1-10+deb12u5_amd64.deb", files)
+        self.assertIn("0ad_0.0.26-3_amd64.deb", files)
+        self.assertIn("libcurl4-doc_7.88.1-10+deb12u5_all.deb", files)
+
+    def test_exclude_sections(self):
+        config = self.get_config("DebianBookworm", config_name="mirror7.list")
+
+        repository = self.ensure_repository(
+            config.repositories["http://ftp.debian.org/debian"]
+        )
+        repository.mirror_path = Path("repo")
+
+        files = {
+            d.path.name
+            for d in repository.get_pool_files(
+                self.TEST_DATA / "DebianBookworm", False, set()
+            )
+        }
+
+        self.assertIn("curl_7.88.1-10+deb12u5_amd64.deb", files)
+        self.assertNotIn("0ad_0.0.26-3_amd64.deb", files)
+        self.assertNotIn("libcurl4-doc_7.88.1-10+deb12u5_all.deb", files)
+
+    def test_include_tags(self):
+        config = self.get_config("DebianBookworm", config_name="mirror8.list")
+
+        repository = self.ensure_repository(
+            config.repositories["http://ftp.debian.org/debian"]
+        )
+        repository.mirror_path = Path("repo")
+
+        files = {
+            d.path.name
+            for d in repository.get_pool_files(
+                self.TEST_DATA / "DebianBookworm", False, set()
+            )
+        }
+
+        self.assertNotIn("curl_7.88.1-10+deb12u5_amd64.deb", files)
+        self.assertIn("0ad_0.0.26-3_amd64.deb", files)
+        self.assertIn("libcurl4-gnutls-dev_7.88.1-10+deb12u5_amd64.deb", files)
+
+    def test_include_facets(self):
+        config = self.get_config("DebianBookworm", config_name="mirror9.list")
+
+        repository = self.ensure_repository(
+            config.repositories["http://ftp.debian.org/debian"]
+        )
+        repository.mirror_path = Path("repo")
+
+        files = {
+            d.path.name
+            for d in repository.get_pool_files(
+                self.TEST_DATA / "DebianBookworm", False, set()
+            )
+        }
+
+        self.assertNotIn("curl_7.88.1-10+deb12u5_amd64.deb", files)
+        self.assertIn("0ad_0.0.26-3_amd64.deb", files)
+        self.assertIn("systemd-container_252.22-1~deb12u1_amd64.deb", files)
+
+    def test_exclude_tags(self):
+        config = self.get_config("DebianBookworm", config_name="mirror10.list")
+
+        repository = self.ensure_repository(
+            config.repositories["http://ftp.debian.org/debian"]
+        )
+        repository.mirror_path = Path("repo")
+
+        files = {
+            d.path.name
+            for d in repository.get_pool_files(
+                self.TEST_DATA / "DebianBookworm", False, set()
+            )
+        }
+
+        self.assertIn("curl_7.88.1-10+deb12u5_amd64.deb", files)
+        self.assertNotIn("0ad_0.0.26-3_amd64.deb", files)
+        self.assertNotIn("libcurl4-gnutls-dev_7.88.1-10+deb12u5_amd64.deb", files)
+
+    def test_exclude_facets(self):
+        config = self.get_config("DebianBookworm", config_name="mirror11.list")
+
+        repository = self.ensure_repository(
+            config.repositories["http://ftp.debian.org/debian"]
+        )
+        repository.mirror_path = Path("repo")
+
+        files = {
+            d.path.name
+            for d in repository.get_pool_files(
+                self.TEST_DATA / "DebianBookworm", False, set()
+            )
+        }
+
+        self.assertIn("curl_7.88.1-10+deb12u5_amd64.deb", files)
+        self.assertNotIn("0ad_0.0.26-3_amd64.deb", files)
+        self.assertNotIn("systemd-container_252.22-1~deb12u1_amd64.deb", files)
+
     def test_dist_upgrader(self):
         config = self.get_config("MixedConfig", config_name="mirror1.list")
 

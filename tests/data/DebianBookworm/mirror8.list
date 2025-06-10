@@ -1,0 +1,3 @@
+deb [ arch=amd64,src ] http://ftp.debian.org/debian bookworm main
+
+include_tags http://ftp.debian.org/debian devel::doc use::gameplaying

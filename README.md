@@ -134,6 +134,7 @@ File lists (ALL, NEW, MD5, SHA256, SHA512) are not written by default, but you c
 
 In addition there are some enhancements available:
 
+- Flexible support for filtering by package name, source name, section, or Debtags
 - Repositories without MD5 hashsums are correctly mirrored
 - Old index files are properly cleaned and don't produce errors during the mirror processing
 - Standard source.list `[ arch=arch1,arch2 ]` can be used to specify multiple repository architectures for mirroring.

@@ -1,0 +1,3 @@
+deb [ arch=amd64,src ] http://ftp.debian.org/debian bookworm main
+
+exclude_sections http://ftp.debian.org/debian doc games

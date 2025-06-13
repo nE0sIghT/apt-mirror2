@@ -1,5 +1,6 @@
 # SPDX-License-Identifer: GPL-3.0-or-later
 
+import os
 import subprocess
 from collections.abc import Iterable, Iterator, MutableMapping
 from dataclasses import dataclass
@@ -14,6 +15,7 @@ from apt_mirror.repository import (
     Codename,
     FlatDirectory,
     FlatRepository,
+    GPGVerify,
     Repository,
 )
 
@@ -36,13 +38,16 @@ class RepositoryConfig:
     codenames: list[str]
     components: list[str]
     by_hash: ByHash
+    gpg_verify: GPGVerify
+    sign_by: list[Path] | None
 
     @classmethod
-    def from_line(cls, line: str, default_arch: str):
+    def from_line(cls, line: str, default_arch: str, default_gpg_verify: GPGVerify):
         log = LoggerFactory.get_logger(cls)
 
         repository_type, url = line.split(maxsplit=1)
         source = False
+        sign_by = None
 
         arches: list[str] = []
         if "-" in repository_type:
@@ -77,6 +82,8 @@ class RepositoryConfig:
                                 f" {value}. Affected config"
                                 f" line: {line}"
                             )
+                    case "sign-by":
+                        sign_by = list(map(Path, value.split(",")))
                     case _:
                         continue
 
@@ -101,10 +108,25 @@ class RepositoryConfig:
                 f" supported. Wrong codenames: {codenames}"
             )
 
+        if sign_by:
+            for path in sign_by:
+                if not path.is_file() or not os.access(path, os.R_OK):
+                    log.warning(
+                        f"The `sign-by` option contains inaccessible path: {path}"
+                    )
+
         url = url.rstrip("/")
 
         return cls(
-            url, URL.from_string(url), arches, source, codenames, components, by_hash
+            url,
+            URL.from_string(url),
+            arches,
+            source,
+            codenames,
+            components,
+            by_hash,
+            default_gpg_verify,
+            sign_by,
         )
 
     def to_repository(self) -> BaseRepository:
@@ -117,11 +139,13 @@ class RepositoryConfig:
                 mirror_dist_upgrader=False,
                 mirror_path=None,
                 ignore_errors=set(),
+                gpg_verify=self.gpg_verify,
                 directories=FlatRepository.FlatDirectories(
                     (
                         directory,
                         FlatDirectory(
                             self.by_hash,
+                            self.sign_by,
                             directory,
                             self.source,
                             bool(self.arches),
@@ -139,11 +163,13 @@ class RepositoryConfig:
                 mirror_dist_upgrader=False,
                 mirror_path=None,
                 ignore_errors=set(),
+                gpg_verify=self.gpg_verify,
                 codenames=Repository.Codenames(
                     (
                         codename,
                         Codename(
                             self.by_hash,
+                            self.sign_by,
                             codename,
                             {
                                 component: Codename.Component(
@@ -169,9 +195,10 @@ class RepositoryConfig:
                 codename = repository.codenames.setdefault(
                     codename,
                     Codename(
-                        self.by_hash,
-                        codename,
-                        {
+                        by_hash=self.by_hash,
+                        sign_by=self.sign_by,
+                        codename=codename,
+                        components={
                             component: Codename.Component(
                                 component, self.source, self.arches
                             )
@@ -182,6 +209,9 @@ class RepositoryConfig:
 
                 if codename.by_hash == ByHash.default():
                     codename.by_hash = self.by_hash
+
+                if not codename.sign_by:
+                    codename.sign_by = self.sign_by
 
                 for component in self.components:
                     component = codename.components.setdefault(
@@ -201,12 +231,19 @@ class RepositoryConfig:
                 directory = repository.directories.setdefault(
                     directory_path,
                     FlatDirectory(
-                        self.by_hash, directory_path, self.source, bool(self.arches)
+                        by_hash=self.by_hash,
+                        sign_by=self.sign_by,
+                        directory=directory_path,
+                        mirror_source=self.source,
+                        mirror_binaries=bool(self.arches),
                     ),
                 )
 
                 if directory.by_hash == ByHash.default():
                     directory.by_hash = self.by_hash
+
+                if not directory.sign_by:
+                    directory.sign_by = self.sign_by
 
                 if not directory.mirror_binaries and bool(self.arches):
                     directory.mirror_binaries = True
@@ -285,6 +322,7 @@ class Config:
 
     DATA_KEYS = {
         "ignore_errors",
+        "gpg_verify",
         "mirror_path",
         "skip-clean",
     } | PACKAGE_FILTERS_KEYS
@@ -331,7 +369,10 @@ class Config:
             "skel_path": "$base_path/skel",
             "var_path": "$base_path/var",
             "etc_netrc": "/etc/apt/auth.conf",
+            "etc_trusted": "/etc/apt/trusted.gpg",
+            "etc_trusted_parts": "/etc/apt/trusted.gpg.d",
             "cleanscript": "$var_path/clean.sh",
+            "gpg_verify": "off",
             "append_logs": "off",
             "write_file_lists": "off",
             "run_postmirror": "0",
@@ -388,7 +429,9 @@ class Config:
                         case line if line.startswith("deb"):
                             try:
                                 repository_config = RepositoryConfig.from_line(
-                                    line, self.default_arch
+                                    line,
+                                    self.default_arch,
+                                    self.gpg_verify,
                                 )
                             except ValueError:
                                 self._log.warning(
@@ -418,6 +461,7 @@ class Config:
         self._set_boolean_fields(boolean_options)
         self._update_mirror_paths(data_options.get("mirror_path", {}))
         self._update_ignore_errors(data_options.get("ignore_errors", {}))
+        self._update_gpg_verify(data_options.get("gpg_verify", {}))
         self._update_skip_clean(data_options.get("skip-clean", {}).keys())
 
         self._update_filters(data_options)
@@ -477,6 +521,16 @@ class Config:
                 continue
 
             self._repositories[url].ignore_errors.update(paths)
+
+    def _update_gpg_verify(self, gpg_verify: dict[str, list[str]]):
+        for url, value in gpg_verify.items():
+            if url not in self._repositories:
+                self._log.warning(
+                    f"gpg_verify was specified for missing repository URL: {url}"
+                )
+                continue
+
+            self._repositories[url].gpg_verify = GPGVerify(value)
 
     def _update_filters(
         self,
@@ -663,6 +717,10 @@ class Config:
         return self._repositories.copy()
 
     @property
+    def gpg_verify(self) -> GPGVerify:
+        return GPGVerify(self._variables["gpg_verify"])
+
+    @property
     def append_logs(self):
         return self.get_bool("append_logs")
 
@@ -689,6 +747,14 @@ class Config:
     @property
     def etc_netrc(self) -> Path:
         return self.get_path("etc_netrc")
+
+    @property
+    def etc_trusted(self) -> Path:
+        return self.get_path("etc_trusted")
+
+    @property
+    def etc_trusted_parts(self) -> Path:
+        return self.get_path("etc_trusted_parts")
 
     @property
     def proxy(self) -> Proxy:

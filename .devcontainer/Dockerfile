@@ -16,6 +16,7 @@ RUN \
         git \
         git-gui \
         gitk \
+        gpgv \
         sudo \
     ;\
     pip --disable-pip-version-check --no-cache-dir install \

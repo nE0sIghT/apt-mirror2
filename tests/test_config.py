@@ -1,4 +1,5 @@
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from apt_mirror.apt_mirror import PathCleaner
 from apt_mirror.config import Config, RepositoryConfigException
@@ -467,3 +468,89 @@ class TestConfig(BaseTest):
                 "dists/noble-backports/multiverse/binary-all/Packages",
             ),
         )
+
+    def test_etc_trusted(self):
+        config = self.get_modified_config(
+            "MixedConfig", "set etc_trusted /a/b/c\nset etc_trusted_parts /d/e/f"
+        )
+
+        self.assertEqual(config.etc_trusted, Path("/a/b/c"))
+        self.assertEqual(config.etc_trusted_parts, Path("/d/e/f"))
+
+        config = self.get_modified_config(
+            "MixedConfig", "set etc_trusted /x/y/z\nset etc_trusted_parts /k/l/m"
+        )
+
+        self.assertEqual(config.etc_trusted, Path("/x/y/z"))
+        self.assertEqual(config.etc_trusted_parts, Path("/k/l/m"))
+
+    def test_sign_by(self):
+        with TemporaryDirectory(prefix="apt-mirror2", suffix=".tmp") as temp_dir:
+            temp_dir = Path(temp_dir)
+
+            for path in ("a/b/c/d", "x/y/z", "k/l", "j/h", "m", "o/p/q/r"):
+                (temp_dir / path).parent.mkdir(parents=True, exist_ok=True)
+                (temp_dir / path).touch()
+
+            with self.assertLogs(level="WARNING") as cm:
+                config = self.get_config(
+                    "SignByConfig", substitute={"TEMP": str(temp_dir)}
+                )
+
+                self.assertEqual(
+                    cm.output,
+                    [
+                        "WARNING:builtins.type:The `sign-by` option contains "
+                        "inaccessible path: /some/missing"
+                    ],
+                )
+
+            repository = self.ensure_repository(
+                config.repositories["http://ftp.debian.org/debian-security"]
+            )
+
+            if repository.codenames["trixie-security"].sign_by is None:
+                raise RuntimeError("sign_by is None")
+
+            self.assertCountEqual(
+                repository.codenames["trixie-security"].sign_by, [temp_dir / "a/b/c/d"]
+            )
+
+            if repository.codenames["bookworm-security"].sign_by is None:
+                raise RuntimeError("sign_by is None")
+
+            self.assertCountEqual(
+                repository.codenames["bookworm-security"].sign_by, [temp_dir / "x/y/z"]
+            )
+
+            self.assertIsNone(repository.codenames["stretch-security"].sign_by)
+
+            repository = self.ensure_repository(
+                config.repositories["http://archive.ubuntu.com/ubuntu"]
+            )
+
+            if repository.codenames["mantic"].sign_by is None:
+                raise RuntimeError("sign_by is None")
+
+            self.assertCountEqual(
+                repository.codenames["mantic"].sign_by,
+                [temp_dir / "k/l", temp_dir / "j/h"],
+            )
+
+            repository = self.ensure_repository(
+                config.repositories["http://mirror.something.ru/repository"]
+            )
+
+            if repository.codenames["codename"].sign_by is None:
+                raise RuntimeError("sign_by is None")
+
+            self.assertCountEqual(
+                repository.codenames["codename"].sign_by, [temp_dir / "m"]
+            )
+
+            if repository.codenames["codename2"].sign_by is None:
+                raise RuntimeError("sign_by is None")
+
+            self.assertCountEqual(
+                repository.codenames["codename2"].sign_by, [Path("/some/missing")]
+            )

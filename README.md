@@ -138,6 +138,7 @@ In addition there are some enhancements available:
 - Non-zero exit code is returned if some of required files were not downloaded due to network or server errors or
   no repositories were configured.
 - Flexible support for filtering by package name, source name, section, or Debtags
+- Optional Release files GPG signature verification
 - Repositories lacking MD5 hashes are correctly mirrored
 - Old index files are properly cleaned and don't produce errors during the mirror processing
 - Standard sources.list `[ arch=arch1,arch2 ]` can be used to specify multiple repository architectures for mirroring.

@@ -14,6 +14,14 @@ set var_path          $base_path/var
 ## Path to apt_auth.conf. See `man apt_auth.conf`
 # set etc_netrc         /etc/apt/auth.conf
 
+## Path to default keyring.
+## This path is deprecated in the apt and will be removed.
+# set etc_trusted       /etc/apt/trusted.gpg
+
+## File fragments for the trusted keys, additional keyrings can be stored here
+## (by other packages or the administrator)
+# set etc_trusted_parts /etc/apt/trusted.gpg.d
+
 ## Set to `on` to append to logs instead of truncating them
 # set append_logs       off
 
@@ -29,6 +37,11 @@ set var_path          $base_path/var
 ## break HTTP/2 downloads due to HTTP/2 concurrent stream limits, which are auto-negotiated
 ## between client and server and (as of now) cannot be limited by the h2 client.
 set nthreads          8
+
+## Whether to check release files GPG signature.
+## Defaults to `off` to match apt-mirror behavior.
+## You could enforce GPG signature verification per server using `gpg_verify url [enable|disable|force]`.
+set gpg_verify        off
 
 ## Rate limit in bytes per second. Suffixes `k` and `m` are allowed. Not enabled by default.
 ## You should never set this lower than `slow_rate`.
@@ -134,9 +147,23 @@ set _tilde            0
 ## Use the special `src` value in the `arch` option to specify a source repository
 # deb [ arch=src ] http://archive.ubuntu.com/ubuntu mantic main restricted universe multiverse
 
+## The `signed-by` is an option to require a repository to pass apt-secure(8) verification with a
+## certain set of keys rather than all trusted keys apt has configured.
+## See `sources.list(5)` man page for more details.
+# deb [ arch=amd64,arm64 signed-by=/some/path/to/keyring.gpg ] http://archive.ubuntu.com/ubuntu mantic main restricted universe multiverse
+
+### Per-mirror options
+## Per-mirror options using format `option URL values...`
+
 ## By default, the name of the mirrored folder is derived from the mirror URL.
 ## Use `mirror_path` to override the mirror folder name.
 # mirror_path http://archive.ubuntu.com/ubuntu ubuntu
+
+## The `gpg_verify` option can be used to control release files signature verification.
+## Allowed values are `on`, `off`, `force`.
+## Defaults to the value of the `gpg_verify` global setting and can be set to `force`, which will make
+## apt-mirror2 fail if a GPG signature cannot be found or verified.
+# gpg_verify http://archive.ubuntu.com/ubuntu off
 
 ## Ignore errors for a specified repository path.
 ## Can be an exact file or folder.

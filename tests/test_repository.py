@@ -10,7 +10,9 @@ from apt_mirror.filter import PackageFilter
 from apt_mirror.repository import (
     ByHash,
     Codename,
+    GPGVerify,
     InvalidReleaseFilesException,
+    InvalidSignatureError,
     PackagesParser,
     Repository,
     SourcesParser,
@@ -34,6 +36,8 @@ class TestRepository(BaseTest):
         arches: list[str] | None = None,
         mirror_source: bool = True,
         mirror_dist_upgrader: bool = False,
+        codename: str = "test",
+        mirror_path: Path = Path("repo"),
     ):
         if components is None:
             components = ["main", "contrib", "non-free", "non-free/debian-installer"]
@@ -47,16 +51,18 @@ class TestRepository(BaseTest):
             skip_clean=set(),
             http2_disable=False,
             mirror_dist_upgrader=mirror_dist_upgrader,
-            mirror_path=Path("repo"),
+            mirror_path=mirror_path,
             ignore_errors=set(),
+            gpg_verify=GPGVerify.default(),
             codenames=Repository.Codenames(
                 [
                     (
-                        "test",
+                        codename,
                         Codename(
-                            ByHash.default(),
-                            "test",
-                            {
+                            by_hash=ByHash.default(),
+                            sign_by=None,
+                            codename=codename,
+                            components={
                                 component: Codename.Component(
                                     component, mirror_source, arches
                                 )
@@ -102,17 +108,20 @@ class TestRepository(BaseTest):
 
     def test_release_files(self):
         repository = self.get_repository()
+        nonexistent = Path("/a/b/c/d")
 
         with self.assertRaises(InvalidReleaseFilesException):
             repository.validate_release_files(
-                self.TEST_DATA / "UnsyncedReleaseFiles", False
+                self.TEST_DATA / "UnsyncedReleaseFiles", False, nonexistent, nonexistent
             )
 
-        repository.validate_release_files(self.TEST_DATA / "SyncedReleaseFiles", False)
+        repository.validate_release_files(
+            self.TEST_DATA / "SyncedReleaseFiles", False, nonexistent, nonexistent
+        )
 
         with self.assertRaises(InvalidReleaseFilesException):
             repository.validate_release_files(
-                self.TEST_DATA / "NonExistingFolder", False
+                self.TEST_DATA / "NonExistingFolder", False, nonexistent, nonexistent
             )
 
     def test_components_filter_buster(self):
@@ -618,6 +627,64 @@ class TestRepository(BaseTest):
         files = [str(f.path) for f in source_parser.parse()]
 
         self.assertFalse(any(".." in path for path in files))
+
+    def test_signature_release(self):
+        repository = self.get_repository(
+            codename="bookworm",
+            components=["main"],
+            arches=["amd64"],
+            mirror_source=True,
+            mirror_path=Path("repo1"),
+        )
+        repository.gpg_verify = GPGVerify.FORCE
+
+        test_data_folder = self.TEST_DATA / "DebianBookworm"
+
+        with self.assertRaisesRegex(
+            InvalidSignatureError, "Unable to verify release file signature:.+/Release"
+        ):
+            repository.validate_release_files(
+                test_data_folder,
+                encode_tilde=False,
+                etc_trusted=Path("/tmp/a/b/c/unknown"),
+                etc_trusted_parts=Path("/tmp/a/b/c/unknown"),
+            )
+
+        repository.validate_release_files(
+            test_data_folder,
+            encode_tilde=False,
+            etc_trusted=Path("/tmp/a/b/c/unknown"),
+            etc_trusted_parts=test_data_folder / "trusted.gpg.d",
+        )
+
+    def test_signature_inrelease(self):
+        repository = self.get_repository(
+            codename="bookworm",
+            components=["main"],
+            arches=["amd64"],
+            mirror_source=True,
+        )
+        repository.gpg_verify = GPGVerify.FORCE
+
+        test_data_folder = self.TEST_DATA / "DebianBookworm"
+
+        with self.assertRaisesRegex(
+            InvalidSignatureError,
+            "Unable to verify release file signature:.+/InRelease",
+        ):
+            repository.validate_release_files(
+                test_data_folder,
+                encode_tilde=False,
+                etc_trusted=Path("/tmp/a/b/c/unknown"),
+                etc_trusted_parts=Path("/tmp/a/b/c/unknown"),
+            )
+
+        repository.validate_release_files(
+            test_data_folder,
+            encode_tilde=False,
+            etc_trusted=Path("/tmp/a/b/c/unknown"),
+            etc_trusted_parts=test_data_folder / "trusted.gpg.d",
+        )
 
 
 class TestSafePath(TestCase):

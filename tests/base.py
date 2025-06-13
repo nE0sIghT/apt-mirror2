@@ -1,5 +1,6 @@
 import tempfile
 from pathlib import Path
+from string import Template
 from unittest import TestCase
 
 from apt_mirror.config import Config
@@ -10,8 +11,25 @@ class BaseTest(TestCase):
     TEST_DATA = Path(__file__).parent / "data"
     maxDiff = None
 
-    def get_config(self, name: str, config_name: str = "mirror.list"):
-        return Config(self.TEST_DATA / name / config_name)
+    def get_config(
+        self,
+        name: str,
+        config_name: str = "mirror.list",
+        substitute: dict[str, str] | None = None,
+    ):
+        config_path = self.TEST_DATA / name / config_name
+
+        if substitute:
+            with (
+                tempfile.NamedTemporaryFile("w+", encoding="utf-8") as tmp,
+                config_path.open("r", encoding="utf-8") as config,
+            ):
+                tmp.write(Template(config.read()).substitute(substitute))
+                tmp.flush()
+
+                return Config(Path(tmp.name))
+
+        return Config(config_path)
 
     def get_modified_config(
         self, name: str, extra: str, config_name: str = "mirror.list"

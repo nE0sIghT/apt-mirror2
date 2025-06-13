@@ -376,13 +376,14 @@ class RepositoryMirror:
             # Check release files
             try:
                 self._repository.validate_release_files(
-                    self._config.skel_path, self._config.encode_tilde
+                    self._config.skel_path,
+                    self._config.encode_tilde,
+                    self._config.etc_trusted,
+                    self._config.etc_trusted_parts,
                 )
                 break
             except InvalidReleaseFilesException as ex:
-                self._log.warning(
-                    f"Release files are invalid: {ex.message}. Retrying..."
-                )
+                self._log.warning(f"Release files are invalid: {ex}. Retrying...")
                 tries -= 1
 
                 if tries < 1:

@@ -1,20 +1,24 @@
 # SPDX-License-Identifer: GPL-3.0-or-later
 
+import base64
 import bz2
 import gzip
 import itertools
 import lzma
 import os
 import shutil
+import subprocess
 from abc import ABC, abstractmethod
-from collections.abc import Iterable, Sequence
+from collections.abc import Generator, Iterable, Sequence
+from contextlib import contextmanager
 from dataclasses import dataclass
-from enum import Enum
+from enum import Enum, EnumMeta
 from mmap import MADV_SEQUENTIAL, MAP_PRIVATE, mmap
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 from typing import IO, Any
 
-from debian.deb822 import Release
+from debian.deb822 import GPGV_DEFAULT_KEYRINGS, GPGV_EXECUTABLE, GpgInfo, Release
 
 from .download import URL, DownloadFile, FileCompression, HashSum, HashType
 from .filter import PackageFilter
@@ -34,9 +38,15 @@ def is_safe_path(root_path: Path, path: Path):
 
 
 class InvalidReleaseFilesException(RuntimeError):
-    def __init__(self, message: str) -> None:
+    pass
+
+
+class InvalidSignatureError(RuntimeError):
+    def __init__(self, message: str, error: str | None = None) -> None:
+        if error:
+            message += f"\nGPG error output:\n{error}"
+
         super().__init__(message)
-        self.message = message
 
 
 @dataclass
@@ -382,9 +392,70 @@ class ByHash(Enum):
         return ByHash.YES
 
 
+class GpgInfoExtended(GpgInfo):
+    @classmethod
+    def from_file(
+        cls, target, keyrings: Iterable[str] | None, *args: Any, **kwargs: Any
+    ):
+        """Create a new GpgInfo object from the given file or
+        a tuple of file signature and file.
+
+        See GpgInfo.from_sequence.
+        Based on the GpgInfo from python-debian
+        TODO: send patch upstream
+        """
+        if isinstance(target, str):
+            return super().from_file(target, *args, keyrings=keyrings, **kwargs)
+
+        keyrings = keyrings or GPGV_DEFAULT_KEYRINGS
+        executable = [GPGV_EXECUTABLE]
+
+        process_args = list(executable)
+        process_args.extend(["--status-fd", "1"])
+        for k in keyrings:
+            process_args.extend(["--keyring", k])
+
+        if "--keyring" not in process_args:
+            raise OSError("cannot access any of the given keyrings")
+
+        process_args.extend(target)
+
+        with subprocess.Popen(
+            process_args,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=False,
+        ) as p:
+            out, err = p.communicate()
+
+        return cls.from_output(out.decode("utf-8"), err.decode("utf-8"))
+
+
+class GPGVerifyMeta(EnumMeta):
+    def __call__(cls, value, *args: Any, **kwds: Any) -> Any:
+        try:
+            return super().__call__(value, *args, **kwds)
+        except ValueError:
+            LoggerFactory.get_logger(cls).warning(
+                f"Wrong `gpg_verify` value: {value}. Using default value."
+            )
+            return GPGVerify.default()
+
+
+class GPGVerify(Enum, metaclass=GPGVerifyMeta):
+    ON = "on"
+    OFF = "off"
+    FORCE = "force"
+
+    @staticmethod
+    def default():
+        return GPGVerify.OFF
+
+
 @dataclass
 class BaseRepositoryMetadata(ABC):
     by_hash: ByHash
+    sign_by: list[Path] | None
 
     @abstractmethod
     def as_path(self) -> Path: ...
@@ -457,6 +528,7 @@ class BaseRepository(ABC):
     mirror_dist_upgrader: bool
     mirror_path: Path | None
     ignore_errors: set[str]
+    gpg_verify: GPGVerify
 
     def __post_init__(self):
         self._log = LoggerFactory.get_logger(self)
@@ -608,71 +680,189 @@ class BaseRepository(ABC):
 
         return pool_files
 
-    def validate_release_files(self, repository_root: Path, encode_tilde: bool):
+    def _get_gpg_keys(
+        self,
+        sign_by: list[Path] | None,
+        etc_trusted: Path,
+        etc_trusted_parts: Path,
+    ):
+        if sign_by:
+            yield from sign_by
+        else:
+            for file in itertools.chain(
+                [etc_trusted],
+                etc_trusted_parts.iterdir() if etc_trusted_parts.exists() else [],
+            ):
+                if not file.is_file() or not os.access(file, os.R_OK):
+                    continue
+
+                yield file
+
+    @contextmanager
+    def _get_merged_gpg_keyring(
+        self,
+        sign_by: list[Path] | None,
+        etc_trusted: Path,
+        etc_trusted_parts: Path,
+    ) -> Generator[str | None, Any, None]:
+        if self.gpg_verify == GPGVerify.OFF:
+            yield None
+            return
+
+        # Mimic apt behavior
+        # https://salsa.debian.org/apt-team/apt/-/blob/63919b628a9bf386136f708f06c1a8a7d4f09fca/apt-pkg/contrib/gpgv.cc#L311
+        with NamedTemporaryFile(prefix="apt-mirror2.", suffix=".gpg") as keyring:
+            for file in self._get_gpg_keys(sign_by, etc_trusted, etc_trusted_parts):
+                if file.suffix == ".asc":
+                    with open(file, "rt", encoding="ascii") as fp:
+                        if not next(fp, "").startswith(
+                            "-----BEGIN PGP PUBLIC KEY BLOCK-----"
+                        ):
+                            continue
+
+                        if next(fp, "-").strip() != "":
+                            continue
+
+                        base64_data = ""
+                        for line in fp:
+                            line = line.strip()
+
+                            if line.startswith("-----END"):
+                                if base64_data:
+                                    keyring.write(base64.b64decode(base64_data))
+
+                                break
+
+                            if not line or line[0] in ("=", "-"):
+                                continue
+
+                            base64_data += line
+                else:
+                    with open(file, "rb") as fp:
+                        header = fp.read(1)
+
+                        # OpenPGP public key packets
+                        # https://salsa.debian.org/apt-team/apt/-/blob/63919b628a9bf386136f708f06c1a8a7d4f09fca/apt-pkg/contrib/gpgv.cc#L352
+                        if header not in (0x98, 0x99, 0xC6):
+                            continue
+
+                        keyring.write(header)
+                        shutil.copyfileobj(fp, keyring)
+
+            keyring.flush()
+            yield keyring.name
+
+    def _validate_release_file_signature(self, release_file: Path, keyring: str | None):
+        if self.gpg_verify != GPGVerify.OFF:
+            gpg_info = None
+            gpg_target = None
+            keyrings = [keyring] if keyring else None
+
+            if release_file.name == "InRelease":
+                gpg_target = str(release_file)
+            else:
+                release_gpg_file = release_file.with_name(f"{release_file.name}.gpg")
+                if release_gpg_file.is_file():
+                    gpg_target = (str(release_gpg_file), str(release_file))
+
+            if gpg_target:
+                gpg_info = GpgInfoExtended.from_file(
+                    gpg_target,
+                    keyrings=keyrings,
+                )
+
+            if gpg_info is None:
+                if self.gpg_verify == GPGVerify.FORCE:
+                    raise InvalidSignatureError(
+                        f"Unable to find GPG signature for file {release_file}"
+                    )
+            elif not gpg_info.valid():
+                raise InvalidSignatureError(
+                    f"Unable to verify release file signature: {release_file}",
+                    "\n".join(gpg_info.err) if gpg_info.err else None,
+                )
+
+    def validate_release_files(
+        self,
+        repository_root: Path,
+        encode_tilde: bool,
+        etc_trusted: Path,
+        etc_trusted_parts: Path,
+    ):
         release_files_exists = False
 
-        for _, metadata_release_files in self.release_files_per_metadata.items():
+        for (
+            metadata,
+            metadata_release_files,
+        ) in self.release_files_per_metadata.items():
             metadata_sizes: dict[str, list[tuple[int, Path]]] = {}
             metadata_hashes: dict[str, dict[HashType, list[tuple[str, Path]]]] = {}
 
-            for release_file_relative_path in metadata_release_files:
-                if release_file_relative_path.suffix == ".gpg":
-                    continue
+            with self._get_merged_gpg_keyring(
+                metadata.sign_by, etc_trusted, etc_trusted_parts
+            ) as keyring:
+                for release_file_relative_path in metadata_release_files:
+                    if release_file_relative_path.suffix == ".gpg":
+                        continue
 
-                release_file = (
-                    repository_root
-                    / self.get_mirror_path(encode_tilde)
-                    / release_file_relative_path
-                )
+                    release_file = (
+                        repository_root
+                        / self.get_mirror_path(encode_tilde)
+                        / release_file_relative_path
+                    )
 
-                if not release_file.exists():
-                    continue
+                    if not release_file.exists():
+                        continue
 
-                with open(release_file, "rt", encoding="utf-8") as fp:
-                    release = Release(fp)
+                    with open(release_file, "rt", encoding="utf-8") as fp:
+                        release = Release(fp)
 
-                release_files_exists = True
-                for hash_type in HashType:
-                    for file in release.get(hash_type.value, []):
-                        try:
-                            size = int(file["size"])
-                        except ValueError:
-                            size = 0
+                    self._validate_release_file_signature(release_file, keyring)
 
-                        if size <= 0:
-                            continue
+                    release_files_exists = True
+                    for hash_type in HashType:
+                        for file in release.get(hash_type.value, []):
+                            try:
+                                size = int(file["size"])
+                            except ValueError:
+                                size = 0
 
-                        # Ignore release files in release files
-                        if file["name"] in self.RELEASE_FILES:
-                            continue
+                            if size <= 0:
+                                continue
 
-                        path = file["name"]
-                        hash_sum = file[hash_type.value]
+                            # Ignore release files in release files
+                            if file["name"] in self.RELEASE_FILES:
+                                continue
 
-                        if any(size != s[0] for s in metadata_sizes.get(path, [])):
-                            raise InvalidReleaseFilesException(
-                                f"Size of file {path} in release file"
-                                f" {release_file_relative_path} differs from size in"
-                                f" release file {metadata_sizes[path][0][1]}"
+                            path = file["name"]
+                            hash_sum = file[hash_type.value]
+
+                            if any(size != s[0] for s in metadata_sizes.get(path, [])):
+                                raise InvalidReleaseFilesException(
+                                    f"Size of file {path} in release file"
+                                    f" {release_file_relative_path} differs from size"
+                                    f" in release file {metadata_sizes[path][0][1]}"
+                                )
+
+                            if any(
+                                hash_sum != s[0]
+                                for s in metadata_hashes.get(path, {}).get(
+                                    hash_type, []
+                                )
+                            ):
+                                raise InvalidReleaseFilesException(
+                                    f"Hashsum of type {hash_type} of file {path} in"
+                                    f" release file {release_file_relative_path}"
+                                    " differs from hashsum in release file"
+                                    f" {metadata_hashes[path][hash_type][0][1]}"
+                                )
+
+                            metadata_sizes.setdefault(path, []).append(
+                                (size, release_file_relative_path)
                             )
-
-                        if any(
-                            hash_sum != s[0]
-                            for s in metadata_hashes.get(path, {}).get(hash_type, [])
-                        ):
-                            raise InvalidReleaseFilesException(
-                                f"Hashsum of type {hash_type} of file {path} in release"
-                                f" file {release_file_relative_path} differs from"
-                                " hashsum in release file"
-                                f" {metadata_hashes[path][hash_type][0][1]}"
-                            )
-
-                        metadata_sizes.setdefault(path, []).append(
-                            (size, release_file_relative_path)
-                        )
-                        metadata_hashes.setdefault(path, {}).setdefault(
-                            hash_type, []
-                        ).append((hash_sum, release_file_relative_path))
+                            metadata_hashes.setdefault(path, {}).setdefault(
+                                hash_type, []
+                            ).append((hash_sum, release_file_relative_path))
 
         if not release_files_exists:
             raise InvalidReleaseFilesException("No release files were found")
@@ -692,6 +882,9 @@ class BaseRepository(ABC):
 
     @abstractmethod
     def get_by_hash_policy(self, metadata: BaseRepositoryMetadata) -> ByHash: ...
+
+    @abstractmethod
+    def get_sign_by(self, metadata: BaseRepositoryMetadata) -> list[Path] | None: ...
 
     @property
     @abstractmethod
@@ -911,6 +1104,9 @@ class Repository(BaseRepository):
     def get_by_hash_policy(self, metadata: BaseRepositoryMetadata) -> ByHash:
         return self.codenames.get_codename(metadata.as_string()).by_hash
 
+    def get_sign_by(self, metadata: BaseRepositoryMetadata) -> list[Path] | None:
+        return self.codenames.get_codename(metadata.as_string()).sign_by
+
     def __str__(self) -> str:
         return (
             f"{self.url}, codenames: {self.codenames}, mirror_path: {self.mirror_path}"
@@ -985,6 +1181,9 @@ class FlatRepository(BaseRepository):
 
     def get_by_hash_policy(self, metadata: BaseRepositoryMetadata) -> ByHash:
         return self.directories.get_directory(metadata.as_path()).by_hash
+
+    def get_sign_by(self, metadata: BaseRepositoryMetadata) -> list[Path] | None:
+        return self.directories.get_directory(metadata.as_path()).sign_by
 
     def __str__(self) -> str:
         return (

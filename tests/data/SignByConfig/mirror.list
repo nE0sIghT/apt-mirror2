@@ -1,0 +1,11 @@
+deb http://ftp.debian.org/debian-security trixie-security main contrib non-free-firmware non-free main/debian-installer
+deb [ arch=amd64,arm64 sign-by=${TEMP}/a/b/c/d ] http://ftp.debian.org/debian-security trixie-security main contrib non-free-firmware non-free main/debian-installer
+deb [ sign-by=${TEMP}/x/y/z ] http://ftp.debian.org/debian-security bookworm-security main contrib non-free-firmware non-free main/debian-installer
+deb-arm64 http://ftp.debian.org/debian-security stretch-security main contrib non-free-firmware non-free main/debian-installer
+
+deb [ sign-by=${TEMP}/k/l,${TEMP}/j/h ] http://archive.ubuntu.com/ubuntu mantic main restricted universe multiverse
+
+deb [ sign-by=${TEMP}/m ] http://mirror.something.ru/repository codename main
+deb-src [ sign-by=${TEMP}/o/p/q/r ] http://mirror.something.ru/repository codename main
+
+deb [ sign-by=/some/missing ] http://mirror.something.ru/repository codename2 main

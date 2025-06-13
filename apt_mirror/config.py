@@ -252,7 +252,7 @@ class URLDict(MutableMapping[str, T]):
     def __len__(self) -> int:
         return len(self._dict)
 
-    def __getitem__(self, key: str) -> Any:
+    def __getitem__(self, key: str) -> T:
         return self._dict[self._find_key(key)]
 
     def __setitem__(self, key: str, value: T) -> None:

@@ -1,3 +1,7 @@
+### Global settings
+## These settings should be located before all other settings/options.
+## Global settings are using format `set SETTING VALUE`
+
 ## Paths to working directories
 set base_path         /var/spool/apt-mirror
 ## All mirrors will be saved to mirror_path
@@ -98,6 +102,9 @@ set _tilde            0
 ## Use 0 to disable wipe protection.
 # set wipe_size_ratio 0.4
 # set wipe_count_ratio 0.4
+
+
+### Mirror source settings
 
 ## Mirrors are configured using standard sources.list syntax
 ## Binary mirrors

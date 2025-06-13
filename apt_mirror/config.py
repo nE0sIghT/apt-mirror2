@@ -324,7 +324,7 @@ class Config:
 
         self._variables: dict[str, str] = {
             "defaultarch": default_arch,
-            "nthreads": "20",
+            "nthreads": "8",
             "uvloop": "1",
             "base_path": default_base_path,
             "mirror_path": "$base_path/mirror",

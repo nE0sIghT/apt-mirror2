@@ -134,6 +134,8 @@ File lists (ALL, NEW, MD5, SHA256, SHA512) are not written by default, but you c
 
 In addition there are some enhancements available:
 
+- Non-zero exit code is returned if some of required files were not downloaded due to network or server errors or
+  no repositories were configured.
 - Flexible support for filtering by package name, source name, section, or Debtags
 - Repositories without MD5 hashsums are correctly mirrored
 - Old index files are properly cleaned and don't produce errors during the mirror processing
@@ -143,8 +145,6 @@ In addition there are some enhancements available:
 - Additional configurations are loaded from the `*.list` files in the directory named the same as the `configfile` with the `.d` suffix. Eg `/etc/apt/mirror.list.d/*.list`.
 - Rate limit is enforced for overall download rate.
 - Slow download rate protection is enabled by default and can be configured via `mirror.list`.
-- Non-zero exit code is returned if some of required files were not downloaded due to network or server errors or
-  no repositories were configured.
 - HTTP user agent can be configured via `user_agent` configuration.
 - Configuration variables are exposed to the postmirror_script.
 - `by-hash` list option can be used to control whether `Acquire-By-Hash` Release option should be respected or enforced.

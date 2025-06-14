@@ -2,7 +2,7 @@
 .Dt apt-mirror2 1
 .Sh NAME
 .Nm apt-mirror2
-.Nd Python/asyncio reimplementation of the apt-mirror - a apt sources mirroring
+.Nd an apt sources mirroring
 tool
 .Sh SYNOPSIS
 .Nm
@@ -11,16 +11,15 @@ tool
 .Op Ar Sy configfile
 .Sh DESCRIPTION
 .Nm
-is the Python/asyncio reimplementation of the apt-mirror developed as drop-in
-replacement for the latest.
+is the Python/asyncio reimplementation of the apt-mirror - an apt sources mirroring
+tool.  
 .sp 0
-This project should be suitable as general apt-mirror replacement.
+This project is intended to be a general drop-in apt-mirror replacement.
 .sp 1
 One of the main advantages of the
 .Nm
-over the apt-mirror - you should never got broken mirror in case
-.Nm
-returns 0 exit code.
+over the apt-mirror is that it never leaves a broken mirror behind, provided
+it exits with code 0.
 This is ensured by data integrity checks at all stages of mirroring.
 .sp 1
 Most of apt-mirror configuration directives are supported.
@@ -38,12 +37,12 @@ to network or server errors or no repositories were configured.
 .It
 Flexible support for filtering by package name, source name, section, or Debtags
 .It
-Repositories without MD5 hashsums are correctly mirrored
+Repositories lacking MD5 hashes are correctly mirrored
 .It
 Old index files are properly cleaned and don't produce errors during the mirror
 processing
 .It
-Standard source.list
+Standard sources.list
 .Ql [ arch=arch1,arch2 ]
 can be used to specify multiple repository architectures for mirroring.
 multiple codenames (or flat folders) can be specified using comma as delimiter.
@@ -82,8 +81,9 @@ Per-repository log files are available in the
 .Ql var_path
 folder
 .It
+The
 .Ql dists
-folder is almost atomicaly replaced using move instead of copy/link
+folder is replaced almost atomically using move instead of copy/link
 .It
 Native Prometheus metrics are supported
 .It

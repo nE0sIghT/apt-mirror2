@@ -140,6 +140,8 @@ class IndexFileParser(ABC):
     def _do_parse_index(self, fp: IO[bytes] | mmap): ...
 
 
+# https://github.com/pylint-dev/pylint/issues/5214
+# pylint: disable=W0201
 class SourcesParser(IndexFileParser):
     def __init__(
         self,
@@ -195,45 +197,36 @@ class SourcesParser(IndexFileParser):
             elif bytes_line[0] != ord("\n"):
                 match bytes_line:
                     case line if line.startswith(b"Package:"):
-                        _, self._package = (  # pylint: disable=W0201
-                            line.decode().strip().split()
-                        )
+                        _, self._package = line.decode().strip().split()
                     case line if line.startswith(b"Directory:"):
-                        # https://github.com/pylint-dev/pylint/issues/5214
-                        _, directory = (  # pylint: disable=W0201
-                            line.decode().strip().split()
-                        )
+                        _, directory = line.decode().strip().split()
 
                         directory = Path(directory)
                         if not self._is_safe_path(directory):
                             self._log.warning(f"Skipping unsafe Directory: {directory}")
                             continue
 
-                        self._directory = directory  # pylint: disable=W0201
+                        self._directory = directory
                     case line if line.startswith(b"Section:"):
                         _, self._section = line.decode().strip().split()
                         continue
                     case line if line.startswith(b"Files:"):
-                        self._hash_type = HashType.MD5  # pylint: disable=W0201
+                        self._hash_type = HashType.MD5
                         continue
                     case line if line.startswith(b"Checksums-"):
                         match line[len(b"Checksums-") : -1]:
                             case b"Sha1:":
-                                self._hash_type = HashType.SHA1  # pylint: disable=W0201
+                                self._hash_type = HashType.SHA1
                             case b"Sha256:":
-                                self._hash_type = (  # pylint: disable=W0201
-                                    HashType.SHA256
-                                )
+                                self._hash_type = HashType.SHA256
                             case b"Sha512:":
-                                self._hash_type = (  # pylint: disable=W0201
-                                    HashType.SHA512
-                                )
+                                self._hash_type = HashType.SHA512
                             case _:
-                                self._hash_type = None  # pylint: disable=W0201
+                                self._hash_type = None
 
                         continue
                     case _:
-                        self._hash_type = None  # pylint: disable=W0201
+                        self._hash_type = None
                         continue
             else:
                 if not self._package or not self._directory:
@@ -300,13 +293,9 @@ class PackagesParser(IndexFileParser):
             if bytes_line[0] != ord("\n"):
                 match bytes_line:
                     case line if line.startswith(b"Package:"):
-                        self._package = self._get_line_value(  # pylint: disable=W0201
-                            line
-                        )
+                        self._package = self._get_line_value(line)
                     case line if line.startswith(b"Source:"):
-                        self._source = self._get_line_value(  # pylint: disable=W0201
-                            line
-                        ).split()[0]
+                        self._source = self._get_line_value(line).split()[0]
                     case line if line.startswith(b"Filename:"):
                         file_path = Path(self._get_line_value(line))
 
@@ -314,11 +303,9 @@ class PackagesParser(IndexFileParser):
                             self._log.warning(f"Skipping unsafe path: {file_path}")
                             continue
 
-                        self._file_path = file_path  # pylint: disable=W0201
+                        self._file_path = file_path
                     case line if line.startswith(b"Size:"):
-                        self._size = int(  # pylint: disable=W0201
-                            self._get_line_value(line)
-                        )
+                        self._size = int(self._get_line_value(line))
                     case line if line.startswith(b"Section:"):
                         self._section = self._get_line_value(line)
                         continue
@@ -346,7 +333,7 @@ class PackagesParser(IndexFileParser):
                             type=HashType.SHA512, hash=self._get_line_value(line)
                         )
                     case _:
-                        self._hash_type = None  # pylint: disable=W0201
+                        self._hash_type = None
                         continue
             else:
                 if not self._package or not self._file_path or not self._size:
@@ -380,6 +367,9 @@ class PackagesParser(IndexFileParser):
 
     def _get_line_value(self, line: bytes):
         return line.decode().strip().split(":", maxsplit=1)[1].strip()
+
+
+# pylint: enable=W0201
 
 
 class ByHash(Enum):

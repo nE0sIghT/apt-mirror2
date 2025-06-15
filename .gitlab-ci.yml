@@ -161,15 +161,15 @@ security (pip-audit):
     - docker:$DOCKER_VERSION-dind
 
 .get latest tag:
-  - LATEST_TAG="latest"
+  - LATEST_TAG="test"
 
   - if [ "${BASE_IMAGE}" = "debian:stable-slim" ]; then
-  -   LATEST_TAG="slim"
+  -   LATEST_TAG="test-slim"
   -   VERSION_SUFFIX="-slim"
   - fi
 
   - if [[ ${BASE_IMAGE} == *alpine* ]]; then
-  -   LATEST_TAG="alpine"
+  -   LATEST_TAG="test-alpine"
   -   VERSION_SUFFIX="-alpine"
   -   PYTHON_VERSION="${PYTHON_VERSION}-alpine"
   - fi
@@ -263,6 +263,8 @@ publish image:
     -   !reference [.get latest tag]
 
     -   docker image ls --tree "${DOCKER_HUB_IMAGE_NAME}:${LATEST_TAG}"
+
+    -   exit 1
 
     -   docker push "${DOCKER_HUB_IMAGE_NAME}:${LATEST_TAG}"
     -   docker push "${QUAY_IO_IMAGE_NAME}:${LATEST_TAG}"

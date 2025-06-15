@@ -1,7 +1,7 @@
 ARG PYTHON_VERSION
 ARG BASE_IMAGE
 
-FROM docker.io/python:$PYTHON_VERSION as builder
+FROM docker.io/python:$PYTHON_VERSION AS builder
 SHELL ["/bin/sh", "-ex", "-c"]
 
 COPY ./ /tmp/apt-mirror2/

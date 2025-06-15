@@ -2,8 +2,11 @@
 variables:
   FF_NETWORK_PER_BUILD: 'true'
   FF_SCRIPT_SECTIONS: 'true'
+
+  DOCKER_VERSION: '28'
   PYTHON_VERSION: '3.12'
   PYTHON_IMAGE: python
+
   DOCKER_HUB_IMAGE_NAME: docker.io/aptmirror/apt-mirror2
   QUAY_IO_IMAGE_NAME: quay.io/apt-mirror2/apt-mirror2
 
@@ -114,13 +117,13 @@ test amd64:
           - '3.12'
           - '3.13'
   tags:
-    - saas-linux-small-amd64
+    - saas-linux-large-amd64
 
 test arm64:
   extends:
     - test amd64
   tags:
-    - saas-linux-small-arm64
+    - saas-linux-large-arm64
 
 security (trivy):
   extends:
@@ -152,46 +155,75 @@ security (pip-audit):
   script:
     - pip-audit -r requirements.txt
 
-.build image:
-  image: docker:24
+.docker job:
+  image: docker:$DOCKER_VERSION
   services:
-    - docker:24-dind
+    - docker:$DOCKER_VERSION-dind
+
+.get latest tag:
+  - LATEST_TAG="latest"
+
+  - if [ "${BASE_IMAGE}" = "debian:stable-slim" ]; then
+  -   LATEST_TAG="slim"
+  -   VERSION_SUFFIX="-slim"
+  - fi
+
+  - if [[ ${BASE_IMAGE} == *alpine* ]]; then
+  -   LATEST_TAG="alpine"
+  -   VERSION_SUFFIX="-alpine"
+  -   PYTHON_VERSION="${PYTHON_VERSION}-alpine"
+  - fi
+
+build image:
+  extends:
+    - .docker job
+  stage: build
   before_script:
-    - LATEST_TAG="latest"
+    - mkdir -p "images/${BASE_IMAGE}"
 
-    - if [ "${BASE_IMAGE}" = "debian:stable-slim" ]; then
-    -   LATEST_TAG="slim"
-    -   VERSION_SUFFIX="-slim"
-    - fi
+    - apk add --no-cache gzip
 
-    - if [[ $BASE_IMAGE == *alpine* ]]; then
-    -   LATEST_TAG="alpine"
-    -   VERSION_SUFFIX="-alpine"
-    -   PYTHON_VERSION="${PYTHON_VERSION}-alpine"
+    - !reference [.get latest tag]
+
+    - docker version
+
+    - if [ ${PLATFORM} == "arm64" ]; then
+    -   export PLATFORM="${PLATFORM}/v8"
     - fi
   script:
-    - >-
-      docker build \
-        --build-arg PYTHON_VERSION="${PYTHON_VERSION}" \
-        --build-arg BASE_IMAGE="${BASE_IMAGE}" \
-        -t "${DOCKER_HUB_IMAGE_NAME}:${LATEST_TAG}" \
-        -t "${QUAY_IO_IMAGE_NAME}:${LATEST_TAG}" \
-        -f Dockerfile \
+    - docker build
+        --platform="linux/${PLATFORM}"
+        --build-arg PYTHON_VERSION="${PYTHON_VERSION}"
+        --build-arg BASE_IMAGE="${BASE_IMAGE}"
+        -t "${DOCKER_HUB_IMAGE_NAME}:${LATEST_TAG}"
+        -t "${QUAY_IO_IMAGE_NAME}:${LATEST_TAG}"
+        -f Dockerfile
         .
+
+    - docker image save
+        --platform="linux/${PLATFORM}"
+        "${DOCKER_HUB_IMAGE_NAME}:${LATEST_TAG}" |
+          gzip > "images/${BASE_IMAGE}/${PLATFORM//\//\~}.tar.gz"
+  artifacts:
+    paths:
+      - images/
+  rules:
+    - if: $CI_COMMIT_TAG && $CI_COMMIT_TAG =~ /^v[0-9]+-[a-z]+[0-9]+$/
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - !reference [.deploy, rules]
   parallel:
     matrix:
       - BASE_IMAGE:
         - debian:stable
         - debian:stable-slim
         - alpine:3
-
-build image:
-  extends:
-    - .build image
-  stage: build
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+        PLATFORM:
+        - amd64
+        - arm64
   needs: []
+  tags:
+    - saas-linux-large-$PLATFORM
 
 .deploy:
   stage: deploy
@@ -212,24 +244,40 @@ build image:
 
 publish image:
   extends:
-    - .build image
     - .docker deploy
-  script:
-    - !reference [.build image, script]
+  before_script:
     - docker login -u "${DOCKER_HUB_USERNAME}" docker.io --password-stdin < "${DOCKER_HUB_PASSWORD}"
-    - docker push "${DOCKER_HUB_IMAGE_NAME}:${LATEST_TAG}"
-
     - docker login -u "${QUAY_IO_USERNAME}" --password-stdin quay.io < "${QUAY_IO_PASSWORD}"
-    - docker push "${QUAY_IO_IMAGE_NAME}:${LATEST_TAG}"
+  script:
+    - for folder in images/*; do
+    -   if ! test -d "${folder}"; then
+    -     continue
+    -   fi
 
-    - if [ -n "${CI_COMMIT_TAG}" ]; then
-    -   IMAGE_TAG="${CI_COMMIT_TAG#v}${VERSION_SUFFIX}"
-    -   docker tag "${DOCKER_HUB_IMAGE_NAME}:${LATEST_TAG}" "${DOCKER_HUB_IMAGE_NAME}:${IMAGE_TAG}"
-    -   docker push "${DOCKER_HUB_IMAGE_NAME}:${IMAGE_TAG}"
+    -   for file in "${folder}/"*.tar.*; do
+    -     docker load < "${file}"
+    -   done
 
-    -   docker tag "${QUAY_IO_IMAGE_NAME}:${LATEST_TAG}" "${QUAY_IO_IMAGE_NAME}:${IMAGE_TAG}"
-    -   docker push "${QUAY_IO_IMAGE_NAME}:${IMAGE_TAG}"
-    - fi
+    -   BASE_IMAGE="$(basename "${folder}")"
+
+    -   !reference [.get latest tag]
+
+    -   docker image ls --tree "${DOCKER_HUB_IMAGE_NAME}:${LATEST_TAG}"
+
+    -   docker push "${DOCKER_HUB_IMAGE_NAME}:${LATEST_TAG}"
+    -   docker push "${QUAY_IO_IMAGE_NAME}:${LATEST_TAG}"
+
+    -   if [ -n "${CI_COMMIT_TAG}" ]; then
+    -     IMAGE_TAG="${CI_COMMIT_TAG#v}${VERSION_SUFFIX}"
+    -     docker tag "${DOCKER_HUB_IMAGE_NAME}:${LATEST_TAG}" "${DOCKER_HUB_IMAGE_NAME}:${IMAGE_TAG}"
+    -     docker push "${DOCKER_HUB_IMAGE_NAME}:${IMAGE_TAG}"
+
+    -     docker tag "${QUAY_IO_IMAGE_NAME}:${LATEST_TAG}" "${QUAY_IO_IMAGE_NAME}:${IMAGE_TAG}"
+    -     docker push "${QUAY_IO_IMAGE_NAME}:${IMAGE_TAG}"
+    -   fi
+    - done
+  needs:
+    - build image
 
 update docker hub readme:
   image: debian:stable

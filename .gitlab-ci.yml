@@ -202,7 +202,7 @@ build image:
 
     - docker image save
         --platform="linux/${PLATFORM}"
-        "${DOCKER_HUB_IMAGE_NAME}:${LATEST_TAG}" |
+        "${DOCKER_HUB_IMAGE_NAME}" "${QUAY_IO_IMAGE_NAME}" |
           gzip > "images/${BASE_IMAGE}/${PLATFORM//\//\~}.tar.gz"
   artifacts:
     paths:
@@ -237,12 +237,13 @@ build image:
 .docker deploy:
   extends:
     - .deploy
+    - .docker job
   rules:
     - if: $CI_COMMIT_TAG && $CI_COMMIT_TAG =~ /^v[0-9]+-[a-z]+[0-9]+$/
       when: never
     - !reference [.deploy, rules]
 
-publish image:
+publish images:
   extends:
     - .docker deploy
   before_script:
@@ -255,14 +256,30 @@ publish image:
     -   fi
 
     -   for file in "${folder}/"*.tar.*; do
-    -     docker load < "${file}"
+    -     PLATFORM="$(basename "${file}")"
+    -     PLATFORM="${PLATFORM%.tar*}"
+    -     PLATFORM="${PLATFORM//\~/\/}"
+
+    -     PLATFORM_IMAGE="apt-mirror2:${PLATFORM//\//_}"
+
+    -     PLATFORM_IMAGES="${PLATFORM_IMAGES} ${PLATFORM_IMAGE}"
+
+    -     docker buildx imagetools create
+            --tag "${PLATFORM_IMAGE}"
+            "oci-archive://${file}"
     -   done
 
     -   BASE_IMAGE="$(basename "${folder}")"
 
     -   !reference [.get latest tag]
 
+    -   docker buildx imagetools create
+          --tag "${DOCKER_HUB_IMAGE_NAME}:${LATEST_TAG}"
+          --tag "${QUAY_IO_IMAGE_NAME}:${LATEST_TAG}"
+          ${PLATFORM_IMAGES}
+
     -   docker image ls --tree "${DOCKER_HUB_IMAGE_NAME}:${LATEST_TAG}"
+    -   docker image ls --tree "${DOCKER_HUB_IMAGE_NAME}"
 
     -   exit 1
 

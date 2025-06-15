@@ -285,6 +285,8 @@ update quay.io readme:
          '{ "description": $readme }' | \
       curl -X PUT \
            --cookie "${COOKIE}" \
+           --silent \
+           --show-error \
            --header "Content-Type: application/json" \
            --header "Authorization: Bearer ${QUAY_IO_TOKEN}" \
            --fail-with-body \

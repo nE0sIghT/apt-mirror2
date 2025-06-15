@@ -636,12 +636,23 @@ class TestRepository(BaseTest):
             mirror_source=True,
             mirror_path=Path("repo1"),
         )
-        repository.gpg_verify = GPGVerify.FORCE
 
         test_data_folder = self.TEST_DATA / "DebianBookworm"
 
+        repository.gpg_verify = GPGVerify.OFF
+
+        repository.validate_release_files(
+            test_data_folder,
+            encode_tilde=False,
+            etc_trusted=Path("/tmp/a/b/c/unknown"),
+            etc_trusted_parts=Path("/tmp/a/b/c/unknown"),
+        )
+
+        repository.gpg_verify = GPGVerify.ON
+
         with self.assertRaisesRegex(
-            InvalidSignatureError, "Unable to verify release file signature:.+/Release"
+            InvalidSignatureError,
+            "Unable to verify release file signature:.+/Release",
         ):
             repository.validate_release_files(
                 test_data_folder,
@@ -657,6 +668,47 @@ class TestRepository(BaseTest):
             etc_trusted_parts=test_data_folder / "trusted.gpg.d",
         )
 
+    def test_signature_release_unsigned(self):
+        repository = self.get_repository(
+            codename="bookworm",
+            components=["main"],
+            arches=["amd64"],
+            mirror_source=True,
+            mirror_path=Path("repo2"),
+        )
+
+        test_data_folder = self.TEST_DATA / "DebianBookworm"
+
+        repository.gpg_verify = GPGVerify.OFF
+
+        repository.validate_release_files(
+            test_data_folder,
+            encode_tilde=False,
+            etc_trusted=Path("/tmp/a/b/c/unknown"),
+            etc_trusted_parts=Path("/tmp/a/b/c/unknown"),
+        )
+
+        repository.gpg_verify = GPGVerify.ON
+
+        repository.validate_release_files(
+            test_data_folder,
+            encode_tilde=False,
+            etc_trusted=Path("/tmp/a/b/c/unknown"),
+            etc_trusted_parts=Path("/tmp/a/b/c/unknown"),
+        )
+
+        repository.gpg_verify = GPGVerify.FORCE
+
+        with self.assertRaisesRegex(
+            InvalidSignatureError, "Unable to find GPG signature.+/Release"
+        ):
+            repository.validate_release_files(
+                test_data_folder,
+                encode_tilde=False,
+                etc_trusted=Path("/tmp/a/b/c/unknown"),
+                etc_trusted_parts=Path("/tmp/a/b/c/unknown"),
+            )
+
     def test_signature_inrelease(self):
         repository = self.get_repository(
             codename="bookworm",
@@ -664,9 +716,19 @@ class TestRepository(BaseTest):
             arches=["amd64"],
             mirror_source=True,
         )
-        repository.gpg_verify = GPGVerify.FORCE
 
         test_data_folder = self.TEST_DATA / "DebianBookworm"
+
+        repository.gpg_verify = GPGVerify.OFF
+
+        repository.validate_release_files(
+            test_data_folder,
+            encode_tilde=False,
+            etc_trusted=Path("/tmp/a/b/c/unknown"),
+            etc_trusted_parts=Path("/tmp/a/b/c/unknown"),
+        )
+
+        repository.gpg_verify = GPGVerify.ON
 
         with self.assertRaisesRegex(
             InvalidSignatureError,

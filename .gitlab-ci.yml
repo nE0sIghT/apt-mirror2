@@ -266,6 +266,28 @@ update docker hub readme:
            --data-binary @- \
            "https://hub.docker.com/v2/repositories/${DOCKER_HUB_IMAGE_NAME##docker.io/}/"
 
+update quay.io readme:
+  image: debian:stable
+  extends:
+    - .docker deploy
+  before_script:
+    - apt-get update
+    - >-
+      apt-get install -y \
+        curl \
+        jq
+  script:
+    - >-
+      jq -n \
+         --arg readme "$(cat README.md)" \
+         '{ "description": $readme }' | \
+      curl -X PUT \
+           --header "Content-Type: application/json" \
+           --header "Authorization: Bearer ${QUAY_IO_PASSWORD}" \
+           --fail-with-body \
+           --data-binary @- \
+           "https://quay.io/api/v1/repository/${QUAY_IO_IMAGE_NAME##quay.io/}"
+
 publish to pypi:
   stage: deploy
   image: python:$PYTHON_VERSION

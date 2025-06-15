@@ -278,7 +278,7 @@ update quay.io readme:
         jq
     - COOKIE="$(mktemp)"
   script:
-    - curl --cookie-jar "${COOKIE}" --silent "https://quay.io/"
+    - curl --cookie-jar "${COOKIE}" --silent "https://quay.io/" > /dev/null
     - >-
       jq -n \
          --arg readme "$(cat README.md)" \

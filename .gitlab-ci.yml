@@ -6,6 +6,7 @@ variables:
   DOCKER_VERSION: '28'
   PYTHON_VERSION: '3.12'
   PYTHON_IMAGE: python
+
   DOCKER_HUB_IMAGE_NAME: docker.io/aptmirror/apt-mirror2
   QUAY_IO_IMAGE_NAME: quay.io/apt-mirror2/apt-mirror2
 
@@ -154,38 +155,70 @@ security (pip-audit):
   script:
     - pip-audit -r requirements.txt
 
+.set container annotations:
+  - ANNOTATION_VERSION="latest"
+  - if [ -n "${CI_COMMIT_TAG}" ]; then
+  -   ANNOTATION_VERSION="${CI_COMMIT_TAG#v}"
+  - fi
+
+  - set --
+      --annotation "${ANNOTATION_PREFIX}org.opencontainers.image.created=$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+      --annotation "${ANNOTATION_PREFIX}org.opencontainers.image.authors=Yuri Konotopov <https://gitlab.com/nE0sIghT>"
+      --annotation "${ANNOTATION_PREFIX}org.opencontainers.image.url=${CI_PROJECT_URL}"
+      --annotation "${ANNOTATION_PREFIX}org.opencontainers.image.source=${CI_PROJECT_URL}"
+      --annotation "${ANNOTATION_PREFIX}org.opencontainers.image.version=${ANNOTATION_VERSION}"
+      --annotation "${ANNOTATION_PREFIX}org.opencontainers.image.revision=${CI_COMMIT_SHA}"
+      --annotation "${ANNOTATION_PREFIX}org.opencontainers.image.licenses=GPL-3.0-or-later"
+      --annotation "${ANNOTATION_PREFIX}org.opencontainers.image.title=apt-mirror2"
+      --annotation "${ANNOTATION_PREFIX}org.opencontainers.image.description=An apt sources mirroring tool"
+
 .build image:
   image: docker:$DOCKER_VERSION
   services:
     - docker:$DOCKER_VERSION-dind
   before_script:
-    - LATEST_TAG="latest"
+    - mkdir -p "images/${BASE_IMAGE}"
 
-    - if [ "${BASE_IMAGE}" = "debian:stable-slim" ]; then
-    -   LATEST_TAG="slim"
-    -   VERSION_SUFFIX="-slim"
-    - fi
-
-    - if [[ $BASE_IMAGE == *alpine* ]]; then
-    -   LATEST_TAG="alpine"
-    -   VERSION_SUFFIX="-alpine"
+    - if [[ ${BASE_IMAGE} == *alpine* ]]; then
     -   PYTHON_VERSION="${PYTHON_VERSION}-alpine"
     - fi
+
+    - if [ ${PLATFORM} == "arm64" ]; then
+    -   export PLATFORM="${PLATFORM}/v8"
+    - fi
+
+    - DOCKER_BUILD_ARGS=""
+
+    - docker version
+    - docker buildx create --use
   script:
-    - >-
-      docker build \
-        --build-arg PYTHON_VERSION="${PYTHON_VERSION}" \
-        --build-arg BASE_IMAGE="${BASE_IMAGE}" \
-        -t "${DOCKER_HUB_IMAGE_NAME}:${LATEST_TAG}" \
-        -t "${QUAY_IO_IMAGE_NAME}:${LATEST_TAG}" \
-        -f Dockerfile \
+    - !reference [.set container annotations]
+    - docker buildx build
+        "${@}"
+        --platform="linux/${PLATFORM}"
+        --build-arg PYTHON_VERSION="${PYTHON_VERSION}"
+        --build-arg BASE_IMAGE="${BASE_IMAGE}"
+        --metadata-file "images/${BASE_IMAGE}/${PLATFORM//\//\~}.json"
+        -t "${DOCKER_HUB_IMAGE_NAME}"
+        -t "${QUAY_IO_IMAGE_NAME}"
+        -f Dockerfile
+        $DOCKER_BUILD_ARGS
         .
+  artifacts:
+    paths:
+      - images/
+
   parallel:
     matrix:
       - BASE_IMAGE:
         - debian:stable
         - debian:stable-slim
         - alpine:3
+        PLATFORM:
+        - amd64
+        - arm64
+  tags:
+    - saas-linux-large-$PLATFORM
 
 build image:
   extends:
@@ -216,22 +249,74 @@ publish image:
   extends:
     - .build image
     - .docker deploy
-  script:
-    - !reference [.build image, script]
+  before_script:
+    - !reference [.build image, before_script]
+
+    - DOCKER_BUILD_ARGS="--output type=image,push=true,push-by-digest=true,name-canonical=true"
+
     - docker login -u "${DOCKER_HUB_USERNAME}" docker.io --password-stdin < "${DOCKER_HUB_PASSWORD}"
-    - docker push "${DOCKER_HUB_IMAGE_NAME}:${LATEST_TAG}"
-
     - docker login -u "${QUAY_IO_USERNAME}" --password-stdin quay.io < "${QUAY_IO_PASSWORD}"
-    - docker push "${QUAY_IO_IMAGE_NAME}:${LATEST_TAG}"
 
-    - if [ -n "${CI_COMMIT_TAG}" ]; then
-    -   IMAGE_TAG="${CI_COMMIT_TAG#v}${VERSION_SUFFIX}"
-    -   docker tag "${DOCKER_HUB_IMAGE_NAME}:${LATEST_TAG}" "${DOCKER_HUB_IMAGE_NAME}:${IMAGE_TAG}"
-    -   docker push "${DOCKER_HUB_IMAGE_NAME}:${IMAGE_TAG}"
+publish manifest:
+  extends:
+    - .build image
+    - .docker deploy
+  before_script:
+    - !reference [.build image, before_script]
 
-    -   docker tag "${QUAY_IO_IMAGE_NAME}:${LATEST_TAG}" "${QUAY_IO_IMAGE_NAME}:${IMAGE_TAG}"
-    -   docker push "${QUAY_IO_IMAGE_NAME}:${IMAGE_TAG}"
-    - fi
+    - docker login -u "${DOCKER_HUB_USERNAME}" docker.io --password-stdin < "${DOCKER_HUB_PASSWORD}"
+    - docker login -u "${QUAY_IO_USERNAME}" --password-stdin quay.io < "${QUAY_IO_PASSWORD}"
+
+    - apk add --no-cache jq
+  script:
+    - for folder in images/*; do
+    -   if ! test -d "${folder}"; then
+    -     continue
+    -   fi
+
+    -   BASE_IMAGE="$(basename "${folder}")"
+    -   LATEST_TAG="latest"
+
+    -   if [ "${BASE_IMAGE}" = "debian:stable-slim" ]; then
+    -     LATEST_TAG="slim"
+    -     VERSION_SUFFIX="-slim"
+    -   fi
+
+    -   if [[ ${BASE_IMAGE} == *alpine* ]]; then
+    -     LATEST_TAG="alpine"
+    -     VERSION_SUFFIX="-alpine"
+    -   fi
+
+    -   DOCKER_TAGS="--tag ${DOCKER_HUB_IMAGE_NAME}:${LATEST_TAG}"
+    -   QUAYIO_TAGS="--tag ${QUAY_IO_IMAGE_NAME}:${LATEST_TAG}"
+
+    -   if [ -n "${CI_COMMIT_TAG}" ]; then
+    -     IMAGE_TAG="${CI_COMMIT_TAG#v}${VERSION_SUFFIX}"
+
+    -     DOCKER_TAGS="${DOCKER_TAGS} --tag ${DOCKER_HUB_IMAGE_NAME}:${IMAGE_TAG}"
+    -     QUAYIO_TAGS="${QUAYIO_TAGS} --tag ${QUAY_IO_IMAGE_NAME}:${IMAGE_TAG}"
+    -   fi
+
+    -   ANNOTATION_PREFIX="manifest-descriptor:"
+    -   !reference [.set container annotations]
+
+    -   docker buildx imagetools create
+          ${DOCKER_TAGS}
+          "${@}"
+          $(jq -r '.["containerimage.digest"]' "${folder}"/*.json | sed "s#^#${DOCKER_HUB_IMAGE_NAME}@#")
+    -   docker buildx imagetools inspect "${DOCKER_HUB_IMAGE_NAME}:${LATEST_TAG}"
+
+    -   docker buildx imagetools create
+          ${QUAYIO_TAGS}
+          "${DOCKER_HUB_IMAGE_NAME}:${LATEST_TAG}"
+    -   docker buildx imagetools inspect "${QUAY_IO_IMAGE_NAME}:${LATEST_TAG}"
+
+    - done
+  parallel: null
+  needs:
+    - publish image
+  tags:
+    - saas-linux-large-amd64
 
 update docker hub readme:
   image: debian:stable

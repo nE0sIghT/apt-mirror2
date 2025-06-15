@@ -276,14 +276,17 @@ update quay.io readme:
       apt-get install -y \
         curl \
         jq
+    - COOKIE="$(mktemp)"
   script:
+    - curl --cookie-jar "${COOKIE}" --silent "https://quay.io/"
     - >-
       jq -n \
          --arg readme "$(cat README.md)" \
          '{ "description": $readme }' | \
       curl -X PUT \
+           --cookie "${COOKIE}" \
            --header "Content-Type: application/json" \
-           --header "Authorization: Bearer ${QUAY_IO_PASSWORD}" \
+           --header "Authorization: Bearer ${QUAY_IO_TOKEN}" \
            --fail-with-body \
            --data-binary @- \
            "https://quay.io/api/v1/repository/${QUAY_IO_IMAGE_NAME##quay.io/}"

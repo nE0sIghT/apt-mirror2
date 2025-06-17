@@ -2,6 +2,8 @@
 variables:
   FF_NETWORK_PER_BUILD: 'true'
   FF_SCRIPT_SECTIONS: 'true'
+
+  DOCKER_VERSION: '28'
   PYTHON_VERSION: '3.12'
   PYTHON_IMAGE: python
   DOCKER_HUB_IMAGE_NAME: docker.io/aptmirror/apt-mirror2
@@ -153,9 +155,9 @@ security (pip-audit):
     - pip-audit -r requirements.txt
 
 .build image:
-  image: docker:24
+  image: docker:$DOCKER_VERSION
   services:
-    - docker:24-dind
+    - docker:$DOCKER_VERSION-dind
   before_script:
     - LATEST_TAG="latest"
 

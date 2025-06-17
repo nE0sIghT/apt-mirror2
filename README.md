@@ -19,6 +19,8 @@ For additional dependencies, please refer to the `pyproject.toml` and/or `requir
 Container images are available in the Docker Hub under [aptmirror/apt-mirror2](https://hub.docker.com/r/aptmirror/apt-mirror2) repository and in the
 Red Hat Quay.io under [apt-mirror2/apt-mirror2](https://quay.io/repository/apt-mirror2/apt-mirror2) repository.
 
+Supported architectures: amd64, arm64v8.
+
 You can try them using
 
 ```bash

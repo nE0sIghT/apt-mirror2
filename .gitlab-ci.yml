@@ -114,13 +114,13 @@ test amd64:
           - '3.12'
           - '3.13'
   tags:
-    - saas-linux-small-amd64
+    - saas-linux-large-amd64
 
 test arm64:
   extends:
     - test amd64
   tags:
-    - saas-linux-small-arm64
+    - saas-linux-large-arm64
 
 security (trivy):
   extends:

@@ -119,6 +119,15 @@ test amd64:
   tags:
     - saas-linux-large-amd64
 
+test i386:
+  extends:
+    - test amd64
+  image:
+    name: *test_image
+    docker:
+      platform: i386
+  parallel: null
+
 test arm64:
   extends:
     - test amd64

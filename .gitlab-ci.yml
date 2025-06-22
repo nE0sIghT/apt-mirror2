@@ -49,7 +49,7 @@ stages:
     -   sed -i -e '/uvloop/d' requirements.txt
     - fi
 
-    - pip install -r requirements.txt -r requirements/dev.txt
+    - pip install --verbose -r requirements.txt -r requirements/dev.txt
   needs: []
 
 .validate defaults:
@@ -137,10 +137,20 @@ test arm64:
 test s390x:
   extends:
     - test amd64
-  image:
-    name: *test_image
-    docker:
-      platform: s390x
+  before_script:
+    - apt-get update
+    - apt-get -y install
+        supermin
+        qemu-system-s390x
+  script:
+    - supermin
+       --name=tests
+       --enable=qemu
+       --size=2G
+       --shell=/bin/bash
+       "--copy-in=$CI_PROJECT_DIR:$CI_PROJECT_DIR"
+       --command="cd $CI_PROJECT_DIR; pip install --verbose -r requirements.txt -r requirements/dev.txt; pytest --junitxml=pytest-result.xml"
+       "--copy-out=$CI_PROJECT_DIR/pytest-result.xml" "$CI_PROJECT_DIR/pytest-result.xml"
   parallel: null
   tags:
     - saas-linux-2xlarge-amd64

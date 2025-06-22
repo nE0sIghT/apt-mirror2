@@ -38,7 +38,7 @@ stages:
 .test defaults:
   extends:
     - .pip cache
-  image: docker.io/$PYTHON_IMAGE:$PYTHON_VERSION
+  image: &test_image docker.io/$PYTHON_IMAGE:$PYTHON_VERSION
   before_script:
     - python --version
 
@@ -124,6 +124,17 @@ test arm64:
     - test amd64
   tags:
     - saas-linux-large-arm64
+
+test s390x:
+  extends:
+    - test amd64
+  image:
+    name: *test_image
+    docker:
+      platform: s390x
+  parallel: null
+  tags:
+    - saas-linux-2xlarge-amd64
 
 security (trivy):
   extends:

@@ -276,6 +276,7 @@ publish manifest:
 
     -   BASE_IMAGE="$(basename "${folder}")"
     -   LATEST_TAG="latest"
+    -   VERSION_SUFFIX=""
 
     -   if [ "${BASE_IMAGE}" = "debian:stable-slim" ]; then
     -     LATEST_TAG="slim"

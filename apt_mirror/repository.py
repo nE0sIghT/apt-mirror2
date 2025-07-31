@@ -741,9 +741,12 @@ class BaseRepository(ABC):
                     with open(file, "rb") as fp:
                         header = fp.read(1)
 
+                        if len(header) != 1:
+                            continue
+
                         # OpenPGP public key packets
                         # https://salsa.debian.org/apt-team/apt/-/blob/63919b628a9bf386136f708f06c1a8a7d4f09fca/apt-pkg/contrib/gpgv.cc#L352
-                        if header not in (0x98, 0x99, 0xC6):
+                        if header[0] not in (0x98, 0x99, 0xC6):
                             continue
 
                         keyring.write(header)

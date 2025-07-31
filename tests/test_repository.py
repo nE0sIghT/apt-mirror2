@@ -665,7 +665,14 @@ class TestRepository(BaseTest):
             test_data_folder,
             encode_tilde=False,
             etc_trusted=Path("/tmp/a/b/c/unknown"),
-            etc_trusted_parts=test_data_folder / "trusted.gpg.d",
+            etc_trusted_parts=test_data_folder / "trusted.gpg.d.asc",
+        )
+
+        repository.validate_release_files(
+            test_data_folder,
+            encode_tilde=False,
+            etc_trusted=Path("/tmp/a/b/c/unknown"),
+            etc_trusted_parts=test_data_folder / "trusted.gpg.d.gpg",
         )
 
     def test_signature_release_unsigned(self):
@@ -745,7 +752,14 @@ class TestRepository(BaseTest):
             test_data_folder,
             encode_tilde=False,
             etc_trusted=Path("/tmp/a/b/c/unknown"),
-            etc_trusted_parts=test_data_folder / "trusted.gpg.d",
+            etc_trusted_parts=test_data_folder / "trusted.gpg.d.asc",
+        )
+
+        repository.validate_release_files(
+            test_data_folder,
+            encode_tilde=False,
+            etc_trusted=Path("/tmp/a/b/c/unknown"),
+            etc_trusted_parts=test_data_folder / "trusted.gpg.d.gpg",
         )
 
 

@@ -654,7 +654,8 @@ class APTMirror:
 
     async def run(self) -> int:
         self._log.info(f"apt-mirror2 version {__version__}")
-        signal.signal(signal.SIGTERM, lambda _, __: self.on_stop())
+        for signum in (signal.SIGINT, signal.SIGTERM):
+            signal.signal(signum, lambda _, __: self.on_stop())
 
         if not self._config.repositories:
             self._log.error("No repositories are found in the configuration")
@@ -875,7 +876,7 @@ def main() -> int:
             return uvloop_run(apt_mirror.run())
 
         return asyncio.run(apt_mirror.run())
-    except RuntimeError as ex:
+    except (RuntimeError, KeyboardInterrupt) as ex:
         if apt_mirror.stopped:
             LOG.info("Stopped")
             return 0

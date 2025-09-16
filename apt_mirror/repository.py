@@ -455,7 +455,7 @@ class GPGVerify(Enum, metaclass=GPGVerifyMeta):
 @dataclass
 class BaseRepositoryMetadata(ABC):
     by_hash: ByHash
-    sign_by: list[Path] | None
+    signed_by: list[Path] | None
 
     @abstractmethod
     def as_path(self) -> Path: ...
@@ -682,12 +682,12 @@ class BaseRepository(ABC):
 
     def _get_gpg_keys(
         self,
-        sign_by: list[Path] | None,
+        signed_by: list[Path] | None,
         etc_trusted: Path,
         etc_trusted_parts: Path,
     ):
-        if sign_by:
-            yield from sign_by
+        if signed_by:
+            yield from signed_by
         else:
             for file in itertools.chain(
                 [etc_trusted],
@@ -701,7 +701,7 @@ class BaseRepository(ABC):
     @contextmanager
     def _get_merged_gpg_keyring(
         self,
-        sign_by: list[Path] | None,
+        signed_by: list[Path] | None,
         etc_trusted: Path,
         etc_trusted_parts: Path,
     ) -> Generator[str | None, Any, None]:
@@ -712,7 +712,7 @@ class BaseRepository(ABC):
         # Mimic apt behavior
         # https://salsa.debian.org/apt-team/apt/-/blob/63919b628a9bf386136f708f06c1a8a7d4f09fca/apt-pkg/contrib/gpgv.cc#L311
         with NamedTemporaryFile(prefix="apt-mirror2.", suffix=".gpg") as keyring:
-            for file in self._get_gpg_keys(sign_by, etc_trusted, etc_trusted_parts):
+            for file in self._get_gpg_keys(signed_by, etc_trusted, etc_trusted_parts):
                 if file.suffix == ".asc":
                     with open(file, "rt", encoding="ascii") as fp:
                         if not next(fp, "").startswith(
@@ -802,7 +802,7 @@ class BaseRepository(ABC):
             metadata_hashes: dict[str, dict[HashType, list[tuple[str, Path]]]] = {}
 
             with self._get_merged_gpg_keyring(
-                metadata.sign_by, etc_trusted, etc_trusted_parts
+                metadata.signed_by, etc_trusted, etc_trusted_parts
             ) as keyring:
                 for release_file_relative_path in metadata_release_files:
                     if release_file_relative_path.suffix == ".gpg":
@@ -887,7 +887,7 @@ class BaseRepository(ABC):
     def get_by_hash_policy(self, metadata: BaseRepositoryMetadata) -> ByHash: ...
 
     @abstractmethod
-    def get_sign_by(self, metadata: BaseRepositoryMetadata) -> list[Path] | None: ...
+    def get_signed_by(self, metadata: BaseRepositoryMetadata) -> list[Path] | None: ...
 
     @property
     @abstractmethod
@@ -1107,8 +1107,8 @@ class Repository(BaseRepository):
     def get_by_hash_policy(self, metadata: BaseRepositoryMetadata) -> ByHash:
         return self.codenames.get_codename(metadata.as_string()).by_hash
 
-    def get_sign_by(self, metadata: BaseRepositoryMetadata) -> list[Path] | None:
-        return self.codenames.get_codename(metadata.as_string()).sign_by
+    def get_signed_by(self, metadata: BaseRepositoryMetadata) -> list[Path] | None:
+        return self.codenames.get_codename(metadata.as_string()).signed_by
 
     def __str__(self) -> str:
         return (
@@ -1185,8 +1185,8 @@ class FlatRepository(BaseRepository):
     def get_by_hash_policy(self, metadata: BaseRepositoryMetadata) -> ByHash:
         return self.directories.get_directory(metadata.as_path()).by_hash
 
-    def get_sign_by(self, metadata: BaseRepositoryMetadata) -> list[Path] | None:
-        return self.directories.get_directory(metadata.as_path()).sign_by
+    def get_signed_by(self, metadata: BaseRepositoryMetadata) -> list[Path] | None:
+        return self.directories.get_directory(metadata.as_path()).signed_by
 
     def __str__(self) -> str:
         return (

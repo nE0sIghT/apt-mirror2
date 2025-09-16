@@ -39,7 +39,7 @@ class RepositoryConfig:
     components: list[str]
     by_hash: ByHash
     gpg_verify: GPGVerify
-    sign_by: list[Path] | None
+    signed_by: list[Path] | None
 
     @classmethod
     def from_line(cls, line: str, default_arch: str, default_gpg_verify: GPGVerify):
@@ -47,7 +47,7 @@ class RepositoryConfig:
 
         repository_type, url = line.split(maxsplit=1)
         source = False
-        sign_by = None
+        signed_by = None
 
         arches: list[str] = []
         if "-" in repository_type:
@@ -82,8 +82,8 @@ class RepositoryConfig:
                                 f" {value}. Affected config"
                                 f" line: {line}"
                             )
-                    case "sign-by":
-                        sign_by = list(map(Path, value.split(",")))
+                    case "signed-by":
+                        signed_by = list(map(Path, value.split(",")))
                     case _:
                         continue
 
@@ -108,11 +108,11 @@ class RepositoryConfig:
                 f" supported. Wrong codenames: {codenames}"
             )
 
-        if sign_by:
-            for path in sign_by:
+        if signed_by:
+            for path in signed_by:
                 if not path.is_file() or not os.access(path, os.R_OK):
                     log.warning(
-                        f"The `sign-by` option contains inaccessible path: {path}"
+                        f"The `signed-by` option contains inaccessible path: {path}"
                     )
 
         url = url.rstrip("/")
@@ -126,7 +126,7 @@ class RepositoryConfig:
             components,
             by_hash,
             default_gpg_verify,
-            sign_by,
+            signed_by,
         )
 
     def to_repository(self) -> BaseRepository:
@@ -145,7 +145,7 @@ class RepositoryConfig:
                         directory,
                         FlatDirectory(
                             self.by_hash,
-                            self.sign_by,
+                            self.signed_by,
                             directory,
                             self.source,
                             bool(self.arches),
@@ -169,7 +169,7 @@ class RepositoryConfig:
                         codename,
                         Codename(
                             self.by_hash,
-                            self.sign_by,
+                            self.signed_by,
                             codename,
                             {
                                 component: Codename.Component(
@@ -196,7 +196,7 @@ class RepositoryConfig:
                     codename,
                     Codename(
                         by_hash=self.by_hash,
-                        sign_by=self.sign_by,
+                        signed_by=self.signed_by,
                         codename=codename,
                         components={
                             component: Codename.Component(
@@ -210,8 +210,8 @@ class RepositoryConfig:
                 if codename.by_hash == ByHash.default():
                     codename.by_hash = self.by_hash
 
-                if not codename.sign_by:
-                    codename.sign_by = self.sign_by
+                if not codename.signed_by:
+                    codename.signed_by = self.signed_by
 
                 for component in self.components:
                     component = codename.components.setdefault(
@@ -232,7 +232,7 @@ class RepositoryConfig:
                     directory_path,
                     FlatDirectory(
                         by_hash=self.by_hash,
-                        sign_by=self.sign_by,
+                        signed_by=self.signed_by,
                         directory=directory_path,
                         mirror_source=self.source,
                         mirror_binaries=bool(self.arches),
@@ -242,8 +242,8 @@ class RepositoryConfig:
                 if directory.by_hash == ByHash.default():
                     directory.by_hash = self.by_hash
 
-                if not directory.sign_by:
-                    directory.sign_by = self.sign_by
+                if not directory.signed_by:
+                    directory.signed_by = self.signed_by
 
                 if not directory.mirror_binaries and bool(self.arches):
                     directory.mirror_binaries = True

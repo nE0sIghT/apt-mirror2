@@ -60,7 +60,7 @@ class TestRepository(BaseTest):
                         codename,
                         Codename(
                             by_hash=ByHash.default(),
-                            sign_by=None,
+                            signed_by=None,
                             codename=codename,
                             components={
                                 component: Codename.Component(

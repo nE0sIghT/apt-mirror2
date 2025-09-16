@@ -484,7 +484,7 @@ class TestConfig(BaseTest):
         self.assertEqual(config.etc_trusted, Path("/x/y/z"))
         self.assertEqual(config.etc_trusted_parts, Path("/k/l/m"))
 
-    def test_sign_by(self):
+    def test_signed_by(self):
         with TemporaryDirectory(prefix="apt-mirror2", suffix=".tmp") as temp_dir:
             temp_dir = Path(temp_dir)
 
@@ -494,13 +494,13 @@ class TestConfig(BaseTest):
 
             with self.assertLogs(level="WARNING") as cm:
                 config = self.get_config(
-                    "SignByConfig", substitute={"TEMP": str(temp_dir)}
+                    "SignedByConfig", substitute={"TEMP": str(temp_dir)}
                 )
 
                 self.assertEqual(
                     cm.output,
                     [
-                        "WARNING:builtins.type:The `sign-by` option contains "
+                        "WARNING:builtins.type:The `signed-by` option contains "
                         "inaccessible path: /some/missing"
                     ],
                 )
@@ -509,31 +509,33 @@ class TestConfig(BaseTest):
                 config.repositories["http://ftp.debian.org/debian-security"]
             )
 
-            if repository.codenames["trixie-security"].sign_by is None:
-                raise RuntimeError("sign_by is None")
+            if repository.codenames["trixie-security"].signed_by is None:
+                raise RuntimeError("signed_by is None")
 
             self.assertCountEqual(
-                repository.codenames["trixie-security"].sign_by, [temp_dir / "a/b/c/d"]
+                repository.codenames["trixie-security"].signed_by,
+                [temp_dir / "a/b/c/d"],
             )
 
-            if repository.codenames["bookworm-security"].sign_by is None:
-                raise RuntimeError("sign_by is None")
+            if repository.codenames["bookworm-security"].signed_by is None:
+                raise RuntimeError("signed_by is None")
 
             self.assertCountEqual(
-                repository.codenames["bookworm-security"].sign_by, [temp_dir / "x/y/z"]
+                repository.codenames["bookworm-security"].signed_by,
+                [temp_dir / "x/y/z"],
             )
 
-            self.assertIsNone(repository.codenames["stretch-security"].sign_by)
+            self.assertIsNone(repository.codenames["stretch-security"].signed_by)
 
             repository = self.ensure_repository(
                 config.repositories["http://archive.ubuntu.com/ubuntu"]
             )
 
-            if repository.codenames["mantic"].sign_by is None:
-                raise RuntimeError("sign_by is None")
+            if repository.codenames["mantic"].signed_by is None:
+                raise RuntimeError("signed_by is None")
 
             self.assertCountEqual(
-                repository.codenames["mantic"].sign_by,
+                repository.codenames["mantic"].signed_by,
                 [temp_dir / "k/l", temp_dir / "j/h"],
             )
 
@@ -541,16 +543,16 @@ class TestConfig(BaseTest):
                 config.repositories["http://mirror.something.ru/repository"]
             )
 
-            if repository.codenames["codename"].sign_by is None:
-                raise RuntimeError("sign_by is None")
+            if repository.codenames["codename"].signed_by is None:
+                raise RuntimeError("signed_by is None")
 
             self.assertCountEqual(
-                repository.codenames["codename"].sign_by, [temp_dir / "m"]
+                repository.codenames["codename"].signed_by, [temp_dir / "m"]
             )
 
-            if repository.codenames["codename2"].sign_by is None:
-                raise RuntimeError("sign_by is None")
+            if repository.codenames["codename2"].signed_by is None:
+                raise RuntimeError("signed_by is None")
 
             self.assertCountEqual(
-                repository.codenames["codename2"].sign_by, [Path("/some/missing")]
+                repository.codenames["codename2"].signed_by, [Path("/some/missing")]
             )

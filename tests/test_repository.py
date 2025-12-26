@@ -86,7 +86,7 @@ class TestRepository(BaseTest):
         self.assertTrue(repository.ignore_errors)
 
         files = repository.get_pool_files(
-            self.TEST_DATA / "IgnoreErrorsConfig", False, set()
+            self.TEST_DATA / "IgnoreErrorsConfig", False, True, set()
         )
 
         file = self.get_from_set(
@@ -253,7 +253,7 @@ class TestRepository(BaseTest):
         files = {
             d.path
             for d in repository.get_pool_files(
-                self.TEST_DATA / "DebianBookworm", False, set()
+                self.TEST_DATA / "DebianBookworm", False, True, set()
             )
         }
 
@@ -289,7 +289,7 @@ class TestRepository(BaseTest):
         files = {
             d.path
             for d in repository.get_pool_files(
-                self.TEST_DATA / "DebianBookworm", False, set()
+                self.TEST_DATA / "DebianBookworm", False, True, set()
             )
         }
 
@@ -313,7 +313,7 @@ class TestRepository(BaseTest):
         files = {
             d.path
             for d in repository.get_pool_files(
-                self.TEST_DATA / "DebianBookworm", False, set()
+                self.TEST_DATA / "DebianBookworm", False, True, set()
             )
         }
 
@@ -342,7 +342,7 @@ class TestRepository(BaseTest):
         files = {
             d.path
             for d in repository.get_pool_files(
-                self.TEST_DATA / "DebianBookworm", False, set()
+                self.TEST_DATA / "DebianBookworm", False, True, set()
             )
         }
 
@@ -363,7 +363,7 @@ class TestRepository(BaseTest):
         files = {
             d.path
             for d in repository.get_pool_files(
-                self.TEST_DATA / "DebianBookworm", False, set()
+                self.TEST_DATA / "DebianBookworm", False, True, set()
             )
         }
 
@@ -390,7 +390,7 @@ class TestRepository(BaseTest):
         files = {
             d.path.name
             for d in repository.get_pool_files(
-                self.TEST_DATA / "DebianBookworm", False, set()
+                self.TEST_DATA / "DebianBookworm", False, True, set()
             )
         }
 
@@ -409,7 +409,7 @@ class TestRepository(BaseTest):
         files = {
             d.path.name
             for d in repository.get_pool_files(
-                self.TEST_DATA / "DebianBookworm", False, set()
+                self.TEST_DATA / "DebianBookworm", False, True, set()
             )
         }
 
@@ -428,7 +428,7 @@ class TestRepository(BaseTest):
         files = {
             d.path.name
             for d in repository.get_pool_files(
-                self.TEST_DATA / "DebianBookworm", False, set()
+                self.TEST_DATA / "DebianBookworm", False, True, set()
             )
         }
 
@@ -447,7 +447,7 @@ class TestRepository(BaseTest):
         files = {
             d.path.name
             for d in repository.get_pool_files(
-                self.TEST_DATA / "DebianBookworm", False, set()
+                self.TEST_DATA / "DebianBookworm", False, True, set()
             )
         }
 
@@ -466,7 +466,7 @@ class TestRepository(BaseTest):
         files = {
             d.path.name
             for d in repository.get_pool_files(
-                self.TEST_DATA / "DebianBookworm", False, set()
+                self.TEST_DATA / "DebianBookworm", False, True, set()
             )
         }
 
@@ -485,7 +485,7 @@ class TestRepository(BaseTest):
         files = {
             d.path.name
             for d in repository.get_pool_files(
-                self.TEST_DATA / "DebianBookworm", False, set()
+                self.TEST_DATA / "DebianBookworm", False, True, set()
             )
         }
 
@@ -559,7 +559,7 @@ class TestRepository(BaseTest):
         repository = self.get_repository(["main"], ["amd64"], False)
 
         files = repository.get_pool_files(
-            self.TEST_DATA / "GitlabRegistryPackages", False, set()
+            self.TEST_DATA / "GitlabRegistryPackages", False, True, set()
         )
 
         single_file = (
@@ -576,7 +576,7 @@ class TestRepository(BaseTest):
         repository = self.get_repository(["main"], [], True)
 
         files = repository.get_pool_files(
-            self.TEST_DATA / "GitlabRegistryPackages", False, set()
+            self.TEST_DATA / "GitlabRegistryPackages", False, True, set()
         )
 
         single_file = "pool/main/g/gitlab-runner/gitlab-runner_14.8.1.dsc"
@@ -609,6 +609,7 @@ class TestRepository(BaseTest):
             self.TEST_DATA / "MaliciousRepository/repo",
             {Path("dists/test/main/source/Sources")},
             set(),
+            True,
             PackageFilter(),
         )
 
@@ -621,6 +622,7 @@ class TestRepository(BaseTest):
             self.TEST_DATA / "MaliciousRepository/repo",
             {Path("dists/test/main/binary-amd64/Packages")},
             set(),
+            True,
             PackageFilter(),
         )
 

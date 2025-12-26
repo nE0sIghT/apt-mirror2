@@ -54,10 +54,11 @@ class PackageFile:
     path: Path
     size: int
     hashes: dict[HashType, HashSum]
+    weak_size_check: bool
 
     def to_download_file(self, directory: Path):
         download_file = DownloadFile.from_path(
-            path=directory / self.path, check_size=True
+            path=directory / self.path, check_size=self.weak_size_check
         )
         for hash_type, hashsum in self.hashes.items():
             download_file.add_compression_variant(
@@ -77,6 +78,7 @@ class IndexFileParser(ABC):
         repository_path: Path,
         index_files: set[Path],
         ignore_errors: set[str],
+        weak_size_check: bool,
         logger_id: Any | None = None,
     ) -> None:
         super().__init__()
@@ -85,6 +87,7 @@ class IndexFileParser(ABC):
         self._repository_path = repository_path
         self._index_files = index_files
         self._ignore_errors = ignore_errors
+        self._weak_size_check = weak_size_check
         self._pool_files: dict[Path, DownloadFile] = {}
 
     def parse(self) -> set[DownloadFile]:
@@ -158,11 +161,16 @@ class SourcesParser(IndexFileParser):
         repository_path: Path,
         index_files: set[Path],
         ignore_errors: set[str],
+        weak_size_check: bool,
         package_filter: PackageFilter,
         logger_id: Any | None = None,
     ) -> None:
         super().__init__(
-            repository_path, index_files, ignore_errors, logger_id=logger_id
+            repository_path,
+            index_files,
+            ignore_errors,
+            weak_size_check=weak_size_check,
+            logger_id=logger_id,
         )
 
         self._package_filter = package_filter
@@ -202,7 +210,12 @@ class SourcesParser(IndexFileParser):
 
                 self._package_files.setdefault(
                     file_path,
-                    PackageFile(path=file_path, size=int(_size), hashes={}),
+                    PackageFile(
+                        path=file_path,
+                        size=int(_size),
+                        hashes={},
+                        weak_size_check=self._weak_size_check,
+                    ),
                 ).hashes[self._hash_type] = HashSum(type=self._hash_type, hash=hashsum)
             elif bytes_line[0] != ord("\n"):
                 match bytes_line:
@@ -265,11 +278,16 @@ class PackagesParser(IndexFileParser):
         repository_path: Path,
         index_files: set[Path],
         ignore_errors: set[str],
+        weak_size_check: bool,
         package_filter: PackageFilter,
         logger_id: Any | None = None,
     ) -> None:
         super().__init__(
-            repository_path, index_files, ignore_errors, logger_id=logger_id
+            repository_path,
+            index_files,
+            ignore_errors,
+            weak_size_check=weak_size_check,
+            logger_id=logger_id,
         )
 
         self._package_filter = package_filter
@@ -358,7 +376,9 @@ class PackagesParser(IndexFileParser):
                     self._reset_block_parser()
                     continue
 
-                download_file = DownloadFile.from_path(self._file_path, check_size=True)
+                download_file = DownloadFile.from_path(
+                    self._file_path, check_size=self._weak_size_check
+                )
                 download_file.ignore_errors = self._should_ignore_errors(
                     download_file.path
                 )
@@ -652,7 +672,11 @@ class BaseRepository(ABC):
         return f"Checksum-{hash_type.value.capitalize()}"
 
     def get_pool_files(
-        self, repository_root: Path, encode_tilde: bool, missing_sources: set[Path]
+        self,
+        repository_root: Path,
+        encode_tilde: bool,
+        weak_size_check: bool,
+        missing_sources: set[Path],
     ) -> Iterable[DownloadFile]:
         pool_files: set[DownloadFile] = set()
 
@@ -662,6 +686,7 @@ class BaseRepository(ABC):
                     repository_root / self.get_mirror_path(encode_tilde),
                     set(self.sources_files) - missing_sources,
                     ignore_errors=self.ignore_errors,
+                    weak_size_check=weak_size_check,
                     package_filter=self.package_filter,
                     logger_id=self.url,
                 ).parse()
@@ -673,6 +698,7 @@ class BaseRepository(ABC):
                     repository_root / self.get_mirror_path(encode_tilde),
                     set(self.packages_files) - missing_sources,
                     ignore_errors=self.ignore_errors,
+                    weak_size_check=weak_size_check,
                     package_filter=self.package_filter,
                     logger_id=self.url,
                 ).parse()

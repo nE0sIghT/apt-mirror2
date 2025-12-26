@@ -55,6 +55,14 @@ set gpg_verify        off
 ## Slow download protection threshold.
 # set slow_rate          100k
 
+## Enable weak size-only package check (without mtime verification)
+## When enabled, the package size is compared against the size recorded in metadata files.
+## If the recorded size matches the locally stored file size, no connection to the remote
+## server is made and the file modification time is not checked.
+## This is useful for Debian/Ubuntu mirrors to speed up the mirroring process, but it must
+## be disabled for development or any less strict mirrors.
+# set weak_size_check    0
+
 set _tilde            0
 
 ## Use uvloop if available

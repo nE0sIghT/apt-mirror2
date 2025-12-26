@@ -386,6 +386,7 @@ class Config:
             "slow_rate_protection": "on",
             "slow_rate_startup": "15",
             "slow_rate": "100k",
+            "weak_size_check": "0",
             "unlink": "0",
             "use_proxy": "off",
             "http_proxy": "",
@@ -699,6 +700,10 @@ class Config:
     @property
     def slow_rate(self) -> int:
         return self.get_size("slow_rate")
+
+    @property
+    def weak_size_check(self) -> bool:
+        return self.get_bool("weak_size_check")
 
     @property
     def nthreads(self) -> int:

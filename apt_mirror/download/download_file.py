@@ -91,6 +91,7 @@ class DownloadFile:
         default_factory=lambda: {}
     )
     check_size: bool = False
+    check_utime: bool = False
     ignore_errors: bool = False
     ignore_missing: bool = False
 

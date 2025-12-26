@@ -436,6 +436,7 @@ class RepositoryMirror:
                 self._repository.get_pool_files,
                 self._config.skel_path,
                 self._config.encode_tilde,
+                self._config.weak_size_check,
                 self._downloader.get_missing_sources(),
             )
 

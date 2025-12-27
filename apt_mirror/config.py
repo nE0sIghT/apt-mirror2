@@ -402,6 +402,7 @@ class Config:
             "prometheus_host": "localhost",
             "prometheus_port": "8000",
             "release_files_retries": "15",
+            "use_dists_move": "1",
         }
 
         self._parse_config_file()
@@ -790,3 +791,7 @@ class Config:
     @property
     def release_files_retries(self) -> int:
         return max(1, int(self["release_files_retries"]))
+
+    @property
+    def use_dists_move(self) -> bool:
+        return self.get_bool("use_dists_move")

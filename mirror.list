@@ -124,6 +124,11 @@ set _tilde            0
 # set wipe_size_ratio 0.4
 # set wipe_count_ratio 0.4
 
+## Use a "move" strategy for the `dists` directory instead of copying it in place.
+## When enabled (default), the `dists` directory is first prepared in a temporary
+## location under `mirror_path`, then the current `dists` is removed and the new
+## directory is atomically renamed to `dists` to minimize client outage.
+# set use_dists_move 1
 
 ### Mirror source settings
 

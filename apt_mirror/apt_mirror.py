@@ -468,86 +468,102 @@ class RepositoryMirror:
         metadata_files: Iterable[DownloadFileCompressionVariant],
     ):
         self._log.info("Moving metadata")
+
         mirror_path = self._repository.get_mirror_path(self._config.encode_tilde)
-        mirror_full_path = self._config.mirror_path / mirror_path
 
-        move_folders: set[Path] = set()
+        if self._config.use_dists_move:
+            mirror_full_path = self._config.mirror_path / mirror_path
 
-        # Drop any temporary leftovers
-        for folder in mirror_full_path.glob(f"*{self.MOVE_FOLDER_PREFIX}*"):
-            if not folder.is_dir():
-                continue
+            move_folders: set[Path] = set()
 
-            self._rmtree(folder)
+            # Drop any temporary leftovers
+            for folder in mirror_full_path.glob(f"*{self.MOVE_FOLDER_PREFIX}*"):
+                if not folder.is_dir():
+                    continue
 
-        for file in metadata_files:
-            file_alternate_paths: list[Path] = []
-            file_skel_path = self._config.skel_path / mirror_path / file.path
+                self._rmtree(folder)
 
-            if (
-                len(file.path.parents) > 1
-                and file.path.parents[-2] not in self._pool_folders
-            ):
-                # Get first level directory
-                top_parent = file.path.parents[-2]
-                top_parent_new_path = top_parent.with_name(
+            for file in metadata_files:
+                file_alternate_paths: list[Path] = []
+                file_skel_path = self._config.skel_path / mirror_path / file.path
+
+                if (
+                    len(file.path.parents) > 1
+                    and file.path.parents[-2] not in self._pool_folders
+                ):
+                    # Get first level directory
+                    top_parent = file.path.parents[-2]
+                    top_parent_new_path = top_parent.with_name(
+                        f"{top_parent.name}{self.MOVE_FOLDER_NEW_SUFFIX}"
+                    )
+
+                    for file_path in file.get_all_paths():
+                        if file_path.is_relative_to(top_parent):
+                            file_alternate_paths.append(
+                                mirror_full_path
+                                / top_parent_new_path
+                                / file_path.relative_to(top_parent)
+                            )
+                        else:
+                            file_alternate_paths.append(mirror_full_path / file_path)
+
+                    move_folders.add(top_parent)
+                else:
+                    file_alternate_paths = [
+                        mirror_full_path / f for f in file.get_all_paths()
+                    ]
+
+                if file_skel_path.exists():
+                    Downloader.link_or_copy(
+                        file_skel_path,
+                        *file_alternate_paths,
+                    )
+
+            for top_parent in move_folders:
+                mirror_parent_path = mirror_full_path / top_parent
+
+                mirror_parent_old_path = mirror_full_path / top_parent.with_name(
+                    f"{top_parent.name}{self.MOVE_FOLDER_OLD_SUFFIX}"
+                )
+                mirror_parent_new_path = mirror_full_path / top_parent.with_name(
                     f"{top_parent.name}{self.MOVE_FOLDER_NEW_SUFFIX}"
                 )
 
-                for file_path in file.get_all_paths():
-                    if file_path.is_relative_to(top_parent):
-                        file_alternate_paths.append(
-                            mirror_full_path
-                            / top_parent_new_path
-                            / file_path.relative_to(top_parent)
-                        )
-                    else:
-                        file_alternate_paths.append(mirror_full_path / file_path)
+                if not mirror_parent_new_path.exists():
+                    continue
 
-                move_folders.add(top_parent)
-            else:
-                file_alternate_paths = [
-                    mirror_full_path / f for f in file.get_all_paths()
-                ]
+                # Move dists > dists.apt_mirror_old
+                if mirror_parent_path.exists():
+                    if mirror_parent_old_path.exists():
+                        self._rmtree(mirror_parent_old_path)
 
-            if file_skel_path.exists():
-                Downloader.link_or_copy(
-                    file_skel_path,
-                    *file_alternate_paths,
+                    shutil.move(
+                        mirror_parent_path,
+                        mirror_parent_old_path,
+                    )
+
+                # Move dists.apt_mirror_new > dists
+                shutil.move(
+                    mirror_parent_new_path,
+                    mirror_parent_path,
                 )
 
-        for top_parent in move_folders:
-            mirror_parent_path = mirror_full_path / top_parent
-
-            mirror_parent_old_path = mirror_full_path / top_parent.with_name(
-                f"{top_parent.name}{self.MOVE_FOLDER_OLD_SUFFIX}"
-            )
-            mirror_parent_new_path = mirror_full_path / top_parent.with_name(
-                f"{top_parent.name}{self.MOVE_FOLDER_NEW_SUFFIX}"
-            )
-
-            if not mirror_parent_new_path.exists():
-                continue
-
-            # Move dists > dists.apt_mirror_old
-            if mirror_parent_path.exists():
+                # Drop dists.apt_mirror_old
                 if mirror_parent_old_path.exists():
                     self._rmtree(mirror_parent_old_path)
+        else:
+            for file in metadata_files:
+                file_relative_path = mirror_path / file.path
+                file_skel_path = self._config.skel_path / file_relative_path
 
-                shutil.move(
-                    mirror_parent_path,
-                    mirror_parent_old_path,
-                )
-
-            # Move dists.apt_mirror_new > dists
-            shutil.move(
-                mirror_parent_new_path,
-                mirror_parent_path,
-            )
-
-            # Drop dists.apt_mirror_old
-            if mirror_parent_old_path.exists():
-                self._rmtree(mirror_parent_old_path)
+                if file_skel_path.exists():
+                    Downloader.link_or_copy(
+                        file_skel_path,
+                        *[
+                            self._config.mirror_path / mirror_path / f
+                            for f in file.get_all_paths()
+                        ],
+                    )
 
         self._log.info("Metadata moved")
 

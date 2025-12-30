@@ -295,34 +295,54 @@ class RepositoryMirror:
         async with self._semaphore:
             self._log.info(f"Mirroring repository {self._repository}")
 
-            release_files = await self.download_release_files()
-            if not release_files:
-                self._log.error(
-                    f"Unable to obtain release files for repository {self._repository}"
-                )
-                return False
-
-            # Download other metadata files
-            metadata_files = await self.download_metadata_files()
-            if not metadata_files:
-                self._log.error(
-                    f"Unable to obtain metadata files for repository {self._repository}"
-                )
-                return False
-
-            downloaded_metadata_files = self._downloader.get_all_files()
-
-            await self.clean_repository_skel(
-                set(
-                    itertools.chain.from_iterable(
-                        v.get_all_paths() for v in downloaded_metadata_files
+            recheck_release_files = False
+            while True:
+                release_files = await self.download_release_files()
+                if not release_files:
+                    self._log.error(
+                        "Unable to obtain release files "
+                        f"for repository {self._repository}"
                     )
-                )
-                - self._downloader.get_missing_sources(),
-            )
+                    return False
 
-            # Download remaining pool
-            await self.download_pool_files()
+                if recheck_release_files:
+                    if self._downloader.downloaded_files_count:
+                        self._log.info("No new release files were downloaded")
+                        break
+                    else:
+                        self._log.info("Release files were changed")
+                        self._error = False
+
+                    recheck_release_files = False
+
+                # Download other metadata files
+                metadata_files = await self.download_metadata_files()
+                if not metadata_files:
+                    self._log.error(
+                        "Unable to obtain metadata files "
+                        f"for repository {self._repository}"
+                    )
+                    return False
+
+                downloaded_metadata_files = self._downloader.get_all_files()
+
+                await self.clean_repository_skel(
+                    set(
+                        itertools.chain.from_iterable(
+                            v.get_all_paths() for v in downloaded_metadata_files
+                        )
+                    )
+                    - self._downloader.get_missing_sources(),
+                )
+
+                # Download remaining pool
+                await self.download_pool_files()
+
+                if not self._error:
+                    break
+
+                recheck_release_files = True
+                self._log.warning("Trying to recheck release files...")
 
             # Move skel to mirror
             if not self._error:

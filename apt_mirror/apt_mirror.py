@@ -306,7 +306,7 @@ class RepositoryMirror:
                     return False
 
                 if recheck_release_files:
-                    if self._downloader.downloaded_files_count:
+                    if not self._downloader.downloaded_files_count:
                         self._log.info("No new release files were downloaded")
                         break
                     else:

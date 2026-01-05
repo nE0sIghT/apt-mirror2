@@ -36,7 +36,8 @@ class BaseTest(TestCase):
 
                     fp.write(data)
             else:
-                mirror_list.touch()
+                with mirror_list.open("wt", encoding="utf-8") as fp:
+                    fp.write("set defaultarch amd64\n")
 
                 if not deb822_names:
                     raise RuntimeError(

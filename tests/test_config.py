@@ -556,3 +556,140 @@ class TestConfig(BaseTest):
             self.assertCountEqual(
                 repository.codenames["codename2"].signed_by, [Path("/some/missing")]
             )
+
+
+class TestDeb822Config(BaseTest):
+    def test_multiple_codenames(self):
+        config = self.get_config(deb822_names=("mixed1", "mixed2"))
+
+        self.assertEqual(len(config.repositories), 4)
+
+        debian_security = self.ensure_repository(
+            config.repositories["http://ftp.debian.org/debian-security"]
+        )
+
+        self.assertCountEqual(
+            debian_security.codenames,
+            ("bullseye-security", "trixie-security"),
+        )
+
+        self.assertFalse(
+            debian_security.codenames["trixie-security"].should_mirror_source()
+        )
+        self.assertTrue(
+            debian_security.codenames["bullseye-security"].should_mirror_source()
+        )
+
+        self.assertCountEqual(
+            debian_security.codenames["trixie-security"].components["main"].arches,
+            {
+                config.default_arch,
+                "amd64",
+                "s390x",
+            },
+        )
+
+        self.assertCountEqual(
+            debian_security.codenames["bullseye-security"].components["main"].arches,
+            {
+                config.default_arch,
+                "amd64",
+                "s390x",
+            },
+        )
+
+        ubuntu_security = self.ensure_repository(
+            config.repositories["http://archive.ubuntu.com/ubuntu"]
+        )
+
+        self.assertCountEqual(
+            ubuntu_security.codenames,
+            (
+                "mantic",
+                "mantic-updates",
+            ),
+        )
+
+        flat_repository = self.ensure_flat_repository(
+            config.repositories["http://mirror.something.ru/repository"]
+        )
+
+        self.assertTrue(flat_repository.is_binaries_enabled)
+        self.assertEqual(
+            str(flat_repository.url), "http://mirror.something.ru/repository"
+        )
+        self.assertCountEqual(flat_repository.directories.keys(), [Path("subpath")])
+        self.assertTrue(
+            flat_repository.directories[Path("subpath")].mirror_binaries, True
+        )
+
+    def test_codenames_list(self):
+        config = self.get_config(deb822_names=("mixed1", "mixed2"))
+
+        proxmox_apqa = self.ensure_repository(
+            config.repositories["https://mirrors.apqa.cn/proxmox/debian/pve"]
+        )
+
+        self.assertCountEqual(
+            proxmox_apqa.codenames,
+            ("bookworm", "bullseye"),
+        )
+
+        self.assertCountEqual(
+            proxmox_apqa.codenames["bookworm"].components["port"].arches,
+            {
+                config.default_arch,
+                "amd64",
+                "arm64",
+                "i386",
+            },
+        )
+
+        self.assertCountEqual(
+            proxmox_apqa.codenames["bullseye"].components["port"].arches,
+            {
+                config.default_arch,
+                "amd64",
+                "arm64",
+                "i386",
+            },
+        )
+
+    def test_http2_disable(self):
+        config = self.get_config(deb822_names=("mixed1", "mixed2"))
+
+        debian = self.ensure_repository(
+            config.repositories["http://ftp.debian.org/debian-security"]
+        )
+
+        self.assertTrue(debian.http2_disable)
+
+        ubuntu = self.ensure_repository(
+            config.repositories["http://archive.ubuntu.com/ubuntu"]
+        )
+
+        self.assertFalse(ubuntu.http2_disable)
+
+    def test_dist_upgrader(self):
+        config = self.get_config(deb822_names=("mixed1", "mixed2"))
+
+        repository = self.ensure_flat_repository(
+            config.repositories["http://mirror.something.ru/repository"]
+        )
+
+        self.assertFalse(repository.mirror_dist_upgrader)
+
+        repository = self.ensure_repository(
+            config.repositories["http://archive.ubuntu.com/ubuntu"]
+        )
+
+        self.assertTrue(repository.mirror_dist_upgrader)
+
+    def test_clean(self):
+        config = self.get_config(deb822_names=("mixed1", "mixed2"))
+
+        repository = self.ensure_flat_repository(
+            config.repositories["http://mirror.something.ru/repository"]
+        )
+
+        self.assertTrue(repository.clean, True)

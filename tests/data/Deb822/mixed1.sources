@@ -1,0 +1,36 @@
+Types: deb deb-src
+URIs: http://ftp.debian.org/debian-security
+Suites: bullseye-security
+Components:
+    main
+    contrib
+    non-free-firmware
+    non-free main/debian-installer
+Architectures: amd64 s390x
+HTTP2-Disable: yes
+
+Types: deb
+URIs: http://ftp.debian.org/debian-security
+Suites: trixie-security
+Components:
+    main
+    contrib
+    non-free-firmware
+    non-free main/debian-installer
+Architectures: amd64 s390x
+HTTP2-Disable: yes
+
+Types: deb
+URIs: http://archive.ubuntu.com/ubuntu/
+Suites: mantic mantic-updates
+Components:
+    main
+    restricted
+    universe
+    multiverse
+Mirror-Dist-Upgrader: yes
+
+Types: deb
+URIs: http://mirror.something.ru/repository
+Suites: subpath/
+Clean: yes

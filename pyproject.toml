@@ -32,7 +32,7 @@ dev = [
     "pip-tools==7.4.1",
     "pyinstaller==6.11.0",
     "pylint==3.3.1",
-    "pytest==8.3.3",
+    "pytest==9.0.2",
     "ruff==0.7.4",
 ]
 aiofiles = [

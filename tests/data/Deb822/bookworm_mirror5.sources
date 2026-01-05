@@ -1,0 +1,6 @@
+Types: deb
+URIs: http://ftp.debian.org/debian
+Suites: bookworm
+Components: main
+Architectures: amd64
+Include-Binary-Packages: libwget0 wget2-dev udev

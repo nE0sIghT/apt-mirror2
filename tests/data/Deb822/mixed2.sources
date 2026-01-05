@@ -1,0 +1,6 @@
+Types: deb
+URIs: https://mirrors.apqa.cn/proxmox/debian/pve
+Suites: bookworm bullseye
+Components:
+    port
+Architectures: arm64 amd64 i386

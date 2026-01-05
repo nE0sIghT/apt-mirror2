@@ -3,10 +3,12 @@
 import os
 import subprocess
 from collections.abc import Iterable, Iterator, MutableMapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from string import Template
 from typing import Any, TypeVar
+
+from debian.deb822 import Deb822
 
 from apt_mirror.download import URL, Proxy
 from apt_mirror.repository import (
@@ -20,9 +22,77 @@ from apt_mirror.repository import (
 )
 
 from .download.slow_rate_protector import SlowRateProtectorFactory
-from .logs import LoggerFactory
+from .logs import ClassLogger, LoggerFactory
 from .netrc import NetRC
 from .version import __version__
+
+
+class SourcesList(Deb822):
+    @dataclass
+    class Types:
+        deb: bool
+        src: bool
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+        types = set(self.get("Types", "").split())
+        self._types = self.Types(deb="deb" in types, src="deb-src" in types)
+
+    @property
+    def enabled(self):
+        return self.get_boolean("Enabled", True)
+
+    @property
+    def types(self):
+        return self._types
+
+    @property
+    def uri(self) -> str:
+        return self["URIs"].split()[0]
+
+    @property
+    def suites(self) -> list[str]:
+        return self["Suites"].split()
+
+    @property
+    def arches(self) -> list[str]:
+        return self.get("Architectures", "").split()
+
+    @property
+    def components(self) -> list[str]:
+        return self.get("Components", "").split()
+
+    @property
+    def by_hash(self) -> ByHash:
+        return ByHash(self["By-Hash"]) if "By-Hash" in self else ByHash.default()
+
+    @property
+    def signed_by(self) -> list[Path]:
+        return list(map(Path, self.get("Signed-By", "").split()))
+
+    @property
+    def gpg_verify(self) -> GPGVerify:
+        return (
+            GPGVerify(self["GPG-Verify"])
+            if "GPG-Verify" in self
+            else GPGVerify.default()
+        )
+
+    @property
+    def skip_clean(self) -> set[Path]:
+        return set(map(Path, self.get("Skip-Clean", "").split()))
+
+    @property
+    def mirror_path(self) -> Path | None:
+        return Path(self["Mirror-Path"]) if "Mirror-Path" in self else None
+
+    @property
+    def ignore_errors(self) -> set[Path]:
+        return set(map(Path, self.get("Ignore-Errors", "").split()))
+
+    def get_boolean(self, key: str, default: bool):
+        return self[key].lower() in ("1", "true", "yes") if key in self else default
 
 
 class RepositoryConfigException(Exception):
@@ -30,7 +100,7 @@ class RepositoryConfigException(Exception):
 
 
 @dataclass
-class RepositoryConfig:
+class RepositoryConfig(ClassLogger):
     key: str
     url: URL
     arches: list[str]
@@ -41,10 +111,58 @@ class RepositoryConfig:
     gpg_verify: GPGVerify
     signed_by: list[Path] | None
 
+    clean: bool = False
+    skip_clean: set[Path] = field(default_factory=set)
+    http2_disable: bool = False
+    mirror_dist_upgrader: bool = False
+    mirror_path: Path | None = None
+    ignore_errors: set[str] = field(default_factory=set)
+
+    @classmethod
+    def create(
+        cls,
+        url: str,
+        codenames: list[str],
+        arches: list[str],
+        source: bool,
+        components: list[str],
+        by_hash: ByHash,
+        signed_by: list[Path] | None,
+        gpg_verify: GPGVerify,
+        **kwargs: Any,
+    ):
+        if not all(c.endswith("/") for c in codenames) and not all(
+            not c.endswith("/") for c in codenames
+        ):
+            raise RepositoryConfigException(
+                f"Mixing flat and non-flat configuration for repository {url} is not"
+                f" supported. Wrong codenames: {codenames}"
+            )
+
+        if signed_by:
+            for path in signed_by:
+                if not path.is_file() or not os.access(path, os.R_OK):
+                    cls.LOG.warning(
+                        f"The `signed-by` option contains inaccessible path: {path}"
+                    )
+
+        url = url.rstrip("/")
+
+        return cls(
+            key=url,
+            url=URL.from_string(url),
+            arches=arches,
+            source=source,
+            codenames=codenames,
+            components=components,
+            by_hash=by_hash,
+            gpg_verify=gpg_verify,
+            signed_by=signed_by,
+            **kwargs,
+        )
+
     @classmethod
     def from_line(cls, line: str, default_arch: str, default_gpg_verify: GPGVerify):
-        log = LoggerFactory.get_logger(cls)
-
         repository_type, url = line.split(maxsplit=1)
         source = False
         signed_by = None
@@ -77,7 +195,7 @@ class RepositoryConfig:
                         try:
                             by_hash = ByHash(value)
                         except ValueError:
-                            log.warning(
+                            cls.LOG.warning(
                                 "Wrong `by-hash` value"
                                 f" {value}. Affected config"
                                 f" line: {line}"
@@ -100,45 +218,52 @@ class RepositoryConfig:
 
         codenames = codename.split(",")
 
-        if not all(c.endswith("/") for c in codenames) and not all(
-            not c.endswith("/") for c in codenames
-        ):
-            raise RepositoryConfigException(
-                f"Mixing flat and non-flat configuration for repository {url} is not"
-                f" supported. Wrong codenames: {codenames}"
-            )
-
-        if signed_by:
-            for path in signed_by:
-                if not path.is_file() or not os.access(path, os.R_OK):
-                    log.warning(
-                        f"The `signed-by` option contains inaccessible path: {path}"
-                    )
-
-        url = url.rstrip("/")
-
-        return cls(
+        return cls.create(
             url,
-            URL.from_string(url),
+            codenames,
             arches,
             source,
-            codenames,
             components,
             by_hash,
-            default_gpg_verify,
             signed_by,
+            default_gpg_verify,
+        )
+
+    @classmethod
+    def from_sources_list(
+        cls, sources_list: SourcesList, default_arch: str, default_gpg_verify: GPGVerify
+    ):
+        return cls.create(
+            url=sources_list.uri,
+            codenames=sources_list.suites,
+            arches=sources_list.arches or [default_arch]
+            if sources_list.types.deb
+            else [],
+            source=sources_list.types.src,
+            components=sources_list.components,
+            by_hash=sources_list.by_hash,
+            signed_by=sources_list.signed_by,
+            gpg_verify=sources_list.gpg_verify,
+            clean=sources_list.get_boolean("Clean", False),
+            skip_clean=sources_list.skip_clean,
+            http2_disable=sources_list.get_boolean("HTTP2-Disable", False),
+            mirror_dist_upgrader=sources_list.get_boolean(
+                "Mirror-Dist-Upgrader", False
+            ),
+            mirror_path=sources_list.mirror_path,
+            ignore_errors=sources_list.ignore_errors,
         )
 
     def to_repository(self) -> BaseRepository:
         if self.is_flat():
             return FlatRepository(
                 url=self.url,
-                clean=False,
-                skip_clean=set(),
-                http2_disable=False,
-                mirror_dist_upgrader=False,
-                mirror_path=None,
-                ignore_errors=set(),
+                clean=self.clean,
+                skip_clean=self.skip_clean,
+                http2_disable=self.http2_disable,
+                mirror_dist_upgrader=self.mirror_dist_upgrader,
+                mirror_path=self.mirror_path,
+                ignore_errors=self.ignore_errors,
                 gpg_verify=self.gpg_verify,
                 directories=FlatRepository.FlatDirectories(
                     (
@@ -157,12 +282,12 @@ class RepositoryConfig:
         else:
             return Repository(
                 url=self.url,
-                clean=False,
-                skip_clean=set(),
-                http2_disable=False,
-                mirror_dist_upgrader=False,
-                mirror_path=None,
-                ignore_errors=set(),
+                clean=self.clean,
+                skip_clean=self.skip_clean,
+                http2_disable=self.http2_disable,
+                mirror_dist_upgrader=self.mirror_dist_upgrader,
+                mirror_path=self.mirror_path,
+                ignore_errors=self.ignore_errors,
                 gpg_verify=self.gpg_verify,
                 codenames=Repository.Codenames(
                     (
@@ -338,14 +463,18 @@ class Config:
         self._log = LoggerFactory.get_logger(self)
         self._repositories: URLDict[BaseRepository] = URLDict()
 
-        self._files = [config_file]
+        self._list_files = [config_file]
+        self._deb822_files = []
         config_directory = config_file.with_name(f"{config_file.name}.d")
         if config_directory.is_dir():
             for file in config_directory.glob("*"):
-                if not file.is_file() or file.suffix != ".list":
+                if not file.is_file():
                     continue
 
-                self._files.append(file)
+                if file.suffix == ".list":
+                    self._list_files.append(file)
+                elif file.suffix == ".sources":
+                    self._deb822_files.append(file)
 
         try:
             default_arch = subprocess.run(
@@ -405,14 +534,25 @@ class Config:
             "use_dists_move": "1",
         }
 
-        self._parse_config_file()
+        self._parse_list_config_file()
+        self._parse_deb822_config_file()
+        self._update_netrc()
         self._substitute_variables()
 
-    def _parse_config_file(self):
+    def _add_repository(self, repository_config: RepositoryConfig):
+        repository = self._repositories.get(repository_config.key)
+        if repository:
+            repository_config.update_repository(repository)
+        else:
+            self._repositories[repository_config.key] = (
+                repository_config.to_repository()
+            )
+
+    def _parse_list_config_file(self):
         boolean_options: dict[str, set[str]] = {}
         data_options: dict[str, dict[str, list[str]]] = {}
 
-        for file in self._files:
+        for file in self._list_files:
             with open(file, "rt", encoding="utf-8") as fp:
                 for line in fp:
                     line = line.strip()
@@ -441,13 +581,7 @@ class Config:
                                 )
                                 continue
 
-                            repository = self._repositories.get(repository_config.key)
-                            if repository:
-                                repository_config.update_repository(repository)
-                            else:
-                                self._repositories[repository_config.key] = (
-                                    repository_config.to_repository()
-                                )
+                            self._add_repository(repository_config)
                         case line if command in self.BOOLEAN_KEYS:
                             key, repository = line.split(maxsplit=1)
                             boolean_options.setdefault(key, set()).add(repository)
@@ -467,7 +601,32 @@ class Config:
         self._update_skip_clean(data_options.get("skip-clean", {}).keys())
 
         self._update_filters(data_options)
-        self._update_netrc()
+
+    def _parse_deb822_config_file(self):
+        filter_data: dict[str, dict[str, list[str]]] = {}
+
+        for file in self._deb822_files:
+            with open(file, "rt", encoding="utf-8") as fp:
+                for sources_list in SourcesList.iter_paragraphs(fp):
+                    if not sources_list.enabled:
+                        continue
+
+                    repository_config = RepositoryConfig.from_sources_list(
+                        sources_list,
+                        self.default_arch,
+                        self.gpg_verify,
+                    )
+
+                    self._add_repository(repository_config)
+
+                    for filter in self.PACKAGE_FILTERS_KEYS:
+                        deb822_key = "-".join(p.capitalize() for p in filter.split("_"))
+                        if deb822_key in sources_list:
+                            filter_data.setdefault(filter, {}).setdefault(
+                                sources_list.uri, []
+                            ).extend(sources_list[deb822_key].split())
+
+        self._update_filters(filter_data)
 
     def _set_boolean_fields(self, options: dict[str, set[str]]):
         for option in options:
@@ -583,7 +742,8 @@ class Config:
     def __getitem__(self, key: str) -> str:
         if key not in self._variables:
             raise KeyError(
-                f"Variable {key} is not defined in the config file {self._files[0]}"
+                f"Variable {key} is not defined "
+                f"in the config file {self._list_files[0]}"
             )
 
         return self._variables[key]

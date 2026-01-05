@@ -4,7 +4,7 @@ import logging
 import os
 import sys
 from pathlib import PurePath
-from typing import Any
+from typing import Any, ClassVar
 
 
 class LoggerFactory:
@@ -89,3 +89,10 @@ class NameAbbrFilter(logging.Filter):
 
 
 LoggerFactory.init_logging()
+
+
+class ClassLogger:
+    LOG: ClassVar[logging.Logger]
+
+    def __init_subclass__(cls) -> None:
+        cls.LOG = LoggerFactory.get_logger(cls)

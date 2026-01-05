@@ -157,6 +157,17 @@ In addition there are some enhancements available:
 - The `dists` folder is replaced almost atomically using move instead of copy/link
 - Native Prometheus metrics are supported
 
+## Deb822-style format
+
+apt-mirror2 has supported the newer deb822 format since version 15.
+
+While global settings still have to be specified in your `mirror.list` file, apt-mirror2 reads `*.sources` files from a drop-in directory (`mirror.list.d` if your main configuration file is named `mirror.list`).
+
+All per-repository options are supported with underscores `_` replaced by dashes `-` and all words written in CamelCase.
+For example, the option `exclude_binary_packages` becomes `Exclude-Binary-Packages`.
+
+See the [mirror.sources file](mirror.sources) for detailed information.
+
 # Common problems
 ## `LocalProtocolError: Max outbound streams is n, n open`
 

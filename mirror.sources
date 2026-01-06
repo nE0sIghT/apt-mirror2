@@ -1,0 +1,105 @@
+### Global settings
+## Global settings are not supported in the Deb822 format.
+## You should provide mirror.list as apt-mirror argument.
+## A `*.sources` files will be read from the `mirror.list.d` folder.
+##
+### Mirror source settings
+## Whether this source is enabled. Optional. Default yes
+# Enabled: yes
+##
+## Mirror type. Required.
+## `deb` - mirror binary packages
+## `deb-src` - mirror source packages
+Types: deb deb-src
+##
+## Source URI. Required.
+## Only single value is supported for now.
+URIs: uri
+##
+## Source suites. Required.
+## Multiple values can be specified using spaces.
+## An exact path can be specified instead of suite by using trailing `/` (flat repository).
+Suites: suite
+##
+## Components. Required if a suite is specified.
+Components: [component1] [component2] [...]
+##
+## Architectures. Optional.
+## Defaults to the host architecture.
+# Architectures: amd64 s390x
+##
+## The `By-Hash` option can be used to control mirroring using hashsums paths.
+## A `yes` or `no` value activates/disables the use of this feature if this source indicates support for it,
+## while `force` will enable the feature regardless of what the source indicates.
+## Default: `yes`.
+# By-Hash: yes
+##
+## The `Signed-By` is an option to require a repository to pass apt-secure(8) verification with a
+## certain set of keys rather than all trusted keys apt has configured.
+## See `sources.list(5)` man page for more details.
+# Signed-By: /some/path/to/keyring.gpg
+##
+## By default, the name of the mirrored folder is derived from the mirror URL.
+## Use `Mirror-Path` to override the mirror folder name.
+# Mirror-Path: ubuntu
+##
+## The `GPG-Verify` option can be used to control release files signature verification.
+## Allowed values are `on`, `off`, `force`.
+## Defaults to the value of the `gpg_verify` global setting and can be set to `force`, which will make
+## apt-mirror2 fail if a GPG signature cannot be found or verified.
+# GPG-Verify: off
+##
+## Ignore errors for a specified repository path.
+## Can be an exact file or folder.
+# Ignore-Errors: pool/bullseye/main/g/gitlab-runner/gitlab-runner_14.8.1_amd64.deb
+##
+## Mirror source packages with the specified names and binary packages built from them.
+## If not specified, all packages are mirrored.
+# Include-Source-Name: source_name1 source_name2 source_name3
+##
+## Do not mirror source packages with specified names and binary packages built from them.
+## If not specified, no packages are excluded.
+# Exclude-Source-Name: source_name1 source_name2 source_name3
+##
+## Mirror binary packages with the specified names.
+## If not specified, all packages are mirrored.
+# Include-Binary-Packages: binary_package1 binary_package2
+##
+## Exclude binary packages with the specified names.
+## If not specified, no packages are excluded.
+# Exclude-Binary-Packages: binary_package1 binary_package2
+##
+## Mirror only packages that belong to specified sections.
+## If not specified, all packages are mirrored.
+# Include-Sections: section1 section2
+##
+## Exclude packages that belong to specified sections.
+## If not specified, no sections are excluded.
+# Exclude-Sections: section1 section2
+##
+## Mirror packages with specified Debtags.
+## If not specified, all packages are mirrored.
+## Either a facet or full tag can be specified.
+# Include-Tags: facet1::tag1 facet2
+##
+## Exclude packages with specified Debtags.
+## If not specified, no packages are excluded.
+# Exclude-Tags: facet1::tag1 facet2
+##
+## Mirror `dist-upgrader-all` files used by Ubuntu’s `do-release-upgrade` tool.
+## If not specified, these files are not mirrored.
+# Mirror-Dist-Upgrader: no
+##
+## If specified, redundant files in the repository will be cleaned (see `_autoclean` option).
+## It's recommended to enable this option.
+## Default: no
+# Clean: no
+##
+## If specified and repository cleaning is enabled, skip the specified paths during cleaning.
+## Unlike `list` config format a value must be relative repository path in the deb822 format.
+# Skip-Clean: pool/c/curl
+##
+## Do not use the HTTP/2 protocol with this repository.
+## Default: no
+# HTTP2-Disable: yes
+##

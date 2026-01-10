@@ -25,6 +25,8 @@ class TestAIOFile(IsolatedAsyncioTestCase):
         if platform.python_implementation() != "CPython":
             return False
 
+        return True
+
     async def test_linux_aio(self):
         if not self.linux_aio_supported():
             return

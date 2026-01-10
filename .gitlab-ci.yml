@@ -119,6 +119,7 @@ test amd64:
       - PYTHON_VERSION:
           - '3.12'
           - '3.13'
+          - '3.14'
   tags:
     - saas-linux-large-amd64
 

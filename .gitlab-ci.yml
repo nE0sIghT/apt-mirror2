@@ -4,7 +4,7 @@ variables:
   FF_SCRIPT_SECTIONS: 'true'
 
   DOCKER_VERSION: '28'
-  PYTHON_VERSION: '3.12'
+  PYTHON_VERSION: '3.13'
   PYTHON_IMAGE: python
 
   DOCKER_HUB_IMAGE_NAME: docker.io/aptmirror/apt-mirror2

@@ -1,0 +1,75 @@
+Package: nebula-utils
+Version: 1.2.0-1
+Architecture: amd64
+Maintainer: John Smith <johnsmith@example.org>
+Installed-Size: 412
+Depends: libc6 (>= 2.34), zlib1g (>= 1:1.2.11)
+Section: utils
+Priority: optional
+Homepage: https://example.invalid/nebula-utils
+Filename: pool/main/n/nebula-utils/nebula-utils_1.2.0-1_amd64.deb
+Size: 118732
+MD5sum: 9b2b5c3a1a9f6d7e4c8f0a2d5e7b1c3f
+SHA1: 2f1c4a7b9d0e3c5a6b7c8d9e0f1a2b3c4d5e6f70
+SHA256: 6d8f4a1b0c3e2f5d7a9c1b3e4d6f7a8c9b0e1d2c3a4b5c6d7e8f9a0b1c2d3e4
+SHA512: 9a3f6d2c1b0e8f7a6c5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0e
+Description: Nebula command-line utilities
+ Small collection of CLI tools for manipulating fictional "nebula"
+ indexes, validating manifests, and printing debug summaries.
+
+Package: orbit-daemon
+Version: 0.9.3-2
+Architecture: amd64
+Maintainer: John Smith <johnsmith@example.org>
+Installed-Size: 1280
+Depends: libc6 (>= 2.34), libssl3 (>= 3.0.0), adduser
+Recommends: logrotate
+Section: net
+Priority: optional
+Homepage: https://example.invalid/orbit-daemon
+Filename: pool/main/o/orbit-daemon/orbit-daemon_0.9.3-2_amd64.deb
+Size: 403911
+MD5sum: 4e1a8c0d3f6b2a9c5d7e0f1a3b4c5d6e
+SHA1: 7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b
+SHA256: 1f2e3d4c5b6a79808f9e0d1c2b3a4f5e6d7c8b9a0e1d2c3b4a59687766554433
+SHA512: 0c1d2e3f4a5b6c7d8e9f00112233445566778899aabbccddeeff0123456789abfedcba98765432100123456789abcdef0c1d2e3f4a5b6c7d8e9f00112233445566778899aabbccddeeff0123456789ab
+Description: Orbit background service
+ A lightweight background daemon that simulates "orbit scheduling"
+ and exposes a local status socket for clients.
+
+Package: starlight-gui
+Version: 2.0.0~beta1-1
+Architecture: amd64
+Maintainer: John Smith <johnsmith@example.org>
+Installed-Size: 65400
+Depends: libc6 (>= 2.34), libgtk-4-1 (>= 4.10), libadwaita-1-0 (>= 1.4)
+Section: x11
+Priority: optional
+Homepage: https://example.invalid/starlight-gui
+Filename: pool/main/s/starlight-gui/starlight-gui_2.0.0~beta1-1_amd64.deb
+Size: 9823144
+MD5sum: a0b1c2d3e4f5061728394a5b6c7d8e9f
+SHA1: 0f9e8d7c6b5a4938271605f4e3d2c1b0a9f8e7d6
+SHA256: ffeeddccbbaa0099887766554433221100aabbccddeeff001122334455667788
+SHA512: 11223344556677889900aabbccddeeff00112233445566778899aabbccddeeffffeeddccbbaa0099887766554433221100aabbccddeeff00112233445566778899aabbccddeeff0011223344556677
+Description: Starlight graphical client
+ GTK-based GUI for managing fictional "starlight" profiles.
+ .
+ Includes a preferences editor, live status view, and export/import.
+
+Package: comet-doc
+Version: 1.0.5-1
+Architecture: all
+Maintainer: John Smith <johnsmith@example.org>
+Installed-Size: 980
+Section: doc
+Priority: optional
+Homepage: https://example.invalid/comet-doc
+Filename: pool/main/c/comet-doc/comet-doc_1.0.5-1_all.deb
+Size: 74288
+MD5sum: d1c2b3a4e5f60718293a4b5c6d7e8f90
+SHA1: 1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d
+SHA256: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+SHA512: abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789
+Description: Comet documentation
+ Offline documentation bundle (HTML + manpages) for the Comet tools.

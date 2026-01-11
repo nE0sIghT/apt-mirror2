@@ -5,6 +5,7 @@ from unittest import TestCase
 from unittest.mock import patch
 
 from apt_mirror.download import DownloadFile
+from apt_mirror.download.download_file import FileCompression, HashType
 from apt_mirror.download.url import URL
 from apt_mirror.filter import PackageFilter
 from apt_mirror.repository import (
@@ -852,3 +853,40 @@ class TestSafePath(TestCase):
 
             self.assertTrue(is_safe_path(symlinked_folder, c))
             self.assertFalse(is_safe_path(symlinked_folder, d))
+
+
+class TestIndexParser(BaseTest):
+    def test_packages_hashsums(self):
+        parser = PackagesParser(
+            self.TEST_DATA / "Indexes",
+            {Path("Packages")},
+            set(),
+            False,
+            PackageFilter(),
+        )
+        files = {f.path: f for f in parser.parse()}
+
+        hashes = (
+            files[Path("pool/main/n/nebula-utils/nebula-utils_1.2.0-1_amd64.deb")]
+            .compression_variants[FileCompression.NONE]
+            .hashes
+        )
+        self.assertEqual(
+            hashes[HashType.MD5].hash,
+            "9b2b5c3a1a9f6d7e4c8f0a2d5e7b1c3f",
+        )
+
+        self.assertEqual(
+            hashes[HashType.SHA1].hash,
+            "2f1c4a7b9d0e3c5a6b7c8d9e0f1a2b3c4d5e6f70",
+        )
+
+        self.assertEqual(
+            hashes[HashType.SHA256].hash,
+            "6d8f4a1b0c3e2f5d7a9c1b3e4d6f7a8c9b0e1d2c3a4b5c6d7e8f9a0b1c2d3e4",
+        )
+
+        self.assertEqual(
+            hashes[HashType.SHA512].hash,
+            "9a3f6d2c1b0e8f7a6c5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0e",
+        )

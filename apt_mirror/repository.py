@@ -340,12 +340,13 @@ class PackagesParser(IndexFileParser):
                     case line if line.startswith(b"Tag:"):
                         self._multiline = line
                         continue
-                    case line if line.startswith(b"%s:" % HashType.MD5.value.encode()):
+                    # "s" must be lowercase unlike other indexes
+                    case line if line.startswith(b"MD5sum:"):
                         self._hashes[HashType.MD5] = HashSum(
                             type=HashType.MD5, hash=self._get_line_value(line)
                         )
                     case line if line.startswith(b"%s:" % HashType.SHA1.value.encode()):
-                        self._hashes[HashType.MD5] = HashSum(
+                        self._hashes[HashType.SHA1] = HashSum(
                             type=HashType.SHA1, hash=self._get_line_value(line)
                         )
                     case line if line.startswith(

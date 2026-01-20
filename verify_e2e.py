@@ -20,7 +20,7 @@ def setup():
         shutil.rmtree(TMP_DIR)
     TMP_DIR.mkdir()
     BASE_PATH.mkdir()
-    
+
     config_content = f"""
 set base_path    {BASE_PATH.absolute()}
 set mirror_path  {MIRROR_PATH.absolute()}
@@ -41,7 +41,7 @@ def run_sync(label):
     start = time.time()
     # Using python -m to run
     cmd = ["python3", "-m", "apt_mirror.apt_mirror", str(MIRROR_LIST)]
-    
+
     process = subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
@@ -52,7 +52,7 @@ def run_sync(label):
 
     stdout_lines = []
     stderr_lines = []
-    
+
     import threading
 
     def stream_reader(pipe, dest_list, prefix=""):
@@ -62,28 +62,27 @@ def run_sync(label):
 
     t1 = threading.Thread(target=stream_reader, args=(process.stdout, stdout_lines, "[OUT] "))
     t2 = threading.Thread(target=stream_reader, args=(process.stderr, stderr_lines, "[ERR] "))
-    
+
     t1.start()
     t2.start()
-    
+
     process.wait()
     t1.join()
     t2.join()
 
     duration = time.time() - start
-    
+
     full_stderr = "".join(stderr_lines)
     full_stdout = "".join(stdout_lines)
 
     # Filter logs for hash verification
     logging_lines = [line for line in stderr_lines] # Capture all log lines for checking
-    
+
     # Look for status lines or specific events.
-    hash_logs = [line for line in logging_lines if "Hash mismatch" in line]
-    
-    print(f"Exit Code: {process.returncode}")
-    print(f"Duration: {duration:.2f}s")
-    
+    # Return all logging lines so verify() can parse different things (downloads, mismatches etc)
+    # properly without pre-filtering too aggressively.
+    logs_to_return = logging_lines
+
     # Fake a result object for compatibility
     class Result:
         pass
@@ -94,12 +93,12 @@ def run_sync(label):
 
     if result.returncode != 0:
         pass # Already printed via stream
-         
-    return result, hash_logs, result.stderr
+
+    return result, logs_to_return, result.stderr
 
 def verify():
     setup()
-    
+
     # 1. Initial Sync
     res1, logs1, stderr1 = run_sync("Initial Sync")
     if res1.returncode != 0:
@@ -122,7 +121,7 @@ def verify():
              print(result.stdout)
              print("DEBUG: STDERR:")
              print(result.stderr)
-    
+
     if len(deb_files) < 3:
         print("Not enough files downloaded to verify!")
         return
@@ -130,39 +129,44 @@ def verify():
     # 2. Modify State
     file_to_corrupt = deb_files[0]
     file_to_delete = deb_files[1]
-    
+
     print(f"Corrupting: {file_to_corrupt.name}")
     with open(file_to_corrupt, "r+b") as f:
         f.seek(0)
         f.write(b"CORRUPT")
-        
+
     print(f"Deleting: {file_to_delete.name}")
     file_to_delete.unlink()
-    
+
     # 3. Second Sync
     res2, logs2, stderr2 = run_sync("Second Sync (Corruption & Deletion)")
-    
+
     # Analysis
     print("\n--- Verification Analysis ---")
-    
+
     # Check for "Hash mismatch [...]" in logs.
     # Corrupted file -> Should trigger mismatch increment.
     # Deleted file -> No check -> No mismatch increment.
     # Unchanged -> Match -> No mismatch increment.
     # Total mismatch count should be 1.
-    
+
     mismatch_counts = []
     for line in logs2:
-        # Format: ... Hash mismatch [1] ...
+        # Old Format: ... Hash mismatch [1] ...
+        # New Format: ... hash mismatch: (1) ...
         try:
-             if "Hash mismatch [" in line:
+             lower_line = line.lower()
+             if "hash mismatch: (" in lower_line:
+                 part = lower_line.split("hash mismatch: (")[1].split(")")[0]
+                 mismatch_counts.append(int(part))
+             elif "hash mismatch [" in line:
                  part = line.split("Hash mismatch [")[1].split("]")[0]
                  mismatch_counts.append(int(part))
         except (IndexError, ValueError):
              pass
-             
+
     print(f"Mismatch counts found: {mismatch_counts}")
-    
+
     if mismatch_counts:
         final_count = mismatch_counts[-1]
         print(f"Final mismatch count: {final_count}")
@@ -173,23 +177,25 @@ def verify():
         else:
              print("FAIL: No mismatches detected.")
     else:
-        print("FAIL: No 'Hash mismatch' log found.")
-        
+        print("FAIL: No 'hash mismatch' log found.")
+
     # Check downloads
-    downloaded_sizes = []
+    downloaded_counts = []
     for line in logs2:
-         if "Downloaded [" in line:
+         # Format: Download finished: N ...
+         if "Download finished:" in line:
               try:
-                   part = line.split("Downloaded [")[1].split("]")[0]
-                   downloaded_sizes.append(part)
-              except IndexError:
+                   # "Download finished: 2 (..."
+                   part = line.split("Download finished:")[1].strip().split(" ")[0]
+                   downloaded_counts.append(int(part))
+              except (IndexError, ValueError):
                    pass
-                   
-    print(f"Downloaded sizes found: {downloaded_sizes}")
-    if downloaded_sizes:
-         last_downloaded = downloaded_sizes[-1]
-         if last_downloaded != "0 B" and last_downloaded != "0.00 B":
-              print("PASS: Re-download happened.")
+
+    print(f"Downloaded counts found: {downloaded_counts}")
+    if downloaded_counts:
+         last_count = downloaded_counts[-1]
+         if last_count > 0:
+              print(f"PASS: {last_count} files re-downloaded.")
          else:
               print("FAIL: No files re-downloaded.")
     else:

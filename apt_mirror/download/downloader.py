@@ -44,6 +44,7 @@ class DownloaderSettings:
 
 
 class Downloader(ABC):
+    BUFFER_SIZE = 16384
     HASH_READ_SIZE = 8 * 1024 * 1024
     _HASH_CONSTRUCTORS = {
         HashType.SHA512: hashlib.sha512,
@@ -82,6 +83,7 @@ class Downloader(ABC):
         self._downloaded_size = 0
         self._unmodified_count = 0
         self._unmodified_size = 0
+        self._hash_mismatch_count = 0
         self._missing_count = 0
         self._missing_size = 0
         self._error_count = 0
@@ -230,7 +232,6 @@ class Downloader(ABC):
                     if hash_type not in self._HASH_CONSTRUCTORS:
                         continue
 
-                    self._log.info(f"Checking hash {hash_type.value} for {path}")
                     checksum = self._HASH_CONSTRUCTORS[hash_type]()
                     with open(path_resolved, "rb") as fp:
                         for chunk in iter(lambda: fp.read(self.HASH_READ_SIZE), b""):
@@ -240,7 +241,10 @@ class Downloader(ABC):
                          return True
             return False
 
-        return await asyncio.to_thread(_calc_and_verify)
+        result = await asyncio.to_thread(_calc_and_verify)
+        if not result:
+            self._hash_mismatch_count += 1
+        return result
 
     async def progress_logger(self):
         while True:
@@ -259,12 +263,11 @@ class Downloader(ABC):
         )
         self._log.info(
             message
-            + f": {self._downloaded_count} ({format_size(self._downloaded_size)},"
-            f" {download_rate});"
-            " unmodified:"
-            f" {self._unmodified_count} ({format_size(self._unmodified_size)});"
-            f" missing: {self._missing_count} ({format_size(self._missing_size)});"
-            f" errors: {self._error_count} ({format_size(self._error_size)})"
+            + f": {self._downloaded_count} ({format_size(self._downloaded_size)}/s)"
+            f" hash mismatch: ({self._hash_mismatch_count})"
+            f" unmodified: ({format_size(self._unmodified_size)})"
+            f" missing: ({self._missing_count}) ({format_size(self._missing_size)})"
+            f" errors: ({self._error_count}) ({format_size(self._error_size)})"
         )
 
     async def download_file(self, source_file: DownloadFile):

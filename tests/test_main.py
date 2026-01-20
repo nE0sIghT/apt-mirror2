@@ -29,6 +29,7 @@ class TestMain(BaseTest):
                 self.assertEqual(str(get_config_file()), Config.DEFAULT_CONFIGFILE)
 
         with (
+            patch.object(Config, "DEFAULT_CONFIGFILE", "/~~~nonexistent"),
             patch.object(Config, "DEFAULT_CONFIGFILE2", "/~~~nonexistent"),
             patch.object(sys, "argv", ["apt-mirror2"]),
             self.assertRaises(SystemExit),

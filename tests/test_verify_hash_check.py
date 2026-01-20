@@ -71,8 +71,10 @@ class TestHashCheck(unittest.TestCase):
         variants = list(download_file.iter_variants())
         
         # Test Correct Hash
+        downloader._hash_mismatch_count = 0
         result = await downloader._check_hash(file_path, variants)
         self.assertTrue(result, "Should return True for matching hash")
+        self.assertEqual(downloader._hash_mismatch_count, 0, "Mismatch count should be 0 for match")
         
         # Test Mismatch
         wrong_hash = "a" * 64
@@ -85,12 +87,12 @@ class TestHashCheck(unittest.TestCase):
         )
         variants_wrong = list(download_file_wrong.iter_variants())
         
+        downloader._hash_mismatch_count = 0
         result_wrong = await downloader._check_hash(file_path, variants_wrong)
         self.assertFalse(result_wrong, "Should return False for mismatching hash")
+        self.assertEqual(downloader._hash_mismatch_count, 1, "Mismatch count should increment")
 
-        # Test Config Off
         # Test Config Off
         downloader._settings.check_local_hash = False
         result_off = await downloader._check_hash(file_path, variants)
         self.assertFalse(result_off, "Should return False when config is off")
-

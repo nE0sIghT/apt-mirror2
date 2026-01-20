@@ -921,3 +921,7 @@ def main() -> int:
 
         LOG.exception(ex)
         return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

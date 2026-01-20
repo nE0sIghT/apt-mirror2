@@ -268,7 +268,7 @@ class Downloader(ABC):
             + f": {self._downloaded_count} ({format_size(self._downloaded_size)}) "
             f"{download_rate}"
             f" hash mismatch: ({self._hash_mismatch_count})"
-            f" unmodified: ({format_size(self._unmodified_size)})"
+            f" unmodified: ({self._unmodified_count}) ({format_size(self._unmodified_size)})"
             f" missing: ({self._missing_count}) ({format_size(self._missing_size)})"
             f" errors: ({self._error_count}) ({format_size(self._error_size)})"
         )

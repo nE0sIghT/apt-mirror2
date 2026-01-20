@@ -198,7 +198,7 @@ def verify():
               print(f"PASS: {last_count} files re-downloaded.")
          else:
               print("FAIL: No files re-downloaded.")
-         
+
          # 4. Check Log Format for Unit Fix
          # We want to ensure total size does NOT have /s suffix in parentheses.
          # Log example: ... (123.4 KiB) 10.0 MiB/sec ...

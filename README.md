@@ -156,6 +156,7 @@ In addition there are some enhancements available:
 - Per-repository log files are available in the `var_path` folder
 - The `dists` folder is replaced almost atomically using move instead of copy/link
 - Native Prometheus metrics are supported
+- `check_local_hash` option can be used to verify local file content against metadata hashes (SHA256, etc.) before downloading, reducing redundant downloads. Enabled by default.
 
 ## Deb822-style format
 

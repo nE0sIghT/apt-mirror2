@@ -4,3 +4,5 @@
 contrib
 build
 dist
+venv/
+env/

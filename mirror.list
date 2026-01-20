@@ -2,6 +2,8 @@
 ## These settings should be located before all other settings/options.
 ## Global settings are using format `set SETTING VALUE`
 
+# set check_local_hash 1
+
 ## Paths to working directories
 set base_path         /var/spool/apt-mirror
 ## All mirrors will be saved to mirror_path

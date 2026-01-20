@@ -2,6 +2,7 @@
 
 import asyncio
 import contextlib
+import hashlib
 import itertools
 import os
 import shutil
@@ -17,7 +18,7 @@ from aiolimiter import AsyncLimiter
 
 from ..aiofile import BaseAsyncIOFileWriterFactory
 from ..logs import LoggerFactory
-from .download_file import DownloadFile, DownloadFileCompressionVariant
+from .download_file import DownloadFile, DownloadFileCompressionVariant, HashType
 from .format import format_size
 from .proxy import Proxy
 from .response import DownloadResponse
@@ -39,10 +40,17 @@ class DownloaderSettings:
     verify_ca_certificate: bool | str = True
     client_certificate: str | None = None
     client_private_key: str | None = None
+    check_local_hash: bool = False
 
 
 class Downloader(ABC):
-    BUFFER_SIZE = 8 * 1024 * 1024
+    HASH_READ_SIZE = 8 * 1024 * 1024
+    _HASH_CONSTRUCTORS = {
+        HashType.SHA512: hashlib.sha512,
+        HashType.SHA256: hashlib.sha256,
+        HashType.SHA1: hashlib.sha1,
+        HashType.MD5: hashlib.md5,
+    }
 
     def __init__(self, *, settings: DownloaderSettings):
         self._log = LoggerFactory.get_logger(
@@ -198,6 +206,42 @@ class Downloader(ABC):
 
         return True
 
+    async def _check_hash(self, path: Path, variants: list[DownloadFileCompressionVariant]):
+        if not self._settings.check_local_hash:
+            return False
+
+        if not path.is_file():
+            return False
+
+        path_resolved = path.resolve()
+        
+        def _calc_and_verify():
+            for variant in variants:
+                # Prioritize fast hashes
+                for hash_type in (
+                    HashType.SHA256,
+                    HashType.SHA512,
+                    HashType.SHA1,
+                    HashType.MD5,
+                ):
+                    if hash_type not in variant.hashes:
+                        continue
+
+                    if hash_type not in self._HASH_CONSTRUCTORS:
+                        continue
+
+                    self._log.info(f"Checking hash {hash_type.value} for {path}")
+                    checksum = self._HASH_CONSTRUCTORS[hash_type]()
+                    with open(path_resolved, "rb") as fp:
+                        for chunk in iter(lambda: fp.read(self.HASH_READ_SIZE), b""):
+                            checksum.update(chunk)
+                    
+                    if checksum.hexdigest() == variant.hashes[hash_type].hash:
+                         return True
+            return False
+
+        return await asyncio.to_thread(_calc_and_verify)
+
     async def progress_logger(self):
         while True:
             try:
@@ -243,6 +287,12 @@ class Downloader(ABC):
 
             for source_path in variant.get_all_paths():
                 target_path = self._settings.target_root_path / source_path
+                
+                if await self._check_hash(target_path, [variant]):
+                    self._unmodified_count += 1
+                    self._unmodified_size += variant.size
+                    self._unmodified.append(variant)
+                    return
 
                 tries = 10
                 while tries > 0:

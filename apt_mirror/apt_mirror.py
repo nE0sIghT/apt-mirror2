@@ -281,6 +281,7 @@ class RepositoryMirror:
                 verify_ca_certificate=self._config.verify_ca_certificate,
                 client_certificate=self._config.client_certificate,
                 client_private_key=self._config.client_private_key,
+                check_local_hash=self._config.check_local_hash,
             ),
         )
 

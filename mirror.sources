@@ -10,6 +10,7 @@
 ## Mirror type. Required.
 ## `deb` - mirror binary packages
 ## `deb-src` - mirror source packages
+# Check-Local-Hash: true
 Types: deb deb-src
 ##
 ## Source URI. Required.

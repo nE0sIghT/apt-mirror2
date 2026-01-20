@@ -532,6 +532,7 @@ class Config:
             "prometheus_port": "8000",
             "release_files_retries": "15",
             "use_dists_move": "1",
+            "check_local_hash": "1",
         }
 
         self._parse_list_config_file()
@@ -795,6 +796,10 @@ class Config:
     @property
     def autoclean(self) -> bool:
         return self.get_bool("_autoclean")
+
+    @property
+    def check_local_hash(self) -> bool:
+        return self.get_bool("check_local_hash")
 
     @property
     def wipe_size_ratio(self) -> float:

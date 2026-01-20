@@ -1,23 +1,22 @@
 
 import asyncio
+import contextlib
 import hashlib
 import shutil
+import sys
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock
-import contextlib
-
-import sys
 from unittest.mock import MagicMock
 
 # Mock external dependencies that might be missing in test env
 try:
-    import aiolimiter
+    import aiolimiter  # noqa: F401
 except ImportError:
     sys.modules["aiolimiter"] = MagicMock()
 
+from apt_mirror.download.download_file import DownloadFile, HashSum, HashType
 from apt_mirror.download.downloader import Downloader, DownloaderSettings
-from apt_mirror.download.download_file import DownloadFile, HashType, HashSum
+
 
 class TestHashCheck(unittest.TestCase):
     def setUp(self):
@@ -83,7 +82,9 @@ class TestHashCheck(unittest.TestCase):
         downloader._hash_mismatch_count = 0
         result = await downloader._check_hash(file_path, variants)
         self.assertTrue(result, "Should return True for matching hash")
-        self.assertEqual(downloader._hash_mismatch_count, 0, "Mismatch count should be 0 for match")
+        self.assertEqual(
+            downloader._hash_mismatch_count, 0, "Mismatch count should be 0 for match"
+        )
 
         # Test Mismatch
         wrong_hash = "a" * 64
@@ -99,7 +100,9 @@ class TestHashCheck(unittest.TestCase):
         downloader._hash_mismatch_count = 0
         result_wrong = await downloader._check_hash(file_path, variants_wrong)
         self.assertFalse(result_wrong, "Should return False for mismatching hash")
-        self.assertEqual(downloader._hash_mismatch_count, 1, "Mismatch count should increment")
+        self.assertEqual(
+            downloader._hash_mismatch_count, 1, "Mismatch count should increment"
+        )
 
         # Test Config Off
         downloader._settings.check_local_hash = False
@@ -134,7 +137,9 @@ class TestHashCheck(unittest.TestCase):
         settings.target_root_path = self.tmp_dir
         settings.url = "http://example.com"
         settings.semaphore = asyncio.Semaphore(1)
-        # Mock aiofile factory to support open (needed if download triggers, but we expect it NOT to trigger network download)
+        # Mock aiofile factory to support open
+        # (needed if download triggers,
+        # but we expect it NOT to trigger network download)
         settings.aiofile_factory = MagicMock()
 
         # Mock Downloader
@@ -155,7 +160,8 @@ class TestHashCheck(unittest.TestCase):
         download_file = DownloadFile.from_path(Path("main.deb"))
 
         # We need to inject a variant that returns multiple paths.
-        # Since DownloadFile constructs variants internally, we can construct one manually or mock it.
+        # Since DownloadFile constructs variants internally,
+        # we can construct one manually or mock it.
         # Let's mock the variant to return two paths.
 
         variant = MagicMock()
@@ -180,7 +186,10 @@ class TestHashCheck(unittest.TestCase):
         # 2. Log should mention self-healing
         downloader._log.info.assert_called()
         log_args = [call.args[0] for call in downloader._log.info.call_args_list]
-        self.assertTrue(any("Self-healed" in arg for arg in log_args), f"Log should contain 'Self-healed', got: {log_args}")
+        self.assertTrue(
+            any("Self-healed" in arg for arg in log_args),
+            f"Log should contain 'Self-healed', got: {log_args}",
+        )
 
         # 3. Stats should prevent re-download
         self.assertEqual(downloader._unmodified_count, 1)

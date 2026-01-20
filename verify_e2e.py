@@ -1,9 +1,6 @@
 
-import asyncio
-import os
 import shutil
 import subprocess
-import time
 from pathlib import Path
 
 # Config
@@ -38,7 +35,7 @@ set check_local_hash 1
 
 def run_sync(label):
     print(f"\n--- Running Sync: {label} ---")
-    start = time.time()
+
     # Using python -m to run
     cmd = ["python3", "-m", "apt_mirror.apt_mirror", str(MIRROR_LIST)]
 
@@ -60,8 +57,12 @@ def run_sync(label):
             print(f"{prefix}{line}", end="")
             dest_list.append(line)
 
-    t1 = threading.Thread(target=stream_reader, args=(process.stdout, stdout_lines, "[OUT] "))
-    t2 = threading.Thread(target=stream_reader, args=(process.stderr, stderr_lines, "[ERR] "))
+    t1 = threading.Thread(
+        target=stream_reader, args=(process.stdout, stdout_lines, "[OUT] ")
+    )
+    t2 = threading.Thread(
+        target=stream_reader, args=(process.stderr, stderr_lines, "[ERR] ")
+    )
 
     t1.start()
     t2.start()
@@ -70,7 +71,7 @@ def run_sync(label):
     t1.join()
     t2.join()
 
-    duration = time.time() - start
+
 
     full_stderr = "".join(stderr_lines)
     full_stdout = "".join(stdout_lines)
@@ -79,8 +80,8 @@ def run_sync(label):
     logging_lines = [line for line in stderr_lines] # Capture all log lines for checking
 
     # Look for status lines or specific events.
-    # Return all logging lines so verify() can parse different things (downloads, mismatches etc)
-    # properly without pre-filtering too aggressively.
+    # Return all logging lines so verify() can parse different things
+    # (downloads, mismatches etc) properly without pre-filtering too aggressively.
     logs_to_return = logging_lines
 
     # Fake a result object for compatibility
@@ -118,9 +119,9 @@ def verify():
          else:
              print(f"DEBUG: var path {VAR_PATH} does not exist.")
              print("DEBUG: STDOUT:")
-             print(result.stdout)
+             print(res1.stdout)
              print("DEBUG: STDERR:")
-             print(result.stderr)
+             print(res1.stderr)
 
     if len(deb_files) < 3:
         print("Not enough files downloaded to verify!")
@@ -171,9 +172,15 @@ def verify():
         final_count = mismatch_counts[-1]
         print(f"Final mismatch count: {final_count}")
         if final_count == 1:
-             print("PASS: Exactly 1 hash mismatch detected (corresponding to the corrupted file).")
+             print(
+                 "PASS: Exactly 1 hash mismatch detected "
+                 "(corresponding to the corrupted file)."
+             )
         elif final_count > 1:
-             print(f"FAIL: Too many mismatches ({final_count}). Did deleted file count?")
+             print(
+                 f"FAIL: Too many mismatches ({final_count}). "
+                 "Did deleted file count?"
+             )
         else:
              print("FAIL: No mismatches detected.")
     else:
@@ -209,7 +216,8 @@ def verify():
                  # Check for the pattern " (X B/s)" or similar where it shouldn't be.
                  # Actually, simpler: verify the structure using regex or simple split.
                  # The log format is: ... {count} ({size}) {rate} ...
-                 # Let's just find the first parenthesis block after "Download finished: N"
+                 # Let's just find the first parenthesis block
+                 # after "Download finished: N"
                  try:
                      parts = line.split("Download finished:")[1]
                      # parts = " 2 (25.8 KiB) 110.6 KiB/sec hash mismatch: ..."
@@ -217,8 +225,11 @@ def verify():
                      first_paren = parts.split("(")[1].split(")")[0]
                      if "/s" in first_paren or "/sec" in first_paren:
                          found_bad_unit = True
-                         print(f"FAIL: Found incorrect unit in size logging: ({first_paren}) in line: {line.strip()}")
-                 except Exception as e:
+                         print(
+                             f"FAIL: Found incorrect unit in size logging: "
+                             f"({first_paren}) in line: {line.strip()}"
+                         )
+                 except Exception:
                      pass
 
          if not found_bad_unit:

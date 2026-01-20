@@ -198,6 +198,34 @@ def verify():
               print(f"PASS: {last_count} files re-downloaded.")
          else:
               print("FAIL: No files re-downloaded.")
+         
+         # 4. Check Log Format for Unit Fix
+         # We want to ensure total size does NOT have /s suffix in parentheses.
+         # Log example: ... (123.4 KiB) 10.0 MiB/sec ...
+         # Bad log: ... (123.4 KiB/s) ...
+         found_bad_unit = False
+         for line in logs2:
+             if "Download finished:" in line:
+                 # Check for the pattern " (X B/s)" or similar where it shouldn't be.
+                 # Actually, simpler: verify the structure using regex or simple split.
+                 # The log format is: ... {count} ({size}) {rate} ...
+                 # Let's just find the first parenthesis block after "Download finished: N"
+                 try:
+                     parts = line.split("Download finished:")[1]
+                     # parts = " 2 (25.8 KiB) 110.6 KiB/sec hash mismatch: ..."
+                     # Extract (25.8 KiB)
+                     first_paren = parts.split("(")[1].split(")")[0]
+                     if "/s" in first_paren or "/sec" in first_paren:
+                         found_bad_unit = True
+                         print(f"FAIL: Found incorrect unit in size logging: ({first_paren}) in line: {line.strip()}")
+                 except Exception as e:
+                     pass
+
+         if not found_bad_unit:
+             print("PASS: Logging unit format appears correct (no /s in size).")
+         else:
+             print("FAIL: Logging unit format incorrect.")
+
     else:
          print("FAIL: No download status log found.")
 

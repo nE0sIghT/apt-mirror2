@@ -1,9 +1,10 @@
+import errno
 import sys
 from pathlib import Path
-from tempfile import NamedTemporaryFile
+from tempfile import NamedTemporaryFile, TemporaryDirectory
 from unittest.mock import patch
 
-from apt_mirror.apt_mirror import get_config_file, is_alternative_binary_path
+from apt_mirror.apt_mirror import APTMirror, get_config_file, is_alternative_binary_path
 from apt_mirror.config import Config
 from tests.base import BaseTest
 
@@ -52,3 +53,14 @@ class TestMain(BaseTest):
 
             config = Config(Path(tmp_file.name), Config.DEFAULT_BASE_PATH2)
             self.assertEqual(config.base_path, Path(Config.DEFAULT_BASE_PATH2))
+
+    def test_lock_exception(self):
+        with TemporaryDirectory() as tempdir:
+            config_path = Path(tempdir) / "mirror.list"
+            config_path.touch()
+            config = Config(config_file=config_path, default_base_path=tempdir)
+            config.create_working_directories()
+            apt_mirror = APTMirror(config)
+
+            with self.assertRaises(PermissionError), apt_mirror.lock():
+                raise PermissionError(errno.EPERM, "Operation not permitted")

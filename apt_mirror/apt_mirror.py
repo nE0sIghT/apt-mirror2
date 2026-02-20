@@ -829,7 +829,6 @@ class APTMirror:
         with open(lock_file, "wb") as fp:
             try:
                 flock(fp, LOCK_EX | LOCK_NB)
-                yield
             except OSError as ex:
                 if ex.errno == EWOULDBLOCK:
                     self.die("apt-mirror is already running, exiting")
@@ -839,6 +838,8 @@ class APTMirror:
                     f"Unable to obtain lock on {lock_file}: error {ex.errno}:"
                     f" {strerror}"
                 )
+
+            yield
 
         lock_file.unlink(missing_ok=True)
 

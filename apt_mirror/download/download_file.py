@@ -1,9 +1,27 @@
 # SPDX-License-Identifer: GPL-3.0-or-later
 
+import hashlib
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
+from typing import Protocol, overload
+
+_ReadableBuffer = bytes | bytearray | memoryview
+
+
+class HashObject(Protocol):
+    def update(self, obj: _ReadableBuffer, /) -> None: ...
+    def digest(self) -> bytes: ...
+    def hexdigest(self) -> str: ...
+
+
+class HashConstructor(Protocol):
+    @overload
+    def __call__(self) -> HashObject: ...
+
+    @overload
+    def __call__(self, data: _ReadableBuffer, /) -> HashObject: ...
 
 
 class HashType(Enum):
@@ -12,11 +30,24 @@ class HashType(Enum):
     SHA1 = "SHA1"
     MD5 = "MD5Sum"
 
+    def get_hash_function(
+        self,
+    ) -> HashConstructor:
+        return {
+            HashType.SHA512: hashlib.sha512,
+            HashType.SHA256: hashlib.sha256,
+            HashType.SHA1: hashlib.sha1,
+            HashType.MD5: hashlib.md5,
+        }[self]
+
 
 @dataclass
 class HashSum:
     type: HashType
     hash: str
+
+    def __hash__(self) -> int:
+        return hash((self.type, self.hash))
 
 
 class FileCompression(Enum):
@@ -113,7 +144,6 @@ class DownloadFile:
         cls,
         path: Path,
         size: int,
-        hash_type: HashType,
         hash_sum: HashSum,
         use_by_hash: bool,
     ):
@@ -121,7 +151,6 @@ class DownloadFile:
         download_file.add_compression_variant(
             path=path,
             size=size,
-            hash_type=hash_type,
             hash_sum=hash_sum,
             use_by_hash=use_by_hash,
         )
@@ -136,13 +165,12 @@ class DownloadFile:
         self,
         path: Path,
         size: int,
-        hash_type: HashType | None = None,
         hash_sum: HashSum | None = None,
         use_by_hash: bool = False,
     ):
         hashes: dict[HashType, HashSum] = {}
-        if hash_type and hash_sum:
-            hashes[hash_type] = hash_sum
+        if hash_sum:
+            hashes[hash_sum.type] = hash_sum
 
         compression = FileCompression.NONE
         for _compression in FileCompression:

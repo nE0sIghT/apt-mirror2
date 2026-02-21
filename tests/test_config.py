@@ -3,6 +3,7 @@ from tempfile import TemporaryDirectory
 
 from apt_mirror.apt_mirror import PathCleaner
 from apt_mirror.config import Config, RepositoryConfigException
+from apt_mirror.download.download_file import HashType
 from apt_mirror.download.url import URL
 from apt_mirror.netrc import NetRC
 from apt_mirror.repository import ByHash
@@ -556,6 +557,18 @@ class TestConfig(BaseTest):
             self.assertCountEqual(
                 repository.codenames["codename2"].signed_by, [Path("/some/missing")]
             )
+
+    def test_check_hashes(self):
+        config = self.get_config("MixedConfig")
+        self.assertEqual(config.check_hashes, {t for t in HashType})
+
+        config = self.get_modified_config("MixedConfig", "set check_hashes off")
+        self.assertEqual(config.check_hashes, set())
+
+        config = self.get_modified_config(
+            "MixedConfig", "set check_hashes SHA256, MD5Sum"
+        )
+        self.assertEqual(config.check_hashes, {HashType.MD5, HashType.SHA256})
 
 
 class TestDeb822Config(BaseTest):

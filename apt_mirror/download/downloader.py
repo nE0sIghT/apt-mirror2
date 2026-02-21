@@ -17,12 +17,32 @@ from aiolimiter import AsyncLimiter
 
 from ..aiofile import BaseAsyncIOFileWriterFactory
 from ..logs import LoggerFactory
-from .download_file import DownloadFile, DownloadFileCompressionVariant
+from .download_file import (
+    DownloadFile,
+    DownloadFileCompressionVariant,
+    HashObject,
+    HashType,
+)
 from .format import format_size
 from .proxy import Proxy
 from .response import DownloadResponse
 from .slow_rate_protector import SlowRateProtectorFactory
 from .url import URL
+
+
+class HashMismatchException(Exception):
+    def __init__(
+        self, hash_type: HashType, path: Path, expected: str, calculated: str
+    ) -> None:
+        super().__init__(
+            f"Hash {HashType.value} mismatch for math {path}: "
+            f"{expected} != {calculated}"
+        )
+
+        self.hash_type = hash_type
+        self.path = path
+        self.expected = expected
+        self.calculated = calculated
 
 
 @dataclass
@@ -35,6 +55,7 @@ class DownloaderSettings:
     user_agent: str
     semaphore: asyncio.Semaphore
     slow_rate_protector_factory: SlowRateProtectorFactory
+    check_hashes: set[HashType]
     rate_limiter: AsyncLimiter | None = None
     verify_ca_certificate: bool | str = True
     client_certificate: str | None = None
@@ -43,6 +64,7 @@ class DownloaderSettings:
 
 class Downloader(ABC):
     BUFFER_SIZE = 8 * 1024 * 1024
+    RETRY_TIMEOUT = 5
 
     def __init__(self, *, settings: DownloaderSettings):
         self._log = LoggerFactory.get_logger(
@@ -83,6 +105,9 @@ class Downloader(ABC):
         self._downloaded: list[DownloadFileCompressionVariant] = []
         self._unmodified: list[DownloadFileCompressionVariant] = []
         self._missing_sources: set[Path] = set()
+
+    def get_target_root_path(self):
+        return self._settings.target_root_path
 
     def set_target_path(self, path: Path):
         self._settings.target_root_path = path
@@ -235,7 +260,7 @@ class Downloader(ABC):
                 tries -= 1
 
             if sleep:
-                await asyncio.sleep(5)
+                await asyncio.sleep(self.RETRY_TIMEOUT)
 
         error = False
         for variant in source_file.iter_variants():
@@ -321,6 +346,13 @@ class Downloader(ABC):
                             target_path
                         ) as fp:
                             try:
+                                hashes: dict[HashType, HashObject] = {}
+                                for hash_type in variant.hashes:
+                                    if hash_type not in self._settings.check_hashes:
+                                        continue
+
+                                    hashes[hash_type] = hash_type.get_hash_function()()
+
                                 slow_rate_protector_factory = (
                                     self._settings.slow_rate_protector_factory
                                 )
@@ -341,6 +373,24 @@ class Downloader(ABC):
                                     size += len(chunk)
                                     slow_rate_protector.rate(len(chunk))
                                     await fp.write(chunk)
+
+                                    for hash_function in hashes.values():
+                                        hash_function.update(chunk)
+
+                                for hash_type, hash_function in hashes.items():
+                                    expected_hash = variant.hashes[
+                                        hash_type
+                                    ].hash.lower()
+                                    calculated_hash = hash_function.hexdigest().lower()
+
+                                    if expected_hash != calculated_hash:
+                                        raise HashMismatchException(
+                                            hash_type,
+                                            source_path,
+                                            expected_hash,
+                                            calculated_hash,
+                                        )
+
                             except Exception as ex:  # pylint: disable=W0718
                                 await retry(
                                     f"An error `{ex.__class__.__qualname__}: {ex}`"

@@ -60,11 +60,10 @@ class PackageFile:
         download_file = DownloadFile.from_path(
             path=directory / self.path, check_size=self.weak_size_check
         )
-        for hash_type, hashsum in self.hashes.items():
+        for hashsum in self.hashes.values():
             download_file.add_compression_variant(
                 directory / self.path,
                 size=self.size,
-                hash_type=hash_type,
                 hash_sum=hashsum,
                 use_by_hash=False,
             )
@@ -383,11 +382,10 @@ class PackagesParser(IndexFileParser):
                 download_file.ignore_errors = self._should_ignore_errors(
                     download_file.path
                 )
-                for hash_type, hashsum in self._hashes.items():
+                for hashsum in self._hashes.values():
                     download_file.add_compression_variant(
                         path=self._file_path,
                         size=self._size,
-                        hash_type=hash_type,
                         hash_sum=hashsum,
                         use_by_hash=False,
                     )
@@ -638,7 +636,6 @@ class BaseRepository(ABC):
                             ].add_compression_variant(
                                 path=repository_path,
                                 size=size,
-                                hash_type=hash_type,
                                 hash_sum=hash_sum,
                                 use_by_hash=use_hash,
                             )
@@ -647,7 +644,6 @@ class BaseRepository(ABC):
                                 DownloadFile.from_hashed_path(
                                     repository_path,
                                     size=size,
-                                    hash_type=hash_type,
                                     hash_sum=hash_sum,
                                     use_by_hash=use_hash,
                                 )

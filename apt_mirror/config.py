@@ -21,6 +21,7 @@ from apt_mirror.repository import (
     Repository,
 )
 
+from .download.download_file import HashType
 from .download.slow_rate_protector import SlowRateProtectorFactory
 from .logs import ClassLogger, LoggerFactory
 from .netrc import NetRC
@@ -516,7 +517,7 @@ class Config:
             "slow_rate_startup": "15",
             "slow_rate": "100k",
             "weak_size_check": "0",
-            "unlink": "0",
+            "check_hashes": ", ".join(t.value for t in HashType),
             "use_proxy": "off",
             "http_proxy": "",
             "https_proxy": "",
@@ -867,6 +868,14 @@ class Config:
     @property
     def weak_size_check(self) -> bool:
         return self.get_bool("weak_size_check")
+
+    @property
+    def check_hashes(self) -> set[HashType]:
+        return set(
+            HashType(t.strip())
+            for t in self._variables["check_hashes"].split(",")
+            if t.strip() != "off"
+        )
 
     @property
     def nthreads(self) -> int:

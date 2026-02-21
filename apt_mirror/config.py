@@ -619,10 +619,12 @@ class Config:
 
                     self._add_repository(repository_config)
 
-                    for filter in self.PACKAGE_FILTERS_KEYS:
-                        deb822_key = "-".join(p.capitalize() for p in filter.split("_"))
+                    for _filter in self.PACKAGE_FILTERS_KEYS:
+                        deb822_key = "-".join(
+                            p.capitalize() for p in _filter.split("_")
+                        )
                         if deb822_key in sources_list:
-                            filter_data.setdefault(filter, {}).setdefault(
+                            filter_data.setdefault(_filter, {}).setdefault(
                                 sources_list.uri, []
                             ).extend(sources_list[deb822_key].split())
 

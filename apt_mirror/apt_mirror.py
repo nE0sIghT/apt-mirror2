@@ -296,6 +296,7 @@ class RepositoryMirror:
             self._log.info(f"Mirroring repository {self._repository}")
 
             recheck_release_files = False
+            downloaded_metadata_files = []
             while True:
                 release_files = await self.download_release_files()
                 if not release_files:

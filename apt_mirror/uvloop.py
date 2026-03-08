@@ -1,4 +1,4 @@
-# SPDX-License-Identifer: GPL-3.0-or-later
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 # This file is mostly copied from the uvloop source with small changes.
 # https://github.com/MagicStack/uvloop/blob/3c3bbeff3418c60b14f793a6541ad01d8036b706/uvloop/__init__.py#L117

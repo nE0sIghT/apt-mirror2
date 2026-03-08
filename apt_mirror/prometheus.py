@@ -1,4 +1,4 @@
-# SPDX-License-Identifer: GPL-3.0-or-later
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from abc import ABC, abstractmethod
 from collections.abc import Generator, Iterable

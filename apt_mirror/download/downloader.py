@@ -35,7 +35,7 @@ class HashMismatchException(Exception):
         self, hash_type: HashType, path: Path, expected: str, calculated: str
     ) -> None:
         super().__init__(
-            f"Hash {HashType.value} mismatch for math {path}: "
+            f"Hash {hash_type.value} mismatch for path {path}: "
             f"{expected} != {calculated}"
         )
 

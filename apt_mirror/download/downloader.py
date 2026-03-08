@@ -78,7 +78,7 @@ class Downloader(ABC):
         self._sources: list[DownloadFile] = []
         # Downloaded files
         self._downloaded: list[DownloadFileCompressionVariant] = []
-        # Umnodified files
+        # Unmodified files
         self._unmodified: list[DownloadFileCompressionVariant] = []
         # Either missing on server files or files with errors
         self._missing_sources: set[Path] = set()
@@ -394,7 +394,7 @@ class Downloader(ABC):
                             except Exception as ex:  # pylint: disable=W0718
                                 await retry(
                                     f"An error `{ex.__class__.__qualname__}: {ex}`"
-                                    f" occured while downloading file {source_path}."
+                                    f" occurred while downloading file {source_path}."
                                     " Retrying..."
                                 )
                                 error = True

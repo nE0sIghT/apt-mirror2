@@ -155,9 +155,9 @@ class PathCleaner:
         )
 
         if not self._clean_allowed():
-            self._log_wipe_threashold_warning()
+            self._log_wipe_threshold_warning()
             fp.write("echo ")
-            fp.write(self._wipe_threashold_warning())
+            fp.write(self._wipe_threshold_warning())
             fp.write(os.linesep)
             return
 
@@ -182,7 +182,7 @@ class PathCleaner:
         for folder in self._folders_queue:
             fp.write(f"rm -r '{folder.absolute()}'\n")
 
-    def _wipe_threashold_warning(self) -> str:
+    def _wipe_threshold_warning(self) -> str:
         return (
             "Wipe threshold reached. Clean will not be performed. Total size:"
             f" {format_size(self.bytes_total)}, about to clean:"
@@ -190,12 +190,12 @@ class PathCleaner:
             f" {self.total_files_count}, about to clean: {self.clean_files_count}."
         )
 
-    def _log_wipe_threashold_warning(self):
-        self._log.warning(self._wipe_threashold_warning())
+    def _log_wipe_threshold_warning(self):
+        self._log.warning(self._wipe_threshold_warning())
 
     def clean(self):
         if not self._clean_allowed():
-            self._log_wipe_threashold_warning()
+            self._log_wipe_threshold_warning()
             return
 
         for file in self._files_queue:

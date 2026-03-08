@@ -5,7 +5,7 @@ from tests.base import BaseTest
 
 
 class TestRepository(BaseTest):
-    def test_wipe_threashold(self):
+    def test_wipe_threshold(self):
         clean_path = self.TEST_DATA / "PathClean"
 
         cleaner = PathCleaner(

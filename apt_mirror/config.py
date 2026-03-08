@@ -687,14 +687,17 @@ class Config:
             self._repositories[url].ignore_errors.update(paths)
 
     def _update_gpg_verify(self, gpg_verify: dict[str, list[str]]):
-        for url, value in gpg_verify.items():
+        for url, values in gpg_verify.items():
             if url not in self._repositories:
                 self._log.warning(
                     f"gpg_verify was specified for missing repository URL: {url}"
                 )
                 continue
 
-            self._repositories[url].gpg_verify = GPGVerify(value)
+            if not values:
+                raise RuntimeError(f"Missing mirror path for URL {url}")
+
+            self._repositories[url].gpg_verify = GPGVerify(values[0])
 
     def _update_filters(
         self,

@@ -108,12 +108,14 @@ class PathCleaner:
     def _clean_allowed(self) -> bool:
         if (
             self._wipe_size_ratio
+            and self.bytes_total
             and self.bytes_cleaned / self.bytes_total >= self._wipe_size_ratio
         ):
             return False
 
         if (
             self._wipe_count_ratio
+            and self.total_files_count
             and self.clean_files_count / self.total_files_count
             >= self._wipe_count_ratio
         ):

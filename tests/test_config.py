@@ -570,6 +570,24 @@ class TestConfig(BaseTest):
         )
         self.assertEqual(config.check_hashes, {HashType.MD5, HashType.SHA256})
 
+    def test_gpg_verify(self):
+        config = self.get_config("MixedConfig")
+
+        repository = self.ensure_repository(
+            config.repositories["http://ftp.debian.org/debian-security"]
+        )
+        self.assertEqual(repository.gpg_verify, GPGVerify.OFF)
+
+        repository = self.ensure_repository(
+            config.repositories["http://archive.ubuntu.com/ubuntu/"]
+        )
+        self.assertEqual(repository.gpg_verify, GPGVerify.ON)
+
+        repository = self.ensure_flat_repository(
+            config.repositories["http://mirror.something.ru/repository"]
+        )
+        self.assertEqual(repository.gpg_verify, GPGVerify.FORCE)
+
 
 class TestDeb822Config(BaseTest):
     def test_multiple_codenames(self):
@@ -706,21 +724,3 @@ class TestDeb822Config(BaseTest):
         )
 
         self.assertTrue(repository.clean, True)
-
-    def test_gpg_verify(self):
-        config = self.get_config("MixedConfig")
-
-        repository = self.ensure_repository(
-            config.repositories["http://ftp.debian.org/debian-security"]
-        )
-        self.assertEqual(repository.gpg_verify, GPGVerify.OFF)
-
-        repository = self.ensure_repository(
-            config.repositories["http://archive.ubuntu.com/ubuntu/"]
-        )
-        self.assertEqual(repository.gpg_verify, GPGVerify.ON)
-
-        repository = self.ensure_flat_repository(
-            config.repositories["http://mirror.something.ru/repository"]
-        )
-        self.assertEqual(repository.gpg_verify, GPGVerify.FORCE)

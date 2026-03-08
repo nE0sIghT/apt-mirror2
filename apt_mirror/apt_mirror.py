@@ -696,7 +696,7 @@ class APTMirror:
     async def run(self) -> int:
         self._log.info(f"apt-mirror2 version {__version__}")
         for signum in (signal.SIGINT, signal.SIGTERM):
-            signal.signal(signum, lambda _, __: self.on_stop())
+            asyncio.get_running_loop().add_signal_handler(signum, self.on_stop)
 
         if not self._config.repositories:
             self._log.error("No repositories are found in the configuration")

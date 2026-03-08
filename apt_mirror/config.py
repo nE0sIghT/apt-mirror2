@@ -567,7 +567,12 @@ class Config:
 
                     match line:
                         case line if command == "set":
-                            _, key, value = line.split(maxsplit=2)
+                            try:
+                                _, key, value = line.split(maxsplit=2)
+                            except ValueError:
+                                self._log.warning(f"Wrong `set` option: {line}")
+                                continue
+
                             self._variables[key] = value
                         case line if line.startswith("deb"):
                             try:

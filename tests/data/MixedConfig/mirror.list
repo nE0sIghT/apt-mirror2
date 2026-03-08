@@ -39,3 +39,7 @@ mirror_dist_upgrader http://archive.ubuntu.com/ubuntu
 clean http://mirror.something.ru/repository
 
 http2-disable http://ftp.debian.org/debian-security
+
+gpg_verify http://ftp.debian.org/debian-security off
+gpg_verify http://archive.ubuntu.com/ubuntu/ on
+gpg_verify http://mirror.something.ru/repository force

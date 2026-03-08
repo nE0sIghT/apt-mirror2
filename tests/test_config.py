@@ -6,7 +6,7 @@ from apt_mirror.config import Config, RepositoryConfigException
 from apt_mirror.download.download_file import HashType
 from apt_mirror.download.url import URL
 from apt_mirror.netrc import NetRC
-from apt_mirror.repository import ByHash
+from apt_mirror.repository import ByHash, GPGVerify
 from tests.base import BaseTest
 
 
@@ -706,3 +706,21 @@ class TestDeb822Config(BaseTest):
         )
 
         self.assertTrue(repository.clean, True)
+
+    def test_gpg_verify(self):
+        config = self.get_config("MixedConfig")
+
+        repository = self.ensure_repository(
+            config.repositories["http://ftp.debian.org/debian-security"]
+        )
+        self.assertEqual(repository.gpg_verify, GPGVerify.OFF)
+
+        repository = self.ensure_repository(
+            config.repositories["http://archive.ubuntu.com/ubuntu/"]
+        )
+        self.assertEqual(repository.gpg_verify, GPGVerify.ON)
+
+        repository = self.ensure_flat_repository(
+            config.repositories["http://mirror.something.ru/repository"]
+        )
+        self.assertEqual(repository.gpg_verify, GPGVerify.FORCE)

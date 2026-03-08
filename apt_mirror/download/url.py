@@ -80,7 +80,13 @@ class URL:
         )
 
     def is_part_of(self, url: "URL"):
-        return str(url).startswith(str(self))
+        if self.scheme != url.scheme or self.get_host() != url.get_host():
+            return False
+
+        base_path = self.path.rstrip("/")
+        target_path = url.path.rstrip("/")
+
+        return target_path == base_path or target_path.startswith(f"{base_path}/")
 
     def __str__(self) -> str:
         return self.without_auth()

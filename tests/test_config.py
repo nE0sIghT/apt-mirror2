@@ -158,6 +158,18 @@ class TestConfig(BaseTest):
         self.assertEqual(cleaner.clean_files_count, 1)
         self.assertEqual(cleaner.folders_count, 1)
 
+        # Test for broken URL.is_part_of
+        config = self.get_modified_config(
+            "SlashConfig",
+            "skip-clean http://example.com/debian11/test",
+        )
+
+        self.assertFalse(
+            self.ensure_repository(
+                config.repositories["http://example.com/debian1"]
+            ).skip_clean
+        )
+
     def test_http2_disable(self):
         config = self.get_config("MixedConfig")
 

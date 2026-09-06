@@ -926,6 +926,41 @@ class TestSafePath(TestCase):
 
 
 class TestIndexParser(BaseTest):
+    def test_missing_uncompressed_packages(self):
+        with TemporaryDirectory() as temp_folder:
+            parser = PackagesParser(
+                Path(temp_folder),
+                {Path("Packages")},
+                set(),
+                False,
+                PackageFilter(),
+            )
+
+            with self.assertNoLogs(parser._log, level="WARNING"):
+                self.assertFalse(parser.parse())
+
+    def test_broken_binary_all_packages(self):
+        with TemporaryDirectory() as temp_folder:
+            packages_file = Path(temp_folder) / "binary-all/Packages.xz"
+            packages_file.parent.mkdir()
+            packages_file.write_bytes(b"invalid")
+
+            parser = PackagesParser(
+                Path(temp_folder),
+                {Path("binary-all/Packages")},
+                set(),
+                False,
+                PackageFilter(),
+            )
+
+            with self.assertLogs(parser._log, level="WARNING") as logs:
+                self.assertFalse(parser.parse())
+
+            self.assertEqual(
+                [f"Unable to unpack index file {packages_file}. Skipping"],
+                [record.getMessage() for record in logs.records],
+            )
+
     def test_packages_hashsums(self):
         parser = PackagesParser(
             self.TEST_DATA / "Indexes",

@@ -94,10 +94,6 @@ class IndexFileParser(ABC):
             index_file = self._repository_path / index_file_relative_path
 
             if not self._unpack_index(index_file):
-                if "binary-all" not in str(index_file):
-                    self._log.warning(
-                        f"Unable to unpack index file {index_file}. Skipping"
-                    )
                 continue
 
             index_file_size = index_file.stat().st_size
@@ -141,6 +137,9 @@ class IndexFileParser(ABC):
 
                     return True
             except (lzma.LZMAError, OSError):
+                self._log.warning(
+                    f"Unable to unpack index file {compressed_file}. Skipping"
+                )
                 return False
 
         return file.exists()

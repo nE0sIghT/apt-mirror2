@@ -111,7 +111,6 @@ test amd64:
   parallel:
     matrix:
       - PYTHON_VERSION:
-          - '3.10'
           - '3.11'
         PYTHON_IMAGE:
           - python

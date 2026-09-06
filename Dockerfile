@@ -26,6 +26,7 @@ RUN \
         --onefile \
         --noconfirm \
         --copy-metadata aioftp \
+        --copy-metadata caio \
         --name apt-mirror \
         /usr/local/bin/apt-mirror
 

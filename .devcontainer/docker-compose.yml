@@ -4,7 +4,7 @@ services:
       context: ../
       dockerfile: .devcontainer/Dockerfile
       args:
-        PYTHON_VERSION: '3.10'
+        PYTHON_VERSION: '3.11'
     image: apt-mirror2-vscode
     volumes:
       - "../:/workspace:cached"
